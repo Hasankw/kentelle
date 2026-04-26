@@ -55,6 +55,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             src={image1}
             alt={product.name}
             fill
+            unoptimized={image1.startsWith("http")}
             className={`object-cover transition-opacity duration-500 ${
               hovered ? "opacity-0" : "opacity-100"
             }`}
@@ -65,6 +66,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             src={image2}
             alt={product.name}
             fill
+            unoptimized={image2.startsWith("http")}
             className={`object-cover transition-opacity duration-500 ${
               hovered ? "opacity-100" : "opacity-0"
             }`}

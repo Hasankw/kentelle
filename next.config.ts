@@ -8,9 +8,22 @@ const nextConfig: NextConfig = {
         hostname: "siwgptjhirmkabyjmddm.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "kentelle.com",
+        pathname: "/cdn/shop/**",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
     ],
-    // Fallback gracefully when image 404s in development
     dangerouslyAllowSVG: true,
+    unoptimized: false,
   },
   turbopack: {
     root: __dirname,
