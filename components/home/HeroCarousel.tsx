@@ -110,7 +110,7 @@ export default function HeroCarousel() {
               </p>
               <Link
                 href={slide.cta.href}
-                className="inline-flex items-center px-8 py-3.5 border border-white/70 text-white text-xs font-heading font-bold tracking-widest uppercase hover:bg-white hover:text-brand-navy transition-all duration-200"
+                className="inline-flex items-center px-8 py-3.5 bg-brand-accent text-brand-navy text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-accent/85 transition-all duration-200"
               >
                 {slide.cta.label}
               </Link>

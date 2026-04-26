@@ -147,7 +147,7 @@ export default function CheckoutPage() {
             <button
               onClick={lockShipping}
               disabled={!isValid}
-              className="w-full mt-2 bg-brand-navy text-brand-white py-3 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-2 bg-brand-accent text-brand-navy py-3 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue to Payment
             </button>

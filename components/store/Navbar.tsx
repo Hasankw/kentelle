@@ -94,7 +94,7 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
             >
               <ShoppingBag size={20} />
               {itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-brand-navy text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 bg-brand-accent text-brand-navy text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                   {itemCount > 9 ? "9+" : itemCount}
                 </span>
               )}

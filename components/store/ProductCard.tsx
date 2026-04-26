@@ -87,7 +87,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           {!outOfStock && (
             <button
               onClick={handleAddToCart}
-              className="absolute bottom-0 left-0 right-0 bg-brand-navy text-brand-white py-3 text-xs font-heading font-bold tracking-widest uppercase flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300"
+              className="absolute bottom-0 left-0 right-0 bg-brand-accent text-brand-navy py-3 text-xs font-heading font-bold tracking-widest uppercase flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hover:bg-brand-accent/85"
             >
               <ShoppingBag size={14} />
               Add to Cart

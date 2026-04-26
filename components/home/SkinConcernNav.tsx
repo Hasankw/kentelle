@@ -1,21 +1,19 @@
-import Link from "next/link";
-
 const concerns = [
-  { label: "Acne & Breakouts", slug: "acne" },
-  { label: "Anti-Ageing", slug: "anti-ageing" },
-  { label: "Dark Spots", slug: "dark-spots" },
-  { label: "Dry Skin", slug: "dry-skin" },
-  { label: "Dullness", slug: "dullness" },
-  { label: "Enlarged Pores", slug: "enlarged-pores" },
-  { label: "Fine Lines", slug: "fine-lines" },
-  { label: "Hydration", slug: "hydration" },
-  { label: "Oily Skin", slug: "oily-skin" },
-  { label: "Pigmentation", slug: "pigmentation" },
-  { label: "Redness", slug: "redness" },
-  { label: "Sensitive Skin", slug: "sensitive-skin" },
-  { label: "Under Eye", slug: "under-eye" },
-  { label: "Uneven Texture", slug: "uneven-texture" },
-  { label: "Wrinkles", slug: "wrinkles" },
+  "Acne & Breakouts",
+  "Anti-Ageing",
+  "Dark Spots",
+  "Dry Skin",
+  "Dullness",
+  "Enlarged Pores",
+  "Fine Lines",
+  "Hydration",
+  "Oily Skin",
+  "Pigmentation",
+  "Redness",
+  "Sensitive Skin",
+  "Under Eye",
+  "Uneven Texture",
+  "Wrinkles",
 ];
 
 export default function SkinConcernNav() {
@@ -32,14 +30,13 @@ export default function SkinConcernNav() {
         </div>
 
         <div className="flex flex-wrap justify-center gap-2">
-          {concerns.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/concerns/${c.slug}`}
-              className="px-4 py-2 border border-brand-white/20 text-xs font-heading font-bold uppercase tracking-wider text-brand-white hover:bg-brand-white hover:text-brand-navy transition-all duration-200"
+          {concerns.map((label) => (
+            <span
+              key={label}
+              className="px-4 py-2 border border-brand-white/20 text-xs font-heading font-bold uppercase tracking-wider text-brand-white hover:bg-brand-white hover:text-brand-navy transition-all duration-200 cursor-default select-none"
             >
-              {c.label}
-            </Link>
+              {label}
+            </span>
           ))}
         </div>
       </div>

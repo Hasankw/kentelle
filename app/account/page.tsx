@@ -104,7 +104,7 @@ export default async function AccountPage() {
               <p className="font-body text-sm text-brand-contrast mb-4">No orders yet.</p>
               <Link
                 href="/shop"
-                className="inline-block px-6 py-2.5 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
+                className="inline-block px-6 py-2.5 bg-brand-accent text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
               >
                 Start Shopping
               </Link>
