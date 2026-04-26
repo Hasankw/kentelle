@@ -15,12 +15,16 @@ export default function AnnouncementBar() {
 
   if (!visible) return null;
 
-  const prev = () =>
-    setCurrent((c) => (c - 1 + messages.length) % messages.length);
+  const prev = () => setCurrent((c) => (c - 1 + messages.length) % messages.length);
   const next = () => setCurrent((c) => (c + 1) % messages.length);
 
   return (
-    <div className="bg-brand-navy text-brand-white text-xs py-2 px-4 flex items-center justify-center gap-3 relative">
+    <div
+      className="text-brand-navy text-xs py-2 px-4 flex items-center justify-center gap-3 relative"
+      style={{
+        background: "linear-gradient(90deg, rgba(226,137,153,1) 0%, rgba(226,137,153,1) 15%, rgba(232,240,242,1) 50%, rgba(57,205,153,1) 86%)",
+      }}
+    >
       <button
         onClick={prev}
         className="opacity-60 hover:opacity-100 transition-opacity"
@@ -28,7 +32,7 @@ export default function AnnouncementBar() {
       >
         <ChevronLeft size={14} />
       </button>
-      <p className="font-body tracking-wider text-center">{messages[current]}</p>
+      <p className="font-body tracking-wider text-center font-semibold">{messages[current]}</p>
       <button
         onClick={next}
         className="opacity-60 hover:opacity-100 transition-opacity"

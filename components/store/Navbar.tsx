@@ -34,8 +34,8 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
   return (
     <nav
       className={cn(
-        "sticky top-0 z-40 bg-brand-bg transition-shadow duration-200",
-        scrolled && "shadow-md"
+        "sticky top-0 z-40 bg-white transition-shadow duration-200",
+        scrolled ? "shadow-md" : "border-b border-brand-contrast/10"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,12 +50,12 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
           </button>
 
           {/* Desktop nav */}
-          <ul className="hidden md:flex items-center gap-6">
+          <ul className="hidden md:flex items-center gap-7">
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="text-xs font-heading font-bold uppercase tracking-widest text-brand-navy hover:text-brand-blue transition-colors"
+                  className="text-[11px] font-heading font-bold uppercase tracking-widest text-brand-navy hover:text-brand-blue transition-colors"
                 >
                   {link.label}
                 </Link>
@@ -66,7 +66,7 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
           {/* Logo */}
           <Link
             href="/"
-            className="absolute left-1/2 -translate-x-1/2 font-heading font-bold text-xl md:text-2xl tracking-widest uppercase text-brand-navy"
+            className="absolute left-1/2 -translate-x-1/2 font-heading font-bold text-xl md:text-2xl tracking-[0.2em] uppercase text-brand-navy"
           >
             Kentelle
           </Link>
@@ -94,7 +94,7 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
             >
               <ShoppingBag size={20} />
               {itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-brand-navy text-brand-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 bg-brand-navy text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                   {itemCount > 9 ? "9+" : itemCount}
                 </span>
               )}
@@ -105,14 +105,14 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-brand-contrast/20 bg-brand-bg">
+        <div className="md:hidden border-t border-brand-contrast/20 bg-white">
           <ul className="flex flex-col py-4">
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="block px-6 py-3 text-xs font-heading font-bold uppercase tracking-widest text-brand-navy hover:text-brand-blue transition-colors"
+                  className="block px-6 py-3 text-[11px] font-heading font-bold uppercase tracking-widest text-brand-navy hover:text-brand-blue transition-colors"
                 >
                   {link.label}
                 </Link>

@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Kentelle brand colors — sourced from kentelle.com CSS */
+  /* Kentelle brand colors — exact values from kentelle.com */
   --color-brand-bg:       #EFF0F5;
-  --color-brand-navy:     #051D49;
+  --color-brand-navy:     #0E1B4D;
   --color-brand-blue:     #4770DB;
   --color-brand-shadow:   #0E1B4D;
   --color-brand-contrast: #A1A6C4;
   --color-brand-white:    #FFFFFF;
+  --color-brand-pink:     #E28999;
+  --color-brand-mint:     #39CD99;
 
   /* Typography */
   --font-body:    var(--font-questrial), sans-serif;
@@ -20,7 +22,7 @@
 
 body {
   background: #EFF0F5;
-  color: #051D49;
+  color: #0E1B4D;
   font-family: var(--font-questrial), sans-serif;
   letter-spacing: 0.06rem;
   line-height: 1.76;
@@ -32,7 +34,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.2;
-  color: #051D49;
+  color: #0E1B4D;
 }
 
 a {
