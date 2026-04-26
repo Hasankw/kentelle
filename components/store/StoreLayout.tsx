@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import AnnouncementBar from "./AnnouncementBar";
 import Navbar from "./Navbar";
 import SearchOverlay from "./SearchOverlay";
@@ -17,6 +18,17 @@ export default function StoreLayout({
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const openCart = useCartStore((s) => s.openCart);
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith("/admin");
+
+  if (isAdmin) {
+    return (
+      <>
+        {children}
+        <ToastContainer />
+      </>
+    );
+  }
 
   return (
     <>
