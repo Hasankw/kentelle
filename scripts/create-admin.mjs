@@ -8,7 +8,7 @@
 import crypto from "crypto";
 
 const SUPABASE_URL = "https://siwgptjhirmkabyjmddm.supabase.co";
-const SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpd2dwdGpoaXJta2FieWptZGRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTg3NTA4NiwiZXhwIjoyMDY3NDUxMDg2fQ.z13rLNF2aWzEKQ-GAhFqoGjBN37MFkXw3exJEbmfQKo";
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpd2dwdGpoaXJta2FieWptZGRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTg3NTA4NiwiZXhwIjoyMDY3NDUxMDg2fQ.z13rLNF2aWzEKQ-GAhFqoGjBN37MFkXw3exJEbmfQKo";
 
 // Simple bcrypt-like hash using PBKDF2 (native Node.js — no bcryptjs needed here)
 // The actual app uses bcryptjs for comparison, so we need a real bcrypt hash.

@@ -10,11 +10,12 @@ import { formatPrice } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Products" };
 
+type ProductRow = { id: string; name: string; slug: string; price: number; salePrice: number | null; stock: number; isActive: boolean; images: string[]; categories: Array<{ name: string }> };
+
 export default async function AdminProductsPage() {
-  const products = await db.product.findMany({
+  const products = (await db.product.findMany({
     orderBy: { createdAt: "desc" },
-    include: { categories: { select: { name: true } } },
-  });
+  })) as ProductRow[];
 
   return (
     <AdminShell>

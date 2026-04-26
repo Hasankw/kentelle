@@ -8,15 +8,12 @@ export async function PUT(
   const { id } = await params;
   const { name, slug, description, ingredients, howToUse, routine, cautions, price, salePrice, stock, isActive, images, categoryIds } = await request.json();
 
-  const existing = await db.product.findUnique({
-    where: { id },
-    include: { categories: { select: { id: true } } },
-  });
+  const existing = await db.product.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const existingCategoryIds = existing.categories.map((c) => c.id);
-  const toConnect = (categoryIds ?? []).filter((cid: string) => !existingCategoryIds.includes(cid));
-  const toDisconnect = existingCategoryIds.filter((cid) => !(categoryIds ?? []).includes(cid));
+  const existingCategoryIds = ((existing as any).categories ?? []).map((c: { id: string }) => c.id) as string[];
+  const toConnect = (categoryIds ?? [] as string[]).filter((cid: string) => !existingCategoryIds.includes(cid));
+  const toDisconnect = existingCategoryIds.filter((cid: string) => !(categoryIds ?? []).includes(cid));
 
   const product = await db.product.update({
     where: { id },

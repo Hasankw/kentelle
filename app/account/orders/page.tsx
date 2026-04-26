@@ -36,7 +36,7 @@ export default async function AccountOrdersPage() {
     },
   });
 
-  const orders = customer?.orders ?? [];
+  const orders = (customer?.orders ?? []) as Array<{ id: string; orderNumber: string; createdAt: string; status: string; total: number; items: Array<{ id: string; name: string; quantity: number; price: number }> }>;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-16">

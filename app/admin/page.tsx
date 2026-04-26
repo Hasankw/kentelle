@@ -9,13 +9,15 @@ import { Package, ShoppingBag, Users, DollarSign } from "lucide-react";
 export const metadata: Metadata = { title: "Dashboard" };
 
 async function getStats() {
-  const [totalOrders, totalRevenue, totalProducts, totalCustomers] =
+  const [totalOrders, confirmedOrders, totalProducts, totalCustomers] =
     await Promise.all([
       db.order.count(),
-      db.order.aggregate({ _sum: { total: true }, where: { status: "CONFIRMED" } }),
+      db.order.findMany({ where: { status: "CONFIRMED" } }),
       db.product.count({ where: { isActive: true } }),
       db.customer.count(),
     ]);
+
+  const totalRevenue = (confirmedOrders as Array<{ total: number }>).reduce((s, o) => s + o.total, 0);
 
   const recentOrders = await db.order.findMany({
     take: 5,
@@ -23,7 +25,7 @@ async function getStats() {
     include: { items: { take: 1 } },
   });
 
-  return { totalOrders, totalRevenue: totalRevenue._sum.total ?? 0, totalProducts, totalCustomers, recentOrders };
+  return { totalOrders, totalRevenue, totalProducts, totalCustomers, recentOrders };
 }
 
 export default async function AdminDashboard() {

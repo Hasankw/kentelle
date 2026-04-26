@@ -17,10 +17,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Find and update order
-  const order = await db.order.findFirst({
+  const orders = await db.order.findMany({
     where: { paypalOrderId },
     include: { items: true },
+    take: 1,
   });
+  const order = (orders[0] ?? null) as { id: string; guestEmail: string | null; orderNumber: string; total: number; items: Array<{ name: string; quantity: number; price: number }> } | null;
 
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });

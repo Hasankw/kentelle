@@ -16,13 +16,12 @@ interface PageProps {
 
 export default async function AdminProductEditPage({ params }: PageProps) {
   const { id } = await params;
-  const [product, categories] = await Promise.all([
-    db.product.findUnique({
-      where: { id },
-      include: { categories: { select: { id: true } } },
-    }),
+  const [rawProduct, categories] = await Promise.all([
+    db.product.findUnique({ where: { id } }),
     db.category.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
+  type ProductRow = { id: string; name: string; slug: string; description: string | null; ingredients: string | null; howToUse: string | null; routine: string | null; cautions: string | null; price: number; salePrice: number | null; stock: number; isActive: boolean; images: string[]; categories: Array<{ id: string }> };
+  const product = rawProduct as ProductRow | null;
 
   if (!product) notFound();
 

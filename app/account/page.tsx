@@ -57,7 +57,7 @@ export default async function AccountPage() {
           { label: "Total Orders", value: customer?.orders?.length ?? 0 },
           {
             label: "Total Spent",
-            value: formatPrice(customer?.orders?.reduce((sum, o) => sum + o.total, 0) ?? 0),
+            value: formatPrice((customer?.orders as Array<{ total: number }> | undefined)?.reduce((sum: number, o: { total: number }) => sum + o.total, 0) ?? 0),
           },
           { label: "Member Since", value: new Date(user.created_at).toLocaleDateString("en-AU", { month: "long", year: "numeric" }) },
         ].map((stat) => (
@@ -82,7 +82,7 @@ export default async function AccountPage() {
           )}
         </div>
         <div className="divide-y divide-brand-contrast/10">
-          {(customer?.orders ?? []).map((order) => (
+          {(customer?.orders as Array<{ id: string; orderNumber: string; createdAt: string; status: string; total: number; items: Array<{ id: string; name: string }> }> ?? []).map((order) => (
             <div key={order.id} className="px-6 py-4 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <p className="font-heading font-bold text-sm text-brand-navy">{order.orderNumber}</p>

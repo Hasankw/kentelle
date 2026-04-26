@@ -8,10 +8,12 @@ import AdminShell from "@/components/admin/AdminShell";
 
 export const metadata: Metadata = { title: "Blog" };
 
+type BlogRow = { id: string; title: string; slug: string; published: boolean; publishedAt: string | null };
+
 export default async function AdminBlogPage() {
-  const posts = await db.blog.findMany({
+  const posts = (await db.blog.findMany({
     orderBy: { createdAt: "desc" },
-  });
+  })) as BlogRow[];
 
   return (
     <AdminShell>

@@ -1,37 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
-  const limit = Math.min(
-    parseInt(req.nextUrl.searchParams.get("limit") ?? "12"),
-    24
-  );
+  const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") ?? "12"), 24);
 
-  if (!q || q.length < 2) {
-    return NextResponse.json({ products: [] });
-  }
+  if (!q || q.length < 2) return NextResponse.json({ products: [] });
 
-  const products = await db.product.findMany({
-    where: {
-      isActive: true,
-      OR: [
-        { name: { contains: q, mode: "insensitive" } },
-        { description: { contains: q, mode: "insensitive" } },
-        { categories: { some: { name: { contains: q, mode: "insensitive" } } } },
-      ],
-    },
-    take: limit,
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      price: true,
-      salePrice: true,
-      images: true,
-    },
-    orderBy: { name: "asc" },
-  });
+  const { data, error } = await supabase
+    .from("Product")
+    .select("id, name, slug, price, salePrice, images")
+    .eq("isActive", true)
+    .or(`name.ilike.%${q}%,description.ilike.%${q}%`)
+    .order("name", { ascending: true })
+    .limit(limit);
 
-  return NextResponse.json({ products });
+  if (error) return NextResponse.json({ products: [] });
+  return NextResponse.json({ products: data ?? [] });
 }
