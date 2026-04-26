@@ -1,43 +1,43 @@
 import Link from "next/link";
 import Image from "next/image";
 
-// Vintage, low-tone real human skincare photography from Unsplash
+// Generic skincare photography — editorial, warm-muted tones
 const collections = [
   {
     name: "Cleansers",
     slug: "cleansers",
     tagline: "Fresh start, every day",
-    image: "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=600&q=85",
   },
   {
     name: "Serums",
     slug: "serums",
     tagline: "Target. Transform. Glow.",
-    image: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1550159930-40066082a4fc?auto=format&fit=crop&w=600&q=85",
   },
   {
     name: "Moisturisers",
     slug: "moisturisers",
     tagline: "Hydration redefined",
-    image: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=600&q=85",
   },
   {
     name: "Eye Care",
     slug: "eye-care",
     tagline: "Bright eyes, every morning",
-    image: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&w=600&q=85",
   },
   {
     name: "Toners",
     slug: "toners",
     tagline: "Balance and refine",
-    image: "https://images.unsplash.com/photo-1556228453-ba0a65c74b9c?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=85",
   },
   {
     name: "Sun Care",
     slug: "sun-care",
     tagline: "Protected, all day",
-    image: "https://images.unsplash.com/photo-1530811761207-8d9d22f0a1f5?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1570194065650-d99fb4d8a609?auto=format&fit=crop&w=600&q=85",
   },
 ];
 
@@ -70,17 +70,14 @@ export default function CollectionGrid() {
               sizes="(max-width: 768px) 50vw, 33vw"
             />
 
-            {/* Vintage warm tone overlay */}
+            {/* Warm vintage tone */}
             <div
               className="absolute inset-0"
-              style={{
-                background: "rgba(160,130,110,0.22)",
-                mixBlendMode: "multiply",
-              }}
+              style={{ background: "rgba(20,10,0,0.20)", mixBlendMode: "multiply" }}
             />
 
-            {/* Dark gradient for text legibility */}
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-brand-navy/15 to-transparent" />
+            {/* Bottom gradient for text */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0E1B4D]/90 via-[#0E1B4D]/20 to-transparent" />
 
             {/* Text */}
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
@@ -90,7 +87,7 @@ export default function CollectionGrid() {
               <p className="text-xs text-white/65 font-body mt-0.5 hidden md:block">
                 {col.tagline}
               </p>
-              <span className="inline-block mt-2 text-[11px] font-heading font-bold tracking-widest uppercase text-white border-b border-white/40 pb-0.5 group-hover:border-brand-pink group-hover:text-brand-pink transition-colors">
+              <span className="inline-block mt-2 text-[11px] font-heading font-bold tracking-widest uppercase text-white border-b border-white/40 pb-0.5 group-hover:border-white group-hover:opacity-80 transition-all">
                 Shop →
               </span>
             </div>
