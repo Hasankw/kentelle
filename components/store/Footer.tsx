@@ -3,11 +3,11 @@ import { ExternalLink, Globe } from "lucide-react";
 
 const shopLinks = [
   { label: "All Products", href: "/shop" },
-  { label: "Skincare", href: "/collections/skincare" },
-  { label: "Face Wash", href: "/collections/face-wash" },
-  { label: "Moisturisers", href: "/collections/moisturisers" },
-  { label: "Serums", href: "/collections/serums" },
-  { label: "Eye Care", href: "/collections/eye-care" },
+  { label: "Skincare", href: "/shop" },
+  { label: "Face Wash", href: "/shop" },
+  { label: "Moisturisers", href: "/shop" },
+  { label: "Serums", href: "/shop" },
+  { label: "Eye Care", href: "/shop" },
 ];
 
 const helpLinks = [
@@ -22,6 +22,10 @@ const accountLinks = [
   { label: "My Account", href: "/account" },
   { label: "Track Order", href: "/account/orders" },
   { label: "Returns & Refunds", href: "/faq#returns" },
+];
+
+const paymentMethods = [
+  "Visa", "Mastercard", "PayPal", "Amex", "Apple Pay", "Google Pay",
 ];
 
 export default function Footer() {
@@ -67,7 +71,7 @@ export default function Footer() {
           </h4>
           <ul className="space-y-2">
             {shopLinks.map((l) => (
-              <li key={l.href}>
+              <li key={l.label}>
                 <Link
                   href={l.href}
                   className="font-body text-sm text-brand-contrast hover:text-brand-white transition-colors"
@@ -122,7 +126,7 @@ export default function Footer() {
       <div className="border-t border-brand-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="font-heading font-bold text-xs tracking-widest uppercase">
-            Get skincare tips & exclusive offers
+            Get skincare tips &amp; exclusive offers
           </p>
           <form
             action="/api/subscribe"
@@ -146,6 +150,25 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Currency + Payment icons */}
+      <div className="border-t border-brand-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-xs text-brand-contrast font-body flex items-center gap-1.5">
+            🇦🇺 Australia (AUD $)
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {paymentMethods.map((m) => (
+              <span
+                key={m}
+                className="border border-brand-white/20 rounded px-2 py-0.5 text-[10px] font-heading font-bold text-brand-contrast/70 tracking-wide"
+              >
+                {m}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Bottom bar */}
       <div className="border-t border-brand-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-brand-contrast font-body">
@@ -158,6 +181,21 @@ export default function Footer() {
               Terms of Service
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Legal disclaimer */}
+      <div className="border-t border-brand-white/10 bg-brand-navy/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <p className="text-[11px] text-brand-contrast/60 font-body leading-relaxed">
+            All Kentelle Skincare products are intended for cosmetic use only and are not registered as therapeutic goods with the TGA.
+            Product information is provided for general educational purposes and does not constitute medical advice.
+            Consult your dermatologist, general practitioner, or qualified healthcare professional before purchasing or using any skincare product.
+            Carefully read and follow all instructions and warnings provided on product packaging.
+            If adverse reactions occur, discontinue use immediately and seek medical attention promptly.
+            These products are not intended to diagnose, treat, cure or prevent any disease or health condition.
+            Kentelle Skincare disclaims liability for any injury, adverse effect, or outcome resulting from product use.
+          </p>
         </div>
       </div>
     </footer>

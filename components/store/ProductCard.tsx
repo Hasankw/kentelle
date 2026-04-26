@@ -3,11 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import { formatPrice, calcDiscount } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
-import { toast } from "@/components/ui/Toast";
 import type { Product } from "@/types";
 
 interface ProductCardProps {
@@ -20,6 +20,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
+  const router = useRouter();
 
   const image1 = product.images[0] ?? "/images/placeholder.jpg";
   const image2 = product.images[1] ?? image1;
@@ -38,7 +39,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       image: image1,
       price: product.salePrice ?? product.price,
     });
-    toast("success", `${product.name} added to cart`);
+    router.push("/cart");
   };
 
   return (

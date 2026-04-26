@@ -1,14 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Minus, Plus, X, ShoppingBag } from "lucide-react";
+import { Minus, Plus, X, ShoppingBag, ChevronDown, Pencil } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import Button from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 
+const FREE_SHIPPING_THRESHOLD = 80;
+
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total } = useCartStore();
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState("");
+
+  const cartTotal = total();
+  const remaining = Math.max(FREE_SHIPPING_THRESHOLD - cartTotal, 0);
+  const progress = Math.min((cartTotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
   if (items.length === 0) {
     return (
@@ -29,9 +38,28 @@ export default function CartPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
-      <h1 className="font-heading font-bold text-3xl text-brand-navy mb-8">
+      <h1 className="font-heading font-bold text-3xl text-brand-navy mb-4 text-center">
         Your Cart
       </h1>
+
+      {/* Free shipping progress bar */}
+      <div className="mb-8 max-w-xl mx-auto">
+        {remaining > 0 ? (
+          <p className="text-center text-sm font-body text-brand-navy mb-2">
+            Spend <span className="font-bold text-brand-blue">{formatPrice(remaining)}</span> more to reach free shipping!
+          </p>
+        ) : (
+          <p className="text-center text-sm font-bold font-body text-brand-mint mb-2">
+            You&apos;ve unlocked free shipping! 🎉
+          </p>
+        )}
+        <div className="h-1.5 bg-brand-contrast/20 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-brand-accent rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Items */}
@@ -43,6 +71,7 @@ export default function CartPage() {
                   src={item.image}
                   alt={item.name}
                   fill
+                  unoptimized={item.image.startsWith("http")}
                   className="object-cover"
                   sizes="80px"
                 />
@@ -88,6 +117,32 @@ export default function CartPage() {
               </div>
             </div>
           ))}
+
+          {/* Order note */}
+          <div className="py-3">
+            <button
+              onClick={() => setNoteOpen((o) => !o)}
+              className="flex items-center justify-between w-full py-2 text-sm font-body text-brand-navy hover:text-brand-blue transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Pencil size={14} />
+                Order note
+              </span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-200 ${noteOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {noteOpen && (
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Add a note for your order (gift message, delivery instructions, etc.)"
+                rows={3}
+                className="mt-2 w-full border border-brand-contrast/30 px-3 py-2 text-sm font-body text-brand-navy placeholder:text-brand-contrast/50 outline-none focus:border-brand-navy transition-colors resize-none"
+              />
+            )}
+          </div>
         </div>
 
         {/* Summary */}
@@ -98,18 +153,18 @@ export default function CartPage() {
           <div className="flex justify-between text-sm font-body">
             <span className="text-brand-contrast">Subtotal</span>
             <span className="font-bold text-brand-navy">
-              {formatPrice(total())}
+              {formatPrice(cartTotal)}
             </span>
           </div>
           <div className="flex justify-between text-sm font-body">
             <span className="text-brand-contrast">Shipping</span>
             <span className="text-brand-navy">
-              {total() >= 80 ? "Free" : "Calculated at checkout"}
+              {cartTotal >= FREE_SHIPPING_THRESHOLD ? "Free" : "Calculated at checkout"}
             </span>
           </div>
           <div className="border-t border-brand-contrast/20 pt-4 flex justify-between font-heading font-bold">
             <span className="text-brand-navy">Total</span>
-            <span className="text-brand-navy">{formatPrice(total())}</span>
+            <span className="text-brand-navy">{formatPrice(cartTotal)}</span>
           </div>
           <Link href="/checkout" className="block">
             <Button className="w-full" size="lg">

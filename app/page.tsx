@@ -7,6 +7,7 @@ import CollectionGrid from "@/components/home/CollectionGrid";
 import SkinConcernNav from "@/components/home/SkinConcernNav";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import ReviewsBanner from "@/components/home/ReviewsBanner";
+import FadeIn from "@/components/ui/FadeIn";
 
 async function getFeaturedProducts() {
   try {
@@ -35,15 +36,11 @@ export default async function HomePage() {
   return (
     <>
       <HeroCarousel />
-      <TrustBadges />
-      <CollectionGrid />
-      <FeaturedProducts
-        products={products}
-        title="Bestsellers"
-        subtitle="Loved by thousands of Australian skin types"
-      />
-      <SkinConcernNav />
-      <ReviewsBanner />
+      <FadeIn><TrustBadges /></FadeIn>
+      <FadeIn delay={0.05}><CollectionGrid /></FadeIn>
+      <FadeIn delay={0.05}><FeaturedProducts products={products} title="Bestsellers" subtitle="Loved by thousands of Australian skin types" /></FadeIn>
+      <FadeIn delay={0.05}><SkinConcernNav /></FadeIn>
+      <FadeIn delay={0.05}><ReviewsBanner /></FadeIn>
     </>
   );
 }
