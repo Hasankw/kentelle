@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
@@ -21,7 +22,9 @@ export default function LoginPage() {
             Sign in to track orders and manage your account.
           </p>
         </div>
-        <LoginForm />
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 
 export default function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") ?? "/account";
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -39,7 +41,7 @@ export default function SignupForm() {
         });
       }
 
-      router.push("/account");
+      router.push(redirectTo);
       router.refresh();
     });
   };
@@ -106,7 +108,10 @@ export default function SignupForm() {
 
       <p className="text-center text-sm font-body text-brand-contrast">
         Already have an account?{" "}
-        <Link href="/login" className="text-brand-blue hover:underline font-bold">
+        <Link
+          href={redirectTo !== "/account" ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"}
+          className="text-brand-blue hover:underline font-bold"
+        >
           Sign in
         </Link>
       </p>

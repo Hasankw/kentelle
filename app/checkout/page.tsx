@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
 import Input from "@/components/ui/Input";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
@@ -49,6 +50,7 @@ function calcShipping(config: ShippingConfig, subtotal: number): number {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, discountedTotal, clearCart, coupon, giftCard } = useCartStore();
+  const [authChecked, setAuthChecked] = useState(false);
   const [shippingLocked, setShippingLocked] = useState(false);
   const [lockedAddress, setLockedAddress] = useState<ShippingAddress | null>(null);
   const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
@@ -57,6 +59,20 @@ export default function CheckoutPage() {
     threshold: 80,
   });
   const [paymentPortal, setPaymentPortal] = useState<"razorpay" | "paypal">("razorpay");
+
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data?.user) {
+        router.replace("/login?redirect=/checkout");
+      } else {
+        setAuthChecked(true);
+      }
+    });
+  }, [router]);
 
   useEffect(() => {
     fetch("/api/settings/shipping")
@@ -82,6 +98,8 @@ export default function CheckoutPage() {
   const subtotal = discountedTotal();
   const shippingCost = calcShipping(shippingConfig, subtotal);
   const orderTotal = subtotal + shippingCost;
+
+  if (!authChecked) return null;
 
   if (items.length === 0) {
     router.replace("/cart");

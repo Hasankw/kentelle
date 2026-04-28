@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, X, ShoppingBag, ChevronDown, Pencil, Tag, Gift, Check } from "lucide-react";
+import { createBrowserClient } from "@supabase/ssr";
 import { useCartStore } from "@/store/cart";
 import Button from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
@@ -25,6 +26,7 @@ export default function CartPage() {
     discount, discountedTotal,
   } = useCartStore();
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
 
@@ -43,6 +45,11 @@ export default function CartPage() {
       .then((r) => r.json())
       .then(setShipping)
       .catch(() => {});
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getUser().then(({ data }) => setIsLoggedIn(!!data?.user));
   }, []);
 
   const subtotal = total();
@@ -249,45 +256,47 @@ export default function CartPage() {
             {couponError && <p className="text-xs text-red-500 font-body mt-1">{couponError}</p>}
           </div>
 
-          {/* Gift Card */}
-          <div className="py-4">
-            <p className="flex items-center gap-2 text-sm font-body text-brand-navy mb-2">
-              <Gift size={14} />
-              Have a gift card?
-            </p>
-            {giftCard ? (
-              <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-2">
-                <span className="text-sm font-heading font-bold text-green-700 flex items-center gap-1.5">
-                  <Check size={14} />
-                  {giftCard.code} — {formatPrice(giftCard.amount)} gift card
-                </span>
-                <button
-                  onClick={removeGiftCard}
-                  className="text-green-600 hover:text-red-500 transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  value={gcInput}
-                  onChange={(e) => { setGcInput(e.target.value.toUpperCase()); setGcError(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && handleApplyGiftCard()}
-                  placeholder="KENT-XXXX-XXXX"
-                  className="flex-1 border border-brand-contrast/30 px-3 py-2 text-sm font-body font-mono text-brand-navy placeholder:text-brand-contrast/40 outline-none focus:border-brand-navy transition-colors uppercase"
-                />
-                <button
-                  onClick={handleApplyGiftCard}
-                  disabled={gcLoading || !gcInput.trim()}
-                  className="px-4 py-2 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
-                >
-                  {gcLoading ? "..." : "Apply"}
-                </button>
-              </div>
-            )}
-            {gcError && <p className="text-xs text-red-500 font-body mt-1">{gcError}</p>}
-          </div>
+          {/* Gift Card — logged-in users only */}
+          {isLoggedIn && (
+            <div className="py-4">
+              <p className="flex items-center gap-2 text-sm font-body text-brand-navy mb-2">
+                <Gift size={14} />
+                Have a gift card?
+              </p>
+              {giftCard ? (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-2">
+                  <span className="text-sm font-heading font-bold text-green-700 flex items-center gap-1.5">
+                    <Check size={14} />
+                    {giftCard.code} — {formatPrice(giftCard.amount)} gift card
+                  </span>
+                  <button
+                    onClick={removeGiftCard}
+                    className="text-green-600 hover:text-red-500 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={gcInput}
+                    onChange={(e) => { setGcInput(e.target.value.toUpperCase()); setGcError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && handleApplyGiftCard()}
+                    placeholder="KENT-XXXX-XXXX"
+                    className="flex-1 border border-brand-contrast/30 px-3 py-2 text-sm font-body font-mono text-brand-navy placeholder:text-brand-contrast/40 outline-none focus:border-brand-navy transition-colors uppercase"
+                  />
+                  <button
+                    onClick={handleApplyGiftCard}
+                    disabled={gcLoading || !gcInput.trim()}
+                    className="px-4 py-2 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+                  >
+                    {gcLoading ? "..." : "Apply"}
+                  </button>
+                </div>
+              )}
+              {gcError && <p className="text-xs text-red-500 font-body mt-1">{gcError}</p>}
+            </div>
+          )}
         </div>
 
         {/* Summary */}

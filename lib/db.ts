@@ -271,9 +271,10 @@ async function orderFindUnique(args: any) {
 async function orderCreate(args: any) {
   const { items, ...orderData } = args.data;
   const orderId = crypto.randomUUID();
+  const now = new Date().toISOString();
   const { data: order, error } = await supabase
     .from("Order")
-    .insert({ id: orderId, ...orderData })
+    .insert({ id: orderId, createdAt: now, updatedAt: now, ...orderData })
     .select()
     .single();
   throwIfError(order, error, "order.create");
