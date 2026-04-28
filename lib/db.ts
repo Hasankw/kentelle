@@ -287,7 +287,7 @@ async function orderCreate(args: any) {
 }
 
 async function orderUpdate(args: any) {
-  let q: any = supabase.from("Order").update(args.data);
+  let q: any = supabase.from("Order").update({ ...args.data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "order.update");

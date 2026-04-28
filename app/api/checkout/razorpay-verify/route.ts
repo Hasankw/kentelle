@@ -31,13 +31,28 @@ export async function POST(req: NextRequest) {
     data: { status: "CONFIRMED", paymentId },
   });
 
-  if (order.guestEmail) {
+  const emailTo = order.guestEmail || order.customer?.email;
+  if (emailTo) {
     try {
+      const addr = order.shippingAddress as any;
       await sendOrderConfirmation(
-        order.guestEmail,
+        emailTo,
         order.orderNumber,
-        order.items.map((i: any) => ({ name: i.name, quantity: i.quantity, price: i.price })),
-        order.total
+        order.items.map((i: any) => ({ name: i.name, image: i.image, quantity: i.quantity, price: i.price })),
+        order.subtotal,
+        order.shippingCost ?? 0,
+        order.total,
+        addr ? {
+          fullName: addr.fullName,
+          line1: addr.line1,
+          line2: addr.line2,
+          city: addr.city,
+          state: addr.state,
+          postcode: addr.postcode,
+          phone: addr.phone,
+        } : undefined,
+        order.discount ?? 0,
+        order.couponCode ?? undefined
       );
     } catch { /* non-fatal */ }
   }

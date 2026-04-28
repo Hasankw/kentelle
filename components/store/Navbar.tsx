@@ -37,16 +37,24 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    supabase.auth.getUser().then(({ data }) => {
-      const user = data?.user;
-      if (!user) return;
+
+    function applyUser(user: any) {
+      if (!user) { setGreeting(""); return; }
       const name =
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
         user.email?.split("@")[0] ||
         "";
-      if (name) setGreeting(name);
+      setGreeting(name);
+    }
+
+    supabase.auth.getUser().then(({ data }) => applyUser(data?.user));
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyUser(session?.user ?? null);
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (

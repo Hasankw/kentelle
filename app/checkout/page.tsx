@@ -51,6 +51,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, discountedTotal, clearCart, coupon, giftCard } = useCartStore();
   const [authChecked, setAuthChecked] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const [shippingLocked, setShippingLocked] = useState(false);
   const [lockedAddress, setLockedAddress] = useState<ShippingAddress | null>(null);
   const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
@@ -99,7 +100,7 @@ export default function CheckoutPage() {
   const shippingCost = calcShipping(shippingConfig, subtotal);
   const orderTotal = subtotal + shippingCost;
 
-  if (!authChecked) return null;
+  if (!authChecked || navigating) return null;
 
   if (items.length === 0) {
     router.replace("/cart");
@@ -284,7 +285,7 @@ export default function CheckoutPage() {
                   lockedAddress={lockedAddress}
                   email={getValues("email")}
                   orderTotal={orderTotal}
-                  onSuccess={(orderNumber) => { clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
+                  onSuccess={(orderNumber) => { setNavigating(true); clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
                 />
               ) : (
                 <RazorpaySection
@@ -292,7 +293,7 @@ export default function CheckoutPage() {
                   lockedAddress={lockedAddress}
                   email={getValues("email")}
                   orderTotal={orderTotal}
-                  onSuccess={(orderNumber) => { clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
+                  onSuccess={(orderNumber) => { setNavigating(true); clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
                 />
               )}
             </div>

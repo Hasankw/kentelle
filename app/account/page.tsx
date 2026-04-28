@@ -27,11 +27,26 @@ export default async function AccountPage() {
     include: {
       orders: {
         orderBy: { createdAt: "desc" },
-        take: 5,
+        take: 10,
         include: { items: { take: 1 } },
       },
     },
   });
+
+  // Also fetch guest orders placed with the same email (not yet linked to a customer record)
+  const guestOrders = await db.order.findMany({
+    where: { guestEmail: user.email?.toLowerCase() ?? "" },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    include: { items: { take: 1 } },
+  });
+
+  // Merge and deduplicate by order id
+  const existingIds = new Set((customer?.orders ?? []).map((o: any) => o.id));
+  const mergedOrders = [
+    ...(customer?.orders ?? []),
+    ...((guestOrders as any[]).filter((o) => !existingIds.has(o.id))),
+  ].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10);
 
   const statusColors: Record<string, string> = {
     PENDING: "bg-yellow-100 text-yellow-700",
@@ -60,10 +75,10 @@ export default async function AccountPage() {
 
       <div className="grid md:grid-cols-3 gap-6 mb-10">
         {[
-          { label: "Total Orders", value: customer?.orders?.length ?? 0 },
+          { label: "Total Orders", value: mergedOrders.length },
           {
             label: "Total Spent",
-            value: formatPrice((customer?.orders as Array<{ total: number }> | undefined)?.reduce((sum: number, o: { total: number }) => sum + o.total, 0) ?? 0),
+            value: formatPrice(mergedOrders.reduce((sum: number, o: any) => sum + o.total, 0)),
           },
           { label: "Member Since", value: new Date(user.created_at).toLocaleDateString("en-AU", { month: "long", year: "numeric" }) },
         ].map((stat) => (
@@ -81,17 +96,19 @@ export default async function AccountPage() {
           <h2 className="font-heading font-bold text-base uppercase tracking-wider text-brand-navy">
             Recent Orders
           </h2>
-          {(customer?.orders?.length ?? 0) > 0 && (
+          {mergedOrders.length > 0 && (
             <Link href="/account/orders" className="text-xs text-brand-blue font-heading font-bold uppercase tracking-wider hover:underline">
               View All
             </Link>
           )}
         </div>
         <div className="divide-y divide-brand-contrast/10">
-          {(customer?.orders as Array<{ id: string; orderNumber: string; createdAt: string; status: string; total: number; couponCode?: string; discount?: number; items: Array<{ id: string; name: string }> }> ?? []).map((order) => (
+          {mergedOrders.map((order: any) => (
             <div key={order.id} className="px-6 py-4 flex items-center gap-4">
               <div className="flex-1 min-w-0">
-                <p className="font-heading font-bold text-sm text-brand-navy">{order.orderNumber}</p>
+                <Link href={`/order-confirmation/${order.orderNumber}`} className="font-heading font-bold text-sm text-brand-navy hover:text-brand-blue transition-colors">
+                  {order.orderNumber}
+                </Link>
                 <p className="text-xs text-brand-contrast font-body mt-0.5">
                   {new Date(order.createdAt).toLocaleDateString("en-AU")} · {order.items[0]?.name}
                   {order.items.length > 1 ? ` +${order.items.length - 1} more` : ""}
@@ -111,7 +128,7 @@ export default async function AccountPage() {
               </p>
             </div>
           ))}
-          {(customer?.orders?.length ?? 0) === 0 && (
+          {mergedOrders.length === 0 && (
             <div className="px-6 py-12 text-center">
               <p className="font-body text-sm text-brand-contrast mb-4">No orders yet.</p>
               <Link
