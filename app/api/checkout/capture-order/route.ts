@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     include: { items: true },
     take: 1,
   });
-  const order = (orders[0] ?? null) as { id: string; guestEmail: string | null; orderNumber: string; total: number; items: Array<{ name: string; quantity: number; price: number }> } | null;
+  const order = (orders[0] ?? null) as { id: string; guestEmail: string | null; orderNumber: string; subtotal: number; shippingCost: number; total: number; discount?: number; couponCode?: string; shippingAddress?: any; items: Array<{ name: string; image?: string; quantity: number; price: number }> } | null;
 
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -40,11 +40,17 @@ export async function POST(req: NextRequest) {
   const email = order.guestEmail;
   if (email) {
     try {
+      const addr = order.shippingAddress as any;
       await sendOrderConfirmation(
         email,
         order.orderNumber,
-        order.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
-        order.total
+        order.items.map((i) => ({ name: i.name, image: i.image, quantity: i.quantity, price: i.price })),
+        order.subtotal,
+        order.shippingCost ?? 0,
+        order.total,
+        addr ? { fullName: addr.fullName, line1: addr.line1, line2: addr.line2, city: addr.city, state: addr.state, postcode: addr.postcode, phone: addr.phone } : undefined,
+        order.discount ?? 0,
+        order.couponCode ?? undefined
       );
     } catch {
       // Non-fatal — email failure should not block the order

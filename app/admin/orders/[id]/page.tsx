@@ -109,8 +109,8 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               </div>
               <div className="px-5 py-4 font-body text-sm text-brand-navy/80 space-y-0.5">
                 <p className="font-bold text-brand-navy">{address.fullName}</p>
-                <p>{address.address1}</p>
-                {address.address2 && <p>{address.address2}</p>}
+                <p>{address.line1}</p>
+                {address.line2 && <p>{address.line2}</p>}
                 <p>{address.city}, {address.state} {address.postcode}</p>
                 <p>{address.country}</p>
                 {address.phone && <p className="mt-1 text-brand-contrast">{address.phone}</p>}

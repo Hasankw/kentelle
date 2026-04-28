@@ -240,7 +240,7 @@ function buildOrderSelect(include: any) {
   const incCustomer = include?.customer;
   const incProduct = typeof incItems === "object" && incItems?.include?.product;
   let select = "*";
-  if (incCustomer) select += ", customer:Customer(id,firstName,lastName,email)";
+  if (incCustomer) select += ", customer:Customer(id,name,email,phone)";
   if (incItems) {
     select += incProduct
       ? ", items:OrderItem(*, product:Product(id,name,slug,images))"
