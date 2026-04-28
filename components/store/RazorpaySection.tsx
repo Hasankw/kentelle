@@ -38,72 +38,82 @@ export default function RazorpaySection({ items, lockedAddress, email, orderTota
     setLoading(true);
     setError("");
 
-    const loaded = await loadScript();
-    if (!loaded) {
-      setError("Could not load payment gateway. Check your connection.");
-      setLoading(false);
-      return;
-    }
-
-    const appliedDiscount = discount();
-    const couponCode = coupon?.code;
-
-    const res = await fetch("/api/checkout/razorpay-create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items,
-        shippingAddress: lockedAddress,
-        email,
-        total: orderTotal,
-        ...(couponCode ? { couponCode } : {}),
-        ...(appliedDiscount > 0 ? { discount: appliedDiscount } : {}),
-      }),
-    });
-
-    const order = await res.json();
-    if (!res.ok) {
-      setError(order.error ?? "Failed to create order. Please try again.");
-      setLoading(false);
-      return;
-    }
-
-    const rzp = new window.Razorpay({
-      key: order.keyId,
-      amount: order.amount,
-      currency: order.currency,
-      name: "Kentelle Skincare",
-      description: `Order Payment${couponCode ? ` (${couponCode})` : ""}`,
-      order_id: order.rzOrderId,
-      prefill: {
-        email,
-        contact: lockedAddress.phone,
-        name: lockedAddress.fullName,
-      },
-      theme: { color: "#3DECC2" },
-      handler: async (response: any) => {
-        setLoading(true);
-        const verify = await fetch("/api/checkout/razorpay-verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            rzOrderId: response.razorpay_order_id,
-            paymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-          }),
-        });
-        const result = await verify.json();
+    try {
+      const loaded = await loadScript();
+      if (!loaded) {
+        setError("Could not load payment gateway. Check your connection.");
         setLoading(false);
-        if (result.success) onSuccess(result.orderNumber);
-        else setError(result.error ?? "Payment verification failed. Contact support.");
-      },
-      modal: {
-        ondismiss: () => setLoading(false),
-      },
-    });
+        return;
+      }
 
-    rzp.open();
-    setLoading(false);
+      const appliedDiscount = discount();
+      const couponCode = coupon?.code;
+
+      const res = await fetch("/api/checkout/razorpay-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          shippingAddress: lockedAddress,
+          email,
+          total: orderTotal,
+          ...(couponCode ? { couponCode } : {}),
+          ...(appliedDiscount > 0 ? { discount: appliedDiscount } : {}),
+        }),
+      });
+
+      const order = await res.json();
+      if (!res.ok) {
+        setError(order.error ?? "Failed to create order. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      const rzp = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Kentelle Skincare",
+        description: `Order Payment${couponCode ? ` (${couponCode})` : ""}`,
+        order_id: order.rzOrderId,
+        prefill: {
+          email,
+          contact: lockedAddress.phone,
+          name: lockedAddress.fullName,
+        },
+        theme: { color: "#3DECC2" },
+        handler: async (response: any) => {
+          setLoading(true);
+          try {
+            const verify = await fetch("/api/checkout/razorpay-verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                rzOrderId: response.razorpay_order_id,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              }),
+            });
+            const result = await verify.json();
+            if (result.success) onSuccess(result.orderNumber);
+            else setError(result.error ?? "Payment verification failed. Contact support.");
+          } catch {
+            setError("Verification failed. Contact support if payment was deducted.");
+          } finally {
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setLoading(false),
+        },
+      });
+
+      rzp.open();
+      setLoading(false);
+    } catch (err: any) {
+      setError(err?.message ?? "Something went wrong. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
