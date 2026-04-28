@@ -1,734 +1,366 @@
 import { Metadata } from "next";
 import Image from "next/image";
-import { Sun, Moon, AlertTriangle, ShieldAlert, Sparkles, Leaf, FlaskConical, Droplets } from "lucide-react";
+import Link from "next/link";
+import { Sun, Moon, AlertTriangle, ShieldAlert } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Kentelle Skin Regimen | Your Complete Skincare Layering Guide",
+  title: "Kentelle Skin Regimen | Complete Skincare Layering Guide",
   description:
-    "Follow the Kentelle Skin Regimen — a science-backed, step-by-step layering guide designed for Australian skin. From cleansers to SPF, morning to night.",
+    "Your step-by-step Kentelle skincare layering guide — designed for Australian skin. From cleansers to SPF, morning to night.",
 };
 
 const DayBadge = () => (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-heading font-bold uppercase tracking-wider rounded-full">
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-heading font-bold uppercase tracking-wider">
     <Sun size={9} /> Day
   </span>
 );
-
 const NightBadge = () => (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-heading font-bold uppercase tracking-wider rounded-full">
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-heading font-bold uppercase tracking-wider">
     <Moon size={9} /> Night
   </span>
 );
-
-const steps = [
-  {
-    step: "01",
-    category: "Cleansers",
-    products: ["G Biomed Glycolic Cleanser 12%", "Milk Cleanser", "Fruit Enzyme Cleanser", "Ceramide Cleanser"],
-    description:
-      "Cleansing and choosing the right cleanser is important. Feeling tightness and redness on skin means the cleanser is not compatible with your skin type. Frequency depends on your skin condition and skin type.",
-    day: true,
-    night: true,
-    icon: <Droplets size={18} className="text-brand-blue" />,
-  },
-  {
-    step: "02",
-    category: "Toners",
-    products: ["Vitamin B Facial Toner", "Relaxing & Comforting Mist"],
-    description:
-      "The toners are nourishing, soothing and protecting. Apply as often as desired for refreshing throughout the day.",
-    day: true,
-    night: true,
-    icon: <Leaf size={18} className="text-brand-blue" />,
-  },
-  {
-    step: "03",
-    category: "Eye Care",
-    products: ["Beautiful Eye Sans Tenor", "Electric Massage Eye Cream"],
-    description:
-      "Apply gently around the orbital bone using your ring finger. The delicate eye area benefits from targeted ingredients that reduce puffiness, dark circles, and fine lines.",
-    day: true,
-    night: true,
-    icon: <Sparkles size={18} className="text-brand-blue" />,
-  },
-  {
-    step: "04",
-    category: "Treatment — Night",
-    products: ["Peel-back (Retinal 0.01)", "UMMF (Niacinamide + Vitamin C + TXA 4%)"],
-    description:
-      "Resurfacing with Peel-back provides even skin tone and rejuvenation. UMMF achieves a 'glass skin' finish — clear, luminous, and glowing. Wait 5 minutes before Step 5. Alternate between Peel-back and UMMF for best results.",
-    day: false,
-    night: true,
-    icon: <FlaskConical size={18} className="text-brand-blue" />,
-    highlight: true,
-  },
-  {
-    step: "04",
-    category: "Treatment — Day",
-    products: ["Glycolic 10"],
-    description:
-      "Rejuvenation: Reduces blemishes and promotes cell turnover. Evens out skin tone and aids in repairing visible sun damage. Wait 5 minutes before Step 5.",
-    day: true,
-    night: false,
-    icon: <FlaskConical size={18} className="text-brand-blue" />,
-    highlight: true,
-  },
-  {
-    step: "05",
-    category: "Serum",
-    products: ["Moisture Fix + Vitamin C 20%"],
-    description:
-      "Brighten & Hydrate: Traps moisture, prevents redness, itching, and fine lines. Vitamin C 20% delivers powerful antioxidant defence to neutralise free radicals and brighten the complexion.",
-    day: true,
-    night: true,
-    icon: <Droplets size={18} className="text-brand-blue" />,
-  },
-  {
-    step: "06",
-    category: "Probiotic",
-    products: ["Bio-ferment"],
-    description:
-      "Uses probiotics to balance skin flora and strengthen the natural defence barrier. A healthy microbiome is the foundation of calm, resilient skin.",
-    day: true,
-    night: true,
-    icon: <Leaf size={18} className="text-brand-blue" />,
-  },
-  {
-    step: "07",
-    category: "Moisturiser",
-    products: ["KENTELLE Daycare / Day Beauty", "KENTELLE Nightcare / Night Beauty"],
-    description:
-      "Seal & Protect: Reduces redness and filters pollutants. Use Day Beauty in the morning and Night Beauty in the evening to give skin the targeted support it needs at each stage of the day.",
-    day: true,
-    night: true,
-    icon: <Sparkles size={18} className="text-brand-blue" />,
-  },
-  {
-    step: "08",
-    category: "Sun Block (SPF 30+)",
-    products: ["KENTELLE SPF 30+ Sunblock"],
-    description:
-      "Essential Filter: Provides a 95% filter to prevent cell damage and slow the aging process. Apply every morning as the final skincare step, before makeup. Non-negotiable daily.",
-    day: true,
-    night: false,
-    icon: <Sun size={18} className="text-amber-500" />,
-    warning: true,
-  },
-  {
-    step: "09",
-    category: "Mineral Makeup",
-    products: ["KENTELLE Mineral Foundation"],
-    description:
-      "Physical Shield: Contains Titanium Oxide (repairing) and Zinc Oxide (UV reflection) for added protection. Provides an extra layer of sun defence while perfecting your complexion. Use daily.",
-    day: true,
-    night: false,
-    icon: <Sparkles size={18} className="text-brand-blue" />,
-  },
-];
-
-const topicalTreatments = [
-  {
-    name: "Niacinamide (10%) & Arbutin (10%)",
-    desc: "Controls oil and fades marks. Safe for daily use to brighten and repair the skin barrier. KENTELLE Ummf is a potent and safe pigmentation corrector.",
-  },
-  {
-    name: "Clindamycin (1%)",
-    desc: "Kills acne bacteria. Apply first and wait 5 minutes before applying spot gels or Benzac.",
-  },
-  {
-    name: "Hydroquinone (4%)",
-    desc: "Lightens dark spots. Night use only. Apply strictly to pigmented areas. Requires a GP Prescription.",
-    nightOnly: true,
-    rx: true,
-  },
-  {
-    name: "Salicylic Acid (BHA)",
-    desc: "An oil-soluble acid that deep-cleans pores. Excellent for blackheads and congestion. Use sparingly to avoid dryness when combined with other actives.",
-  },
-  {
-    name: "Tretinoin (Retin-A / Steiva-A)",
-    desc: "A powerful Vitamin A cream for cell turnover. Night use only. Start 2–3 times a week to avoid redness/peeling. Stop using at least 7 days before any clinical treatment (peels, waxing, or laser) to prevent skin tearing.",
-    nightOnly: true,
-    rx: true,
-  },
-];
-
-const oralMeds = [
-  {
-    name: "Antibiotics (Minomycin / Doxycycline)",
-    desc: "Used for 3–6 months for severe acne. Causes photosensitivity — SPF 50+ mandatory daily.",
-    rx: true,
-  },
-  {
-    name: "Roaccutane (Isotretinoin)",
-    desc: "A powerful Vitamin A derivative that shrinks oil glands. Contraindication for many clinical treatments (peels, lasers). You must inform your therapist if you are taking it. Causes severe dryness and skin thinning.",
-    rx: true,
-  },
-];
-
-const nutrients = [
-  {
-    name: "Chronofirm Peptide Matrix",
-    action: "Structural Support",
-    benefit: "Stimulates collagen and elastin to firm the skin, improve elasticity, and deliver anti-aging results.",
-    day: true,
-    night: true,
-  },
-  {
-    name: "Vitamin C 20%",
-    action: "Antioxidant Defence",
-    benefit: "Neutralises free radicals, reduces redness, brightens the complexion, and aids UV recovery.",
-    day: true,
-    night: false,
-  },
-  {
-    name: "Moisture Fix Serum",
-    action: "Intense Hydration",
-    benefit: "Instantly binds moisture to the skin to soothe and prevent dehydration.",
-    day: true,
-    night: true,
-  },
-  {
-    name: "Collagen Cream",
-    action: "Deep Nourishment",
-    benefit: "Replenishes essential proteins to keep skin plump and resilient.",
-    day: false,
-    night: true,
-  },
-];
-
-const peelAndGlow = [
-  {
-    product: "Gluco 12 Cleanser",
-    notes: "Active cleansing to prep the skin.",
-    day: true,
-    night: true,
-  },
-  {
-    product: "Glyco 10 Skin Cream",
-    notes: "Start once a week; increase frequency gradually. Apply serum on top, then seal with moisturiser and sunblock.",
-    day: false,
-    night: true,
-  },
-  {
-    product: "Vitamin A (Retinol / Retinal 0.01)",
-    notes: "Start once a week; increase frequency gradually. Apply serum first, then Vitamin A, seal with moisturiser.",
-    day: false,
-    night: true,
-  },
-  {
-    product: "Vitamin C 20%",
-    notes: "Best used with Vitamin A to stimulate collagen and reduce redness.",
-    day: true,
-    night: false,
-  },
-  {
-    product: "Niacinamide 5–10% & Arbutin 5–10%",
-    notes: "Apply to clean skin to control oil, fade pigment, and repair the barrier.",
-    day: true,
-    night: true,
-  },
-  {
-    product: "Glyco 15 Body Exfoliator",
-    notes: "STRICTLY for body rejuvenation only. Do not use on the face. Always follow with a deeply moisturising or ceramide cream. Do not use strong shower gels.",
-    day: false,
-    night: true,
-    bodyOnly: true,
-  },
-  {
-    product: "Glyco 40",
-    notes: "STRICTLY PROFESSIONAL USE ONLY. Never for home application.",
-    professional: true,
-    day: false,
-    night: false,
-  },
-];
 
 export default function SkinRegimenPage() {
   return (
     <div className="bg-white">
 
-      {/* ── HERO ──────────────────────────────────────────────── */}
-      <section className="relative h-[75vh] min-h-[520px] flex items-center justify-center overflow-hidden">
+      {/* HERO IMAGE */}
+      <div className="relative w-full h-[55vh] min-h-[400px] overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1570194065650-d99fb4b38e99?w=1600&q=85&auto=format&fit=crop"
-          alt="Skincare routine — woman applying serum"
+          src="https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=1600&q=85&auto=format&fit=crop"
+          alt="Skincare routine"
           fill
-          className="object-cover object-center"
           priority
+          className="object-cover object-center"
           sizes="100vw"
-          unoptimized
         />
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-brand-navy/70" />
-        <div className="relative z-10 max-w-3xl mx-auto text-center px-4">
-          <p className="text-xs font-heading font-bold tracking-[0.3em] uppercase text-brand-accent mb-4">
-            Your Science-Backed Guide
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-navy/30 via-brand-navy/40 to-brand-navy/85" />
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-14 px-4 text-center">
+          <p className="text-[10px] font-heading font-bold tracking-[0.3em] uppercase text-brand-accent mb-3">
+            Science-Backed · Australian Skin
           </p>
-          <h1 className="font-heading font-bold text-4xl md:text-6xl tracking-widest uppercase mb-6 leading-tight text-brand-white">
+          <h1 className="font-heading font-bold text-4xl md:text-6xl tracking-widest uppercase text-white leading-tight">
             Kentelle Skin<br />Regimen
           </h1>
-          <p className="font-body text-base text-brand-contrast leading-relaxed max-w-xl mx-auto">
-            A complete layering protocol designed for Australian skin — from first cleanse to final SPF.
-            Follow the order, respect the timing, and let science do the work.
-          </p>
-        </div>
-      </section>
-
-      {/* ── LAYERING RULE BANNER ─────────────────────────────── */}
-      <section className="bg-brand-accent">
-        <div className="max-w-5xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
-          <span className="text-xs font-heading font-bold uppercase tracking-widest text-brand-navy">
-            Layering Rule:
-          </span>
-          <span className="font-body text-sm text-brand-navy">
-            Always apply products from <strong>thinnest</strong> (serums & treatments) to <strong>thickest</strong> (moisturisers & SPF) for maximum efficacy.
-          </span>
-        </div>
-      </section>
-
-      {/* ── EVERYDAY ESSENTIAL CARE ──────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-4 py-20">
-        <div className="text-center mb-14">
-          <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-3">Section 1</p>
-          <h2 className="font-heading font-bold text-3xl md:text-4xl text-brand-navy mb-4">
-            Everyday Essential Care
-          </h2>
-          <p className="font-body text-sm text-brand-contrast max-w-lg mx-auto">
-            Your foundational daily and nightly routine. Follow these steps in order every day for a healthy, protected complexion.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          {steps.map((s, i) => (
-            <div
-              key={i}
-              className={`flex gap-5 md:gap-8 p-6 border-2 transition-colors ${
-                s.warning
-                  ? "border-amber-300 bg-amber-50"
-                  : s.highlight
-                  ? "border-brand-accent/60 bg-brand-accent/5"
-                  : "border-brand-contrast/10 bg-white hover:border-brand-contrast/25"
-              }`}
-            >
-              {/* Step number */}
-              <div className="shrink-0">
-                <div className="w-12 h-12 rounded-full bg-brand-navy text-brand-white flex items-center justify-center font-heading font-bold text-sm tracking-wider">
-                  {s.step}
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  {s.icon}
-                  <h3 className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy">
-                    {s.category}
-                  </h3>
-                  <div className="flex gap-1.5">
-                    {s.day && <DayBadge />}
-                    {s.night && <NightBadge />}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {s.products.map((p) => (
-                    <span
-                      key={p}
-                      className="px-2.5 py-1 bg-brand-navy/5 border border-brand-navy/10 text-brand-navy text-xs font-heading font-bold"
-                    >
-                      {p}
-                    </span>
-                  ))}
-                </div>
-
-                <p className="font-body text-sm text-brand-contrast leading-relaxed">
-                  {s.description}
-                </p>
-
-                {s.warning && (
-                  <p className="mt-2 text-xs font-heading font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1">
-                    <AlertTriangle size={12} /> Mandatory every single day — no exceptions
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── EDITORIAL IMAGE BREAK ────────────────────────────── */}
-      <div className="relative h-72 md:h-96 overflow-hidden">
-        <Image
-          src="https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=1400&q=85&auto=format&fit=crop"
-          alt="Skincare layering — applying moisturiser"
-          fill
-          className="object-cover object-top"
-          sizes="100vw"
-          unoptimized
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/60 via-transparent to-transparent" />
-        <div className="absolute bottom-6 left-0 right-0 text-center">
-          <span className="inline-block px-5 py-2 bg-brand-accent text-brand-navy text-xs font-heading font-bold uppercase tracking-widest">
-            Pre-Treatment Actives — Applied After Step 3
-          </span>
         </div>
       </div>
 
-      {/* ── PRE-TREATMENT ────────────────────────────────────── */}
-      <section className="bg-[#F8F9FC] py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-3">
-              Between Steps 3 & 4
-            </p>
-            <h2 className="font-heading font-bold text-3xl md:text-4xl text-brand-navy mb-4">
-              Pre-Treatment
-            </h2>
-            <p className="font-body text-sm text-brand-contrast max-w-lg mx-auto">
-              Acne and Pigmentation Care. Apply these specific treatments after Step 3 and before Step 4.
-              These are active ingredients that require careful, targeted application.
-            </p>
-          </div>
+      {/* INTRO */}
+      <div className="max-w-3xl mx-auto px-4 py-14 text-center">
+        <p className="font-body text-base text-brand-contrast leading-relaxed mb-6">
+          This guide outlines the correct order and logic for layering your Kentelle products — morning and evening. Follow the sequence, respect the timing, and let science do the work.
+        </p>
+        <div className="inline-block border-t-2 border-brand-accent pt-5">
+          <p className="text-xs font-heading font-bold uppercase tracking-widest text-brand-navy">
+            Layering Rule: Thinnest to Thickest
+          </p>
+          <p className="font-body text-sm text-brand-contrast mt-1">
+            Always apply from lightest texture (serums, treatments) to heaviest (moisturisers, SPF).
+          </p>
+        </div>
+      </div>
 
-          {/* Topical */}
-          <h3 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy mb-4 flex items-center gap-2">
-            <FlaskConical size={14} /> Topical Treatments & Actives
-          </h3>
-          <div className="grid md:grid-cols-2 gap-4 mb-10">
-            {topicalTreatments.map((t) => (
-              <div key={t.name} className="bg-white border border-brand-contrast/10 p-5">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <p className="font-heading font-bold text-sm text-brand-navy">{t.name}</p>
-                  {t.nightOnly && <NightBadge />}
-                  {t.rx && (
-                    <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-heading font-bold uppercase tracking-wider">
-                      Rx Required
-                    </span>
-                  )}
-                </div>
-                <p className="font-body text-xs text-brand-contrast leading-relaxed">{t.desc}</p>
-              </div>
-            ))}
+      {/* SECTION 1 — EVERYDAY CARE */}
+      <div className="border-t border-brand-contrast/10">
+        <div className="relative w-full h-72 md:h-96 overflow-hidden">
+          <Image
+            src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=1400&q=85&auto=format&fit=crop&crop=top"
+            alt="Daily skincare routine"
+            fill
+            className="object-cover object-top"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-brand-navy/55" />
+          <div className="absolute inset-0 flex items-center justify-center text-center px-4">
+            <div>
+              <p className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent mb-2">Section 01</p>
+              <h2 className="font-heading font-bold text-3xl md:text-4xl text-white uppercase tracking-widest">
+                Everyday Essential Care
+              </h2>
+            </div>
           </div>
+        </div>
 
-          {/* Others to declare */}
-          <div className="bg-amber-50 border border-amber-200 px-5 py-4 mb-10">
-            <p className="text-xs font-heading font-bold uppercase tracking-wider text-amber-800 mb-1 flex items-center gap-1.5">
-              <AlertTriangle size={12} /> Others to Declare
-            </p>
-            <p className="font-body text-sm text-amber-900">
-              Please inform us if you are using high-strength Glycolic Acid, Benzoyl Peroxide, Prescription Steroid creams, or Antidepressants — these affect skin sensitivity and treatment outcomes.
-            </p>
-          </div>
-
-          {/* Oral Medications */}
-          <h3 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy mb-4 flex items-center gap-2">
-            <ShieldAlert size={14} /> Oral Medications (Prescription Required)
-          </h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            {oralMeds.map((m) => (
-              <div key={m.name} className="bg-white border border-red-100 p-5">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <p className="font-heading font-bold text-sm text-brand-navy">{m.name}</p>
-                  <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-heading font-bold uppercase tracking-wider">
-                    Prescription
+        <div className="max-w-3xl mx-auto px-4 py-14">
+          <p className="font-body text-sm text-brand-contrast leading-relaxed mb-12">
+            Your foundational daily and nightly routine. Follow these steps in order for a healthy, protected complexion.
+          </p>
+          <ol className="space-y-10">
+            {[
+              { n:"01", cat:"Cleansers", day:true, night:true, products:"G Biomed Glycolic Cleanser 12%, Milk Cleanser, Fruit Enzyme Cleanser, Ceramide Cleanser", desc:"Choose a cleanser suited to your skin type. Tightness or redness after cleansing signals incompatibility. Frequency depends on your skin condition." },
+              { n:"02", cat:"Toners", day:true, night:true, products:"Vitamin B Facial Toner, Relaxing & Comforting Mist", desc:"Nourishing, soothing, and protective. Apply as often as desired throughout the day for a refreshing reset." },
+              { n:"03", cat:"Eye Care", day:true, night:true, products:"Beautiful Eye Sans Tenor, Electric Massage Eye Cream", desc:"Apply gently around the orbital bone with your ring finger. Targets puffiness, dark circles, and fine lines in the delicate eye area." },
+              { n:"04", cat:"Treatment — Night", day:false, night:true, products:"Peel-back (Retinal 0.01)  ·  UMMF (Niacinamide + Vitamin C + TXA 4%)", desc:"Peel-back resurfaces for even tone and rejuvenation. UMMF achieves a glass-skin finish. Wait 5 minutes before Step 5. Alternate between the two for best results.", highlight:true },
+              { n:"04", cat:"Treatment — Day", day:true, night:false, products:"Glycolic 10", desc:"Reduces blemishes, promotes cell turnover, and aids in repairing visible sun damage. Wait 5 minutes before Step 5.", highlight:true },
+              { n:"05", cat:"Serum", day:true, night:true, products:"Moisture Fix + Vitamin C 20%", desc:"Traps moisture and prevents redness, itching, and fine lines. Vitamin C 20% neutralises free radicals and brightens the complexion." },
+              { n:"06", cat:"Probiotic", day:true, night:true, products:"Bio-ferment", desc:"Balances skin flora using probiotics and strengthens the natural defence barrier. A healthy microbiome is the foundation of calm, resilient skin." },
+              { n:"07", cat:"Moisturiser", day:true, night:true, products:"KENTELLE Daycare / Day Beauty  ·  KENTELLE Nightcare / Night Beauty", desc:"Seals in all previous layers, reduces redness, and filters pollutants. Use Day Beauty in the morning and Night Beauty in the evening." },
+              { n:"08", cat:"Sun Block SPF 30+", day:true, night:false, products:"KENTELLE SPF 30+ Sunblock", desc:"Provides a 95% filter against cell damage and photo-aging. Apply every morning as your final skincare step before makeup. Non-negotiable daily.", warning:true },
+              { n:"09", cat:"Mineral Makeup", day:true, night:false, products:"KENTELLE Mineral Foundation", desc:"Contains Titanium Oxide (repairing) and Zinc Oxide (UV reflection) for added physical protection on top of your SPF." },
+            ].map((s, i) => (
+              <li key={i} className="flex gap-6">
+                <div className="shrink-0 pt-0.5">
+                  <span className={`flex w-10 h-10 rounded-full items-center justify-center font-heading font-bold text-xs ${s.warning ? "bg-amber-400 text-brand-navy" : s.highlight ? "bg-brand-accent text-brand-navy" : "bg-brand-navy text-white"}`}>
+                    {s.n}
                   </span>
                 </div>
-                <p className="font-body text-xs text-brand-contrast leading-relaxed">{m.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SUN SAFETY WARNING ───────────────────────────────── */}
-      <section className="bg-brand-navy py-16 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-400/20 mb-5">
-            <Sun size={28} className="text-amber-400" />
-          </div>
-          <h2 className="font-heading font-bold text-2xl md:text-3xl text-brand-white mb-4 uppercase tracking-widest">
-            Mandatory Sun Safety
-          </h2>
-          <p className="font-body text-sm text-brand-contrast mb-6 leading-relaxed">
-            The following medications cause <strong className="text-brand-white">photosensitivity</strong> — extreme sun sensitivity that can lead to severe burns and scarring without proper protection.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3 mb-6">
-            {["Oral Antibiotics", "Roaccutane (severe dryness & skin thinning)", "Most Antidepressants"].map((item) => (
-              <span
-                key={item}
-                className="px-4 py-2 border border-amber-400/40 text-amber-300 text-xs font-heading font-bold"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-          <div className="inline-block bg-amber-400 text-brand-navy px-6 py-3 font-heading font-bold text-sm uppercase tracking-widest">
-            SPF 50+ is non-negotiable every single day
-          </div>
-        </div>
-      </section>
-
-      {/* ── SKIN NUTRIENTS & POST-PROCEDURE ─────────────────── */}
-      <section className="max-w-4xl mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-3">Section 2</p>
-          <h2 className="font-heading font-bold text-3xl md:text-4xl text-brand-navy mb-4">
-            Skin Nutrients &amp; Post-Procedure Care
-          </h2>
-          <p className="font-body text-sm text-brand-contrast max-w-lg mx-auto">
-            Use these products when the skin is healthy or following a dermal procedure to nourish, repair, and strengthen the tissue.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-5 mb-8">
-          {nutrients.map((n, i) => (
-            <div key={n.name} className="border border-brand-contrast/10 bg-white p-6">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-brand-accent/20 text-brand-navy font-heading font-bold text-xs flex items-center justify-center shrink-0">
-                  {String(i + 1).padStart(2, "0")}
+                <div className="flex-1 border-b border-brand-contrast/10 pb-10">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <h3 className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy">{s.cat}</h3>
+                    {s.day && <DayBadge />}
+                    {s.night && <NightBadge />}
+                    {s.warning && <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-amber-700 flex items-center gap-0.5"><AlertTriangle size={10} /> Mandatory daily</span>}
+                  </div>
+                  <p className="font-heading font-bold text-xs text-brand-blue mb-2">{s.products}</p>
+                  <p className="font-body text-sm text-brand-contrast leading-relaxed">{s.desc}</p>
                 </div>
-                <div className="flex gap-1.5">
-                  {n.day && <DayBadge />}
-                  {n.night && <NightBadge />}
-                </div>
-              </div>
-              <p className="font-heading font-bold text-sm text-brand-navy mb-1">{n.name}</p>
-              <p className="text-xs font-heading font-bold uppercase tracking-wider text-brand-blue mb-2">{n.action}</p>
-              <p className="font-body text-xs text-brand-contrast leading-relaxed">{n.benefit}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Post-procedure note */}
-        <div className="border-l-4 border-brand-accent bg-brand-accent/5 px-6 py-5">
-          <p className="font-heading font-bold text-xs uppercase tracking-wider text-brand-navy mb-1">
-            Post-Procedure Protocol
-          </p>
-          <p className="font-body text-sm text-brand-contrast leading-relaxed">
-            If you have just had a dermal treatment (peel, needling, IPL), prioritise <strong>Moisture Fix</strong> and <strong>Chronofirm</strong> to speed healing.
-            Always seal with your KENTELLE Day/Night Moisturiser and SPF to lock in these nutrients.
-          </p>
-        </div>
-      </section>
-
-      {/* ── IMAGE + TEXT SPLIT ───────────────────────────────── */}
-      <div className="max-w-6xl mx-auto px-4 py-12 grid md:grid-cols-2 gap-8 items-center">
-        <div className="relative h-72 md:h-80 overflow-hidden">
-          <Image
-            src="https://images.unsplash.com/photo-1596761052804-01f77c4d3795?w=800&q=85&auto=format&fit=crop"
-            alt="Post-procedure skin care — applying serum"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
-            unoptimized
-          />
-        </div>
-        <div>
-          <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-3">Repair & Restore</p>
-          <h3 className="font-heading font-bold text-2xl text-brand-navy mb-4">Skin Heals Fastest<br />When Layered Right</h3>
-          <p className="font-body text-sm text-brand-contrast leading-relaxed mb-4">
-            After a dermal treatment, your skin barrier is temporarily compromised. The right product sequence — applied in the correct order — creates a protective, healing environment that accelerates recovery and minimises downtime.
-          </p>
-          <p className="font-body text-sm text-brand-contrast leading-relaxed">
-            Start with Moisture Fix to instantly bind hydration, follow with Chronofirm to stimulate repair, and always seal with your KENTELLE moisturiser and SPF.
-          </p>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
 
-      {/* ── PEEL & GLOW ──────────────────────────────────────── */}
-      <section className="bg-[#F8F9FC] py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-3">Section 3</p>
-            <h2 className="font-heading font-bold text-3xl md:text-4xl text-brand-navy mb-4">
-              Peel and Glow Guidelines
-            </h2>
-            <p className="font-body text-sm text-brand-contrast max-w-lg mx-auto">
-              To be used 3–7 or more days after a dermal treatment (IPL, deep peels, Microdermabrasion, Microneedling), once the skin has stopped peeling or flaking.
-            </p>
-          </div>
-
-          {/* Tingle note */}
-          <div className="bg-white border border-brand-accent/30 px-5 py-4 mb-8 flex gap-3">
-            <Sparkles size={16} className="text-brand-accent shrink-0 mt-0.5" />
+      {/* SECTION 2 — PRE-TREATMENT */}
+      <div className="bg-[#F8F9FC] border-t border-brand-contrast/10">
+        <div className="relative w-full h-64 md:h-80 overflow-hidden">
+          <Image
+            src="https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=1400&q=85&auto=format&fit=crop&crop=face"
+            alt="Skincare treatment"
+            fill
+            className="object-cover object-top"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-brand-navy/55" />
+          <div className="absolute inset-0 flex items-center justify-center text-center px-4">
             <div>
-              <p className="font-heading font-bold text-xs uppercase tracking-wider text-brand-navy mb-1">The Tingle</p>
-              <p className="font-body text-sm text-brand-contrast">
-                A slight tingling sensation is normal with Glyco 10, Vitamin A, and Vitamin C — this is the active ingredients working. If tingling is persistent or causes excessive redness, reduce the frequency of application.
-              </p>
+              <p className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent mb-2">Between Steps 3 &amp; 4</p>
+              <h2 className="font-heading font-bold text-3xl md:text-4xl text-white uppercase tracking-widest">Pre-Treatment</h2>
+              <p className="font-body text-sm text-brand-contrast mt-2">Acne &amp; Pigmentation Care</p>
             </div>
           </div>
+        </div>
 
-          {/* Table */}
-          <div className="bg-white border border-brand-contrast/10 overflow-x-auto">
+        <div className="max-w-3xl mx-auto px-4 py-14">
+          <p className="font-body text-sm text-brand-contrast leading-relaxed mb-10">
+            Apply these specific treatments after Step 3 and before Step 4. These are active ingredients that require careful, targeted application.
+          </p>
+          <h3 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy mb-6">Topical Treatments &amp; Actives</h3>
+          <ol className="space-y-6 mb-10">
+            {[
+              { name:"Niacinamide (10%) & Arbutin (10%)", tags:[], desc:"Controls oil and fades marks. Safe for daily use to brighten and repair the skin barrier. KENTELLE UMMF is a potent and safe pigmentation corrector." },
+              { name:"Clindamycin (1%)", tags:[], desc:"Kills acne bacteria. Apply first and wait 5 minutes before applying spot gels or Benzac." },
+              { name:"Hydroquinone (4%)", tags:["Night only","Rx Required"], desc:"Lightens dark spots. Night use only. Apply strictly to pigmented areas. Requires a GP Prescription." },
+              { name:"Salicylic Acid (BHA)", tags:[], desc:"An oil-soluble acid that deep-cleans pores. Excellent for blackheads and congestion. Use sparingly to avoid dryness when combined with other actives." },
+              { name:"Tretinoin (Retin-A / Steiva-A)", tags:["Night only","Rx Required"], desc:"A powerful Vitamin A cream for cell turnover. Start 2-3 times a week. Stop at least 7 days before peels, waxing, or laser to prevent skin tearing." },
+            ].map((t) => (
+              <li key={t.name} className="flex gap-4 border-b border-brand-contrast/10 pb-6">
+                <div className="w-1.5 shrink-0 bg-brand-accent mt-1 self-stretch rounded-full" />
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-heading font-bold text-sm text-brand-navy">{t.name}</p>
+                    {t.tags.map((tag) => (
+                      <span key={tag} className={`px-2 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider ${tag === "Rx Required" ? "bg-red-100 text-red-600" : "bg-indigo-100 text-indigo-700"}`}>{tag}</span>
+                    ))}
+                  </div>
+                  <p className="font-body text-sm text-brand-contrast leading-relaxed">{t.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <div className="bg-amber-50 border-l-4 border-amber-400 px-5 py-4 mb-10">
+            <p className="font-heading font-bold text-xs uppercase tracking-wider text-amber-800 mb-1 flex items-center gap-1.5"><AlertTriangle size={12} /> Others to Declare</p>
+            <p className="font-body text-sm text-amber-900">Inform your therapist if you are using high-strength Glycolic Acid, Benzoyl Peroxide, Prescription Steroid creams, or Antidepressants — these affect skin sensitivity and treatment outcomes.</p>
+          </div>
+
+          <h3 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy mb-6 flex items-center gap-2"><ShieldAlert size={14} /> Oral Medications — Prescription Required</h3>
+          <ol className="space-y-6">
+            {[
+              { name:"Antibiotics (Minomycin / Doxycycline)", desc:"Used for 3-6 months for severe acne. Causes photosensitivity — SPF 50+ is mandatory every day while on this medication." },
+              { name:"Roaccutane (Isotretinoin)", desc:"A powerful Vitamin A derivative that shrinks oil glands. Contraindicated for peels and lasers. Causes severe dryness and skin thinning. Always inform your therapist." },
+            ].map((m) => (
+              <li key={m.name} className="flex gap-4 border-b border-brand-contrast/10 pb-6">
+                <div className="w-1.5 shrink-0 bg-red-400 mt-1 self-stretch rounded-full" />
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-heading font-bold text-sm text-brand-navy">{m.name}</p>
+                    <span className="px-2 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider bg-red-100 text-red-600">Prescription</span>
+                  </div>
+                  <p className="font-body text-sm text-brand-contrast leading-relaxed">{m.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      {/* SUN SAFETY */}
+      <div className="relative w-full h-64 md:h-80 overflow-hidden">
+        <Image
+          src="https://images.unsplash.com/photo-1526758097130-bab247274f58?w=1400&q=85&auto=format&fit=crop"
+          alt="Sun protection"
+          fill
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-brand-navy/75" />
+        <div className="absolute inset-0 flex items-center justify-center text-center px-4">
+          <div className="max-w-xl">
+            <Sun size={32} className="text-amber-400 mx-auto mb-3" />
+            <h2 className="font-heading font-bold text-2xl md:text-3xl text-white uppercase tracking-widest mb-3">Mandatory Sun Safety</h2>
+            <p className="font-body text-sm text-brand-contrast mb-5">Oral Antibiotics, Roaccutane, and most Antidepressants cause extreme sun sensitivity. Without SPF, this leads to severe burns and permanent scarring.</p>
+            <span className="inline-block bg-amber-400 text-brand-navy px-6 py-2 font-heading font-bold text-xs uppercase tracking-widest">SPF 50+ Non-Negotiable — Every Single Day</span>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3 — POST-PROCEDURE */}
+      <div className="border-t border-brand-contrast/10">
+        <div className="grid md:grid-cols-2">
+          <div className="relative h-72 md:h-auto min-h-[320px] overflow-hidden">
+            <Image
+              src="https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=800&q=85&auto=format&fit=crop"
+              alt="Serum application — post-procedure care"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+          </div>
+          <div className="bg-brand-navy p-10 md:p-16 flex flex-col justify-center">
+            <p className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent mb-3">Section 02</p>
+            <h2 className="font-heading font-bold text-2xl md:text-3xl text-white uppercase tracking-widest mb-4">Skin Nutrients &amp; Post-Procedure</h2>
+            <p className="font-body text-sm text-brand-contrast leading-relaxed">Use these products when skin is healthy or following a dermal procedure — to nourish, repair, and strengthen the tissue. After a peel or needling, prioritise Moisture Fix and Chronofirm to accelerate healing, then seal with your moisturiser and SPF.</p>
+          </div>
+        </div>
+        <div className="max-w-3xl mx-auto px-4 py-14">
+          <ol className="space-y-6">
+            {[
+              { n:"01", name:"Chronofirm Peptide Matrix", action:"Structural Support", day:true, night:true, desc:"Stimulates collagen and elastin to firm the skin, improve elasticity, and deliver anti-aging results." },
+              { n:"02", name:"Vitamin C 20%", action:"Antioxidant Defence", day:true, night:false, desc:"Neutralises free radicals, reduces redness, brightens the complexion, and aids UV recovery." },
+              { n:"03", name:"Moisture Fix Serum", action:"Intense Hydration", day:true, night:true, desc:"Instantly binds moisture to the skin to soothe and prevent dehydration." },
+              { n:"04", name:"Collagen Cream", action:"Deep Nourishment", day:false, night:true, desc:"Replenishes essential proteins to keep skin plump and resilient." },
+            ].map((item) => (
+              <li key={item.n} className="flex gap-6 border-b border-brand-contrast/10 pb-6">
+                <span className="w-8 h-8 rounded-full bg-brand-accent/20 text-brand-navy font-heading font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{item.n}</span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-heading font-bold text-sm text-brand-navy">{item.name}</p>
+                    <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-brand-blue">{item.action}</span>
+                    {item.day && <DayBadge />}
+                    {item.night && <NightBadge />}
+                  </div>
+                  <p className="font-body text-sm text-brand-contrast leading-relaxed">{item.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      {/* SECTION 4 — PEEL & GLOW */}
+      <div className="bg-[#F8F9FC] border-t border-brand-contrast/10">
+        <div className="relative w-full h-64 md:h-80 overflow-hidden">
+          <Image
+            src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1400&q=85&auto=format&fit=crop&crop=face"
+            alt="Glowing healthy skin"
+            fill
+            className="object-cover object-top"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-brand-navy/60" />
+          <div className="absolute inset-0 flex items-center justify-center text-center px-4">
+            <div>
+              <p className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent mb-2">Section 03</p>
+              <h2 className="font-heading font-bold text-3xl md:text-4xl text-white uppercase tracking-widest">Peel &amp; Glow Guidelines</h2>
+              <p className="font-body text-sm text-brand-contrast mt-2 max-w-sm mx-auto">Use 3-7 days after a dermal treatment, once the skin has stopped peeling or flaking.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-3xl mx-auto px-4 py-14">
+          <div className="border-l-4 border-brand-accent bg-brand-accent/5 px-5 py-4 mb-10">
+            <p className="font-heading font-bold text-xs uppercase tracking-wider text-brand-navy mb-1">The Tingle</p>
+            <p className="font-body text-sm text-brand-contrast">A slight tingling sensation is normal with Glyco 10, Vitamin A, and Vitamin C — this is the actives working. If tingling is persistent or causes excessive redness, reduce frequency.</p>
+          </div>
+
+          <div className="overflow-x-auto bg-white border border-brand-contrast/10 mb-12">
             <table className="w-full text-sm font-body">
               <thead>
                 <tr className="border-b border-brand-contrast/10 bg-brand-navy">
-                  <th className="px-5 py-3.5 text-left text-xs font-heading font-bold uppercase tracking-wider text-brand-white">Product</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-heading font-bold uppercase tracking-wider text-brand-white">Application Notes</th>
-                  <th className="px-5 py-3.5 text-center text-xs font-heading font-bold uppercase tracking-wider text-brand-white">Day</th>
-                  <th className="px-5 py-3.5 text-center text-xs font-heading font-bold uppercase tracking-wider text-brand-white">Night</th>
+                  <th className="px-5 py-3 text-left text-[10px] font-heading font-bold uppercase tracking-wider text-white">Product</th>
+                  <th className="px-5 py-3 text-left text-[10px] font-heading font-bold uppercase tracking-wider text-white">Notes</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-heading font-bold uppercase tracking-wider text-white"><Sun size={12} className="mx-auto" /></th>
+                  <th className="px-4 py-3 text-center text-[10px] font-heading font-bold uppercase tracking-wider text-white"><Moon size={12} className="mx-auto" /></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-contrast/10">
-                {peelAndGlow.map((row) => (
-                  <tr key={row.product} className={`${row.professional ? "bg-red-50" : row.bodyOnly ? "bg-amber-50" : "hover:bg-[#F8F9FC]"} transition-colors`}>
-                    <td className="px-5 py-4 font-heading font-bold text-xs text-brand-navy whitespace-nowrap align-top">
+                {[
+                  { product:"Gluco 12 Cleanser", notes:"Active cleansing to prep the skin.", day:true, night:true },
+                  { product:"Glyco 10 Skin Cream", notes:"Start once a week; increase gradually. Apply serum on top, seal with moisturiser and sunblock.", day:false, night:true },
+                  { product:"Vitamin A (Retinol / Retinal 0.01)", notes:"Start once a week; increase gradually. Apply serum first, then Vitamin A, seal with moisturiser.", day:false, night:true },
+                  { product:"Vitamin C 20%", notes:"Best used with Vitamin A to stimulate collagen and reduce redness.", day:true, night:false },
+                  { product:"Niacinamide 5-10% & Arbutin 5-10%", notes:"Apply to clean skin to control oil, fade pigment, and repair the barrier.", day:true, night:true },
+                  { product:"Glyco 15 Body Exfoliator", notes:"Body rejuvenation ONLY — not the face. Always seal with ceramide cream. Avoid strong shower gels.", day:false, night:true, tag:"Body Only" },
+                  { product:"Glyco 40", notes:"Professional use only. Never for home application.", day:false, night:false, tag:"Pro Only" },
+                ].map((row) => (
+                  <tr key={row.product} className={row.tag === "Pro Only" ? "bg-red-50" : row.tag === "Body Only" ? "bg-amber-50" : "hover:bg-[#F8F9FC] transition-colors"}>
+                    <td className="px-5 py-4 font-heading font-bold text-xs text-brand-navy align-top">
                       {row.product}
-                      {row.professional && (
-                        <div className="mt-1">
-                          <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[9px] font-heading font-bold uppercase tracking-wider">
-                            Professional Only
-                          </span>
-                        </div>
-                      )}
-                      {row.bodyOnly && (
-                        <div className="mt-1">
-                          <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-heading font-bold uppercase tracking-wider">
-                            Body Only
-                          </span>
-                        </div>
-                      )}
+                      {row.tag && <div className="mt-1"><span className={`px-1.5 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider ${row.tag === "Pro Only" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"}`}>{row.tag}</span></div>}
                     </td>
-                    <td className="px-5 py-4 text-brand-contrast text-xs leading-relaxed">{row.notes}</td>
-                    <td className="px-5 py-4 text-center">
-                      {row.day ? <Sun size={14} className="text-amber-500 mx-auto" /> : <span className="text-brand-contrast/20">—</span>}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {row.night ? <Moon size={14} className="text-indigo-500 mx-auto" /> : <span className="text-brand-contrast/20">—</span>}
-                    </td>
+                    <td className="px-5 py-4 text-xs text-brand-contrast leading-relaxed">{row.notes}</td>
+                    <td className="px-4 py-4 text-center">{row.day ? <Sun size={13} className="text-amber-500 mx-auto" /> : <span className="text-brand-contrast/20 text-xs">-</span>}</td>
+                    <td className="px-4 py-4 text-center">{row.night ? <Moon size={13} className="text-indigo-500 mx-auto" /> : <span className="text-brand-contrast/20 text-xs">-</span>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      </section>
 
-      {/* ── LAYERING LOGIC SUMMARY ───────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-3">Summary</p>
-          <h2 className="font-heading font-bold text-3xl md:text-4xl text-brand-navy mb-4">
-            Your Daily Layering Order
-          </h2>
-          <p className="font-body text-sm text-brand-contrast max-w-lg mx-auto">
-            At a glance — follow this sequence every morning and evening.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Day */}
-          <div className="border-2 border-amber-200 bg-amber-50 p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center">
-                <Sun size={16} className="text-white" />
-              </div>
-              <h3 className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy">Morning Routine</h3>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-5"><Sun size={14} className="text-amber-500" /><p className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">Day Layering</p></div>
+              <ol className="space-y-3">
+                {["Cleanse","Moisture Fix Serum","Glyco 10","Moisturiser","Sunblock"].map((s, i) => (
+                  <li key={s} className="flex items-center gap-3 text-sm font-body text-brand-contrast">
+                    <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 font-heading font-bold text-[10px] flex items-center justify-center shrink-0">{i + 1}</span>{s}
+                  </li>
+                ))}
+              </ol>
             </div>
-            <ol className="space-y-3">
-              {[
-                "Cleanser",
-                "Toner",
-                "Eye Care",
-                "Glycolic 10 (wait 5 min)",
-                "Moisture Fix + Vitamin C 20%",
-                "Bio-ferment",
-                "Day Moisturiser",
-                "SPF 30+",
-                "Mineral Makeup (optional)",
-              ].map((step, i) => (
-                <li key={step} className="flex items-center gap-3">
-                  <span className="w-5 h-5 rounded-full bg-amber-400/30 text-brand-navy font-heading font-bold text-[10px] flex items-center justify-center shrink-0">
-                    {i + 1}
-                  </span>
-                  <span className="font-body text-sm text-brand-navy">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {/* Night */}
-          <div className="border-2 border-indigo-200 bg-indigo-50 p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center">
-                <Moon size={16} className="text-white" />
-              </div>
-              <h3 className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy">Evening Routine</h3>
+            <div>
+              <div className="flex items-center gap-2 mb-5"><Moon size={14} className="text-indigo-500" /><p className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">Night Layering</p></div>
+              <ol className="space-y-3">
+                {["Cleanse","Serum","Vitamin A","Moisturiser"].map((s, i) => (
+                  <li key={s} className="flex items-center gap-3 text-sm font-body text-brand-contrast">
+                    <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-800 font-heading font-bold text-[10px] flex items-center justify-center shrink-0">{i + 1}</span>{s}
+                  </li>
+                ))}
+              </ol>
             </div>
-            <ol className="space-y-3">
-              {[
-                "Cleanser",
-                "Toner",
-                "Eye Care",
-                "Peel-back or UMMF (wait 5 min)",
-                "Moisture Fix + Vitamin C 20%",
-                "Bio-ferment",
-                "Night Moisturiser",
-              ].map((step, i) => (
-                <li key={step} className="flex items-center gap-3">
-                  <span className="w-5 h-5 rounded-full bg-indigo-300/50 text-indigo-800 font-heading font-bold text-[10px] flex items-center justify-center shrink-0">
-                    {i + 1}
-                  </span>
-                  <span className="font-body text-sm text-brand-navy">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      {/* ── SKIN CLOSEUP IMAGE ───────────────────────────────── */}
-      <div className="relative h-64 md:h-80 overflow-hidden">
-        <Image
-          src="https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=1400&q=85&auto=format&fit=crop&crop=face"
-          alt="Healthy glowing skin result"
-          fill
-          className="object-cover object-center"
-          sizes="100vw"
-          unoptimized
-        />
-        <div className="absolute inset-0 bg-brand-navy/50" />
-        <div className="absolute inset-0 flex items-center justify-center text-center px-4">
-          <div>
-            <p className="font-heading font-bold text-2xl md:text-3xl text-brand-white tracking-wider uppercase mb-2">
-              The Result Is In The Routine
-            </p>
-            <p className="font-body text-sm text-brand-contrast max-w-sm mx-auto">
-              Consistency with the right products in the right order is what transforms skin over time.
-            </p>
           </div>
         </div>
       </div>
 
-      {/* ── CTA STRIP ────────────────────────────────────────── */}
-      <section className="bg-brand-navy py-16 px-4 text-center">
-        <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-accent mb-3">
-          Ready to Start?
-        </p>
-        <h2 className="font-heading font-bold text-2xl md:text-3xl text-brand-white mb-4">
-          Shop the Full Kentelle Regimen
-        </h2>
-        <p className="font-body text-sm text-brand-contrast max-w-md mx-auto mb-8">
-          Every product in this guide is available in our store. Find your skin type match and build your complete routine.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <a
-            href="/find-your-routine"
-            className="px-8 py-3.5 bg-brand-accent text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
-          >
-            Find My Routine
-          </a>
-          <a
-            href="/shop"
-            className="px-8 py-3.5 border border-brand-white/30 text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:border-brand-white transition-colors"
-          >
-            Browse All Products
-          </a>
+      {/* FINAL CTA */}
+      <div className="relative w-full h-80 md:h-96 overflow-hidden">
+        <Image
+          src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1400&q=85&auto=format&fit=crop"
+          alt="Glowing healthy skin"
+          fill
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-brand-navy/65" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+          <p className="font-heading font-bold text-2xl md:text-3xl text-white uppercase tracking-widest mb-3">The Result Is In The Routine</p>
+          <p className="font-body text-sm text-brand-contrast max-w-sm mx-auto mb-7">Consistency with the right products in the right order is what transforms skin over time.</p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link href="/find-your-routine" className="px-8 py-3 bg-brand-accent text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors">Find My Routine</Link>
+            <Link href="/shop" className="px-8 py-3 border border-white/40 text-white text-xs font-heading font-bold uppercase tracking-widest hover:border-white transition-colors">Shop All Products</Link>
+          </div>
         </div>
-      </section>
+      </div>
 
     </div>
   );
