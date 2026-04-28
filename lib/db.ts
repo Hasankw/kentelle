@@ -270,11 +270,16 @@ async function orderFindUnique(args: any) {
 
 async function orderCreate(args: any) {
   const { items, ...orderData } = args.data;
-  const { data: order, error } = await supabase.from("Order").insert(orderData).select().single();
+  const orderId = crypto.randomUUID();
+  const { data: order, error } = await supabase
+    .from("Order")
+    .insert({ id: orderId, ...orderData })
+    .select()
+    .single();
   throwIfError(order, error, "order.create");
   if (items?.create?.length) {
     await supabase.from("OrderItem").insert(
-      items.create.map((item: any) => ({ ...item, orderId: (order as any).id }))
+      items.create.map((item: any) => ({ id: crypto.randomUUID(), ...item, orderId }))
     );
   }
   return order;
