@@ -1,0 +1,109 @@
+"use client";
+
+import { useState } from "react";
+import type { CartItem, ShippingAddress } from "@/types";
+
+interface Props {
+  items: CartItem[];
+  lockedAddress: ShippingAddress;
+  email: string;
+  orderTotal: number;
+  onSuccess: (orderNumber: string) => void;
+}
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+function loadScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) { resolve(true); return; }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+export default function RazorpaySection({ items, lockedAddress, email, orderTotal, onSuccess }: Props) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handlePay = async () => {
+    setLoading(true);
+    setError("");
+
+    const loaded = await loadScript();
+    if (!loaded) { setError("Could not load payment gateway. Check your connection."); setLoading(false); return; }
+
+    const res = await fetch("/api/checkout/razorpay-create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items, shippingAddress: lockedAddress, email, total: orderTotal }),
+    });
+    const order = await res.json();
+    if (!res.ok) { setError(order.error ?? "Failed to create order"); setLoading(false); return; }
+
+    const rzp = new window.Razorpay({
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency,
+      name: "Kentelle Skincare",
+      description: "Order Payment",
+      order_id: order.rzOrderId,
+      prefill: { email, contact: lockedAddress.phone, name: lockedAddress.fullName },
+      theme: { color: "#3DECC2" },
+      handler: async (response: any) => {
+        setLoading(true);
+        const verify = await fetch("/api/checkout/razorpay-verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rzOrderId: response.razorpay_order_id,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          }),
+        });
+        const result = await verify.json();
+        setLoading(false);
+        if (result.success) onSuccess(result.orderNumber);
+        else setError(result.error ?? "Payment verification failed");
+      },
+      modal: {
+        ondismiss: () => setLoading(false),
+      },
+    });
+
+    rzp.open();
+    setLoading(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      {error && <p className="text-xs text-red-500 font-body">{error}</p>}
+      <button
+        onClick={handlePay}
+        disabled={loading}
+        className="w-full bg-brand-navy text-brand-white py-3.5 text-sm font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Processing...
+          </span>
+        ) : (
+          "Pay Now"
+        )}
+      </button>
+      <p className="text-center text-[11px] text-brand-contrast/60 font-body">
+        Secured by Razorpay
+      </p>
+    </div>
+  );
+}

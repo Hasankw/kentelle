@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { createPayPalOrder } from "@/lib/paypal";
+import { createRazorpayOrder } from "@/lib/razorpay";
 import { generateOrderNumber } from "@/lib/utils";
 import type { CartItem, ShippingAddress } from "@/types";
 
 export async function POST(req: NextRequest) {
-  const {
-    items,
-    shippingAddress,
-    email,
-    total,
-    couponCode,
-    discount,
-  }: {
+  const { items, shippingAddress, email, total, couponCode, discount }: {
     items: CartItem[];
     shippingAddress: ShippingAddress;
     email: string;
@@ -25,22 +18,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shippingCost = subtotal >= 80 ? 0 : 9.95;
-  const serverTotal = parseFloat((subtotal + shippingCost).toFixed(2));
+  const rzOrder = await createRazorpayOrder(total);
 
-  // Create PayPal order first to get ID
-  const paypalOrderId = await createPayPalOrder(serverTotal, "AUD");
-
-  // Create order in DB
   const order = await db.order.create({
     data: {
       orderNumber: generateOrderNumber(),
       guestEmail: email,
-      subtotal,
-      shippingCost,
-      total: serverTotal,
-      paypalOrderId,
+      subtotal: items.reduce((s, i) => s + i.price * i.quantity, 0),
+      shippingCost: 0,
+      total: parseFloat(Number(total).toFixed(2)),
+      paypalOrderId: rzOrder.id,
       shippingAddress: JSON.parse(JSON.stringify(shippingAddress)),
       status: "PENDING",
       ...(couponCode ? { couponCode } : {}),
@@ -57,5 +44,11 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ paypalOrderId, orderId: order.id });
+  return NextResponse.json({
+    rzOrderId: rzOrder.id,
+    amount: rzOrder.amount,
+    currency: rzOrder.currency,
+    orderId: order.id,
+    keyId: process.env.RAZORPAY_KEY_ID,
+  });
 }

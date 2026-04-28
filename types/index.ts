@@ -111,6 +111,33 @@ export interface Lead {
   createdAt: Date;
 }
 
+export interface GiftCard {
+  id: string;
+  code: string;
+  amount: number;
+  recipientEmail: string;
+  recipientName: string;
+  senderEmail: string;
+  senderName: string;
+  message: string;
+  status: "ACTIVE" | "REDEEMED";
+  redeemedAt: Date | null;
+  createdAt: Date;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: "PERCENTAGE" | "FIXED";
+  value: number;
+  minOrder: number;
+  maxUses: number | null;
+  usedCount: number;
+  isActive: boolean;
+  expiresAt: Date | null;
+  createdAt: Date;
+}
+
 export type SortOption =
   | "featured"
   | "best_selling"

@@ -30,3 +30,10 @@ export function generateOrderNumber(): string {
   const random = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `KNT-${timestamp}-${random}`;
 }
+
+export function generateGiftCardCode(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const seg = () =>
+    Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return `KENT-${seg()}-${seg()}`;
+}

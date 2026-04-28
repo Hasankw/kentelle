@@ -1,31 +1,96 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Minus, Plus, X, ShoppingBag, ChevronDown, Pencil } from "lucide-react";
+import { Minus, Plus, X, ShoppingBag, ChevronDown, Pencil, Tag, Gift, Check } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import Button from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 
-const FREE_SHIPPING_THRESHOLD = 80;
+type ShippingConfig = { type: string; rate: number; threshold: number };
+
+const DEFAULT_SHIPPING: ShippingConfig = { type: "threshold", rate: 9.95, threshold: 80 };
+
+function calcShipping(config: ShippingConfig, subtotal: number): number {
+  if (config.type === "free") return 0;
+  if (config.type === "fixed") return config.rate;
+  return subtotal >= config.threshold ? 0 : config.rate;
+}
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, total } = useCartStore();
+  const {
+    items, removeItem, updateQuantity, total,
+    coupon, giftCard, applyCoupon, removeCoupon, applyGiftCard, removeGiftCard,
+    discount, discountedTotal,
+  } = useCartStore();
+
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
 
-  const cartTotal = total();
-  const remaining = Math.max(FREE_SHIPPING_THRESHOLD - cartTotal, 0);
-  const progress = Math.min((cartTotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
+
+  const [gcInput, setGcInput] = useState("");
+  const [gcLoading, setGcLoading] = useState(false);
+  const [gcError, setGcError] = useState("");
+
+  const [shipping, setShipping] = useState<ShippingConfig>(DEFAULT_SHIPPING);
+
+  useEffect(() => {
+    fetch("/api/settings/shipping")
+      .then((r) => r.json())
+      .then(setShipping)
+      .catch(() => {});
+  }, []);
+
+  const subtotal = total();
+  const discountAmt = discount();
+  const afterDiscount = discountedTotal();
+  const shippingCost = calcShipping(shipping, afterDiscount);
+  const orderTotal = afterDiscount + shippingCost;
+
+  const remaining = Math.max(shipping.threshold - afterDiscount, 0);
+  const progress = Math.min((afterDiscount / shipping.threshold) * 100, 100);
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setCouponLoading(true);
+    setCouponError("");
+    const res = await fetch("/api/coupons/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: couponInput.trim(), orderTotal: subtotal }),
+    });
+    const data = await res.json();
+    setCouponLoading(false);
+    if (!res.ok) { setCouponError(data.error ?? "Invalid coupon"); return; }
+    applyCoupon({ code: data.code, type: data.type, value: data.value });
+    setCouponInput("");
+  };
+
+  const handleApplyGiftCard = async () => {
+    if (!gcInput.trim()) return;
+    setGcLoading(true);
+    setGcError("");
+    const res = await fetch("/api/gift-cards/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: gcInput.trim() }),
+    });
+    const data = await res.json();
+    setGcLoading(false);
+    if (!res.ok) { setGcError(data.error ?? "Invalid gift card"); return; }
+    applyGiftCard({ code: data.code, amount: data.amount });
+    setGcInput("");
+  };
 
   if (items.length === 0) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 px-4">
         <ShoppingBag size={56} className="text-brand-contrast opacity-40" />
-        <h1 className="font-heading font-bold text-2xl text-brand-navy">
-          Your cart is empty
-        </h1>
+        <h1 className="font-heading font-bold text-2xl text-brand-navy">Your cart is empty</h1>
         <p className="font-body text-sm text-brand-contrast">
           Looks like you haven&apos;t added anything yet.
         </p>
@@ -43,23 +108,25 @@ export default function CartPage() {
       </h1>
 
       {/* Free shipping progress bar */}
-      <div className="mb-8 max-w-xl mx-auto">
-        {remaining > 0 ? (
-          <p className="text-center text-sm font-body text-brand-navy mb-2">
-            Spend <span className="font-bold text-brand-blue">{formatPrice(remaining)}</span> more to reach free shipping!
-          </p>
-        ) : (
-          <p className="text-center text-sm font-bold font-body text-brand-mint mb-2">
-            You&apos;ve unlocked free shipping! 🎉
-          </p>
-        )}
-        <div className="h-1.5 bg-brand-contrast/20 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-brand-accent rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
+      {shipping.type === "threshold" && (
+        <div className="mb-8 max-w-xl mx-auto">
+          {remaining > 0 ? (
+            <p className="text-center text-sm font-body text-brand-navy mb-2">
+              Spend <span className="font-bold text-brand-blue">{formatPrice(remaining)}</span> more for free shipping!
+            </p>
+          ) : (
+            <p className="text-center text-sm font-bold font-body text-brand-mint mb-2">
+              You&apos;ve unlocked free shipping! 🎉
+            </p>
+          )}
+          <div className="h-1.5 bg-brand-contrast/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-brand-accent rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Items */}
@@ -93,9 +160,7 @@ export default function CartPage() {
                   >
                     <Minus size={12} />
                   </button>
-                  <span className="w-8 text-center text-sm font-body">
-                    {item.quantity}
-                  </span>
+                  <span className="w-8 text-center text-sm font-body">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.id, item.quantity + 1)}
                     className="w-7 h-7 border border-brand-contrast/30 flex items-center justify-center hover:border-brand-navy transition-colors"
@@ -143,28 +208,116 @@ export default function CartPage() {
               />
             )}
           </div>
+
+          {/* Coupon */}
+          <div className="py-4">
+            <p className="flex items-center gap-2 text-sm font-body text-brand-navy mb-2">
+              <Tag size={14} />
+              Have a coupon?
+            </p>
+            {coupon ? (
+              <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-2">
+                <span className="text-sm font-heading font-bold text-green-700 flex items-center gap-1.5">
+                  <Check size={14} />
+                  {coupon.code} — {coupon.type === "PERCENTAGE" ? `${coupon.value}% off` : formatPrice(coupon.value) + " off"}
+                </span>
+                <button
+                  onClick={removeCoupon}
+                  className="text-green-600 hover:text-red-500 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={couponInput}
+                  onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                  placeholder="COUPON CODE"
+                  className="flex-1 border border-brand-contrast/30 px-3 py-2 text-sm font-body font-mono text-brand-navy placeholder:text-brand-contrast/40 outline-none focus:border-brand-navy transition-colors uppercase"
+                />
+                <button
+                  onClick={handleApplyCoupon}
+                  disabled={couponLoading || !couponInput.trim()}
+                  className="px-4 py-2 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+                >
+                  {couponLoading ? "..." : "Apply"}
+                </button>
+              </div>
+            )}
+            {couponError && <p className="text-xs text-red-500 font-body mt-1">{couponError}</p>}
+          </div>
+
+          {/* Gift Card */}
+          <div className="py-4">
+            <p className="flex items-center gap-2 text-sm font-body text-brand-navy mb-2">
+              <Gift size={14} />
+              Have a gift card?
+            </p>
+            {giftCard ? (
+              <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-2">
+                <span className="text-sm font-heading font-bold text-green-700 flex items-center gap-1.5">
+                  <Check size={14} />
+                  {giftCard.code} — {formatPrice(giftCard.amount)} gift card
+                </span>
+                <button
+                  onClick={removeGiftCard}
+                  className="text-green-600 hover:text-red-500 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={gcInput}
+                  onChange={(e) => { setGcInput(e.target.value.toUpperCase()); setGcError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleApplyGiftCard()}
+                  placeholder="KENT-XXXX-XXXX"
+                  className="flex-1 border border-brand-contrast/30 px-3 py-2 text-sm font-body font-mono text-brand-navy placeholder:text-brand-contrast/40 outline-none focus:border-brand-navy transition-colors uppercase"
+                />
+                <button
+                  onClick={handleApplyGiftCard}
+                  disabled={gcLoading || !gcInput.trim()}
+                  className="px-4 py-2 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+                >
+                  {gcLoading ? "..." : "Apply"}
+                </button>
+              </div>
+            )}
+            {gcError && <p className="text-xs text-red-500 font-body mt-1">{gcError}</p>}
+          </div>
         </div>
 
         {/* Summary */}
-        <div className="bg-brand-white border border-brand-contrast/20 p-6 h-fit space-y-4">
+        <div className="bg-brand-white border border-brand-contrast/20 p-6 h-fit space-y-3">
           <h2 className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy">
             Order Summary
           </h2>
           <div className="flex justify-between text-sm font-body">
             <span className="text-brand-contrast">Subtotal</span>
-            <span className="font-bold text-brand-navy">
-              {formatPrice(cartTotal)}
-            </span>
+            <span className="font-bold text-brand-navy">{formatPrice(subtotal)}</span>
           </div>
+          {discountAmt > 0 && (
+            <div className="flex justify-between text-sm font-body text-green-600">
+              <span>Discount</span>
+              <span className="font-bold">−{formatPrice(discountAmt)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm font-body">
             <span className="text-brand-contrast">Shipping</span>
             <span className="text-brand-navy">
-              {cartTotal >= FREE_SHIPPING_THRESHOLD ? "Free" : "Calculated at checkout"}
+              {shippingCost === 0
+                ? "Free"
+                : shipping.type === "threshold"
+                ? "Calculated at checkout"
+                : formatPrice(shippingCost)}
             </span>
           </div>
-          <div className="border-t border-brand-contrast/20 pt-4 flex justify-between font-heading font-bold">
+          <div className="border-t border-brand-contrast/20 pt-3 flex justify-between font-heading font-bold">
             <span className="text-brand-navy">Total</span>
-            <span className="text-brand-navy">{formatPrice(cartTotal)}</span>
+            <span className="text-brand-navy">{formatPrice(orderTotal)}</span>
           </div>
           <Link href="/checkout" className="block">
             <Button className="w-full" size="lg">

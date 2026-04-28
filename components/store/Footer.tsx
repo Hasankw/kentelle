@@ -11,6 +11,7 @@ const shopLinks = [
 ];
 
 const helpLinks = [
+  { label: "Find Your Routine", href: "/find-your-routine" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact Us", href: "/contact" },
   { label: "About Kentelle", href: "/about" },
@@ -21,6 +22,7 @@ const helpLinks = [
 const accountLinks = [
   { label: "My Account", href: "/account" },
   { label: "Track Order", href: "/account/orders" },
+  { label: "Gift Cards", href: "/gift-cards" },
   { label: "Returns & Refunds", href: "/faq#returns" },
 ];
 

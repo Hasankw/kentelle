@@ -13,17 +13,25 @@ import {
   LogOut,
   Settings,
   Tag,
+  Warehouse,
+  Gift,
+  Ticket,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
   { icon: Package, label: "Products", href: "/admin/products" },
+  { icon: Warehouse, label: "Inventory", href: "/admin/inventory" },
   { icon: Tag, label: "Categories", href: "/admin/categories" },
   { icon: ShoppingBag, label: "Orders", href: "/admin/orders" },
   { icon: Users, label: "Customers", href: "/admin/customers" },
+  { icon: Gift, label: "Gift Cards", href: "/admin/gift-cards" },
+  { icon: Ticket, label: "Coupons", href: "/admin/coupons" },
   { icon: Star, label: "Reviews", href: "/admin/reviews" },
   { icon: FileText, label: "Blog", href: "/admin/blog" },
+  { icon: CreditCard, label: "Payments", href: "/admin/payments" },
   { icon: Mail, label: "Leads", href: "/admin/leads" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];

@@ -7,7 +7,7 @@ import SettingsForm from "@/components/admin/SettingsForm";
 
 export const metadata: Metadata = { title: "Settings" };
 
-const KEYS = ["announcement_text", "announcement_enabled", "free_shipping_threshold", "footer_email", "footer_phone"];
+const KEYS = ["announcement_text", "announcement_enabled", "free_shipping_threshold", "footer_email", "footer_phone", "shipping_type", "shipping_rate"];
 
 export default async function AdminSettingsPage() {
   const rows = await db.content.findMany({ where: { key: { in: KEYS } } });

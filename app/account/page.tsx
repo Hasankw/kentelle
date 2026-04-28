@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Gift, Tag } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
@@ -15,6 +16,11 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const giftCards = await db.giftCard.findMany({
+    where: { recipientEmail: user.email?.toLowerCase() ?? "" },
+    orderBy: { createdAt: "desc" },
+  });
 
   const customer = await db.customer.findUnique({
     where: { supabaseUid: user.id },
@@ -82,7 +88,7 @@ export default async function AccountPage() {
           )}
         </div>
         <div className="divide-y divide-brand-contrast/10">
-          {(customer?.orders as Array<{ id: string; orderNumber: string; createdAt: string; status: string; total: number; items: Array<{ id: string; name: string }> }> ?? []).map((order) => (
+          {(customer?.orders as Array<{ id: string; orderNumber: string; createdAt: string; status: string; total: number; couponCode?: string; discount?: number; items: Array<{ id: string; name: string }> }> ?? []).map((order) => (
             <div key={order.id} className="px-6 py-4 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <p className="font-heading font-bold text-sm text-brand-navy">{order.orderNumber}</p>
@@ -90,6 +96,12 @@ export default async function AccountPage() {
                   {new Date(order.createdAt).toLocaleDateString("en-AU")} · {order.items[0]?.name}
                   {order.items.length > 1 ? ` +${order.items.length - 1} more` : ""}
                 </p>
+                {order.couponCode && (
+                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-heading font-bold uppercase tracking-wider">
+                    <Tag size={9} /> {order.couponCode} used
+                    {order.discount ? ` · -${formatPrice(order.discount)}` : ""}
+                  </span>
+                )}
               </div>
               <span className={`px-2 py-0.5 text-[10px] font-heading font-bold uppercase tracking-wider shrink-0 ${statusColors[order.status] ?? "bg-gray-100 text-gray-600"}`}>
                 {order.status}
@@ -112,6 +124,53 @@ export default async function AccountPage() {
           )}
         </div>
       </div>
+
+      {/* Gift Cards */}
+      {(giftCards as any[]).length > 0 && (
+        <div className="bg-white border border-brand-contrast/10 mt-6">
+          <div className="px-6 py-4 border-b border-brand-contrast/10 flex items-center gap-2">
+            <Gift size={16} className="text-brand-navy" />
+            <h2 className="font-heading font-bold text-base uppercase tracking-wider text-brand-navy">
+              My Gift Cards
+            </h2>
+          </div>
+          <div className="divide-y divide-brand-contrast/10">
+            {(giftCards as any[]).map((gc) => {
+              const isRedeemed = gc.status === "REDEEMED";
+              return (
+                <div key={gc.id} className={`px-6 py-4 flex items-center justify-between gap-4 ${isRedeemed ? "opacity-50 bg-gray-50" : ""}`}>
+                  <div>
+                    <p className={`font-mono font-bold text-sm tracking-widest ${isRedeemed ? "text-gray-400 line-through" : "text-brand-navy"}`}>
+                      {gc.code}
+                    </p>
+                    <p className="text-xs text-brand-contrast font-body mt-0.5">
+                      From: {gc.senderName || gc.senderEmail} · {new Date(gc.createdAt).toLocaleDateString("en-AU")}
+                    </p>
+                    {gc.message && (
+                      <p className="text-xs text-brand-contrast/70 italic mt-0.5">&ldquo;{gc.message}&rdquo;</p>
+                    )}
+                    {isRedeemed && gc.redeemedAt && (
+                      <p className="text-xs text-gray-400 font-body mt-0.5">
+                        Redeemed on {new Date(gc.redeemedAt).toLocaleDateString("en-AU")}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`font-heading font-bold text-lg ${isRedeemed ? "text-gray-400" : "text-brand-navy"}`}>
+                      {formatPrice(Number(gc.amount))}
+                    </p>
+                    <span className={`px-2 py-0.5 text-[10px] font-heading font-bold uppercase tracking-wider ${
+                      isRedeemed ? "bg-gray-100 text-gray-400" : "bg-green-100 text-green-700"
+                    }`}>
+                      {isRedeemed ? "Used" : "Active"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

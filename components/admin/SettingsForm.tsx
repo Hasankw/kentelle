@@ -6,7 +6,9 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
   const [form, setForm] = useState({
     announcement_text: settings.announcement_text ?? "",
     announcement_enabled: settings.announcement_enabled === "true",
-    free_shipping_threshold: settings.free_shipping_threshold ?? "100",
+    free_shipping_threshold: settings.free_shipping_threshold ?? "80",
+    shipping_type: settings.shipping_type ?? "threshold",
+    shipping_rate: settings.shipping_rate ?? "9.95",
     footer_email: settings.footer_email ?? "",
     footer_phone: settings.footer_phone ?? "",
   });
@@ -34,6 +36,7 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Announcement */}
       <div>
         <h2 className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy mb-4">
           Announcement Bar
@@ -64,25 +67,62 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
         </div>
       </div>
 
+      {/* Shipping */}
       <div>
         <h2 className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy mb-4">
-          Shipping
+          Shipping (Australia Only)
         </h2>
-        <div>
-          <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">
-            Free Shipping Threshold (AUD)
-          </label>
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={form.free_shipping_threshold}
-            onChange={(e) => setForm((f) => ({ ...f, free_shipping_threshold: e.target.value }))}
-            className={`${fieldClass} max-w-[160px]`}
-          />
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">
+              Shipping Type
+            </label>
+            <select
+              value={form.shipping_type}
+              onChange={(e) => setForm((f) => ({ ...f, shipping_type: e.target.value }))}
+              className={`${fieldClass} max-w-xs`}
+            >
+              <option value="threshold">Free above threshold, otherwise flat rate</option>
+              <option value="fixed">Fixed rate always</option>
+              <option value="free">Always free</option>
+            </select>
+          </div>
+
+          {(form.shipping_type === "threshold" || form.shipping_type === "fixed") && (
+            <div>
+              <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">
+                Shipping Rate (AUD)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.shipping_rate}
+                onChange={(e) => setForm((f) => ({ ...f, shipping_rate: e.target.value }))}
+                className={`${fieldClass} max-w-[160px]`}
+              />
+            </div>
+          )}
+
+          {form.shipping_type === "threshold" && (
+            <div>
+              <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">
+                Free Shipping Threshold (AUD)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={form.free_shipping_threshold}
+                onChange={(e) => setForm((f) => ({ ...f, free_shipping_threshold: e.target.value }))}
+                className={`${fieldClass} max-w-[160px]`}
+              />
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Contact */}
       <div>
         <h2 className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy mb-4">
           Contact Details

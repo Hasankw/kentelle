@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
+export async function GET() {
+  const products = await db.product.findMany({ orderBy: { name: "asc" } });
+  return NextResponse.json(products);
+}
+
 export async function POST(request: NextRequest) {
   const { name, slug, description, ingredients, howToUse, routine, cautions, price, salePrice, stock, isActive, images, categoryIds } = await request.json();
 

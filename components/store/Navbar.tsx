@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ShoppingBag, Search, User, Menu, X } from "lucide-react";
+import { createBrowserClient } from "@supabase/ssr";
 import { useCartStore } from "@/store/cart";
 import { cn } from "@/lib/utils";
 
@@ -23,12 +24,30 @@ interface NavbarProps {
 export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [greeting, setGreeting] = useState("");
   const itemCount = useCartStore((s) => s.itemCount());
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
+  }, []);
+
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data?.user;
+      if (!user) return;
+      const name =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split("@")[0] ||
+        "";
+      if (name) setGreeting(name);
+    });
   }, []);
 
   return (
@@ -83,9 +102,14 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
             <Link
               href="/account"
               aria-label="Account"
-              className="text-brand-navy hover:text-brand-blue transition-colors"
+              className="flex items-center gap-1.5 text-brand-navy hover:text-brand-blue transition-colors"
             >
               <User size={20} />
+              {greeting && (
+                <span className="hidden sm:block text-[11px] font-heading font-bold uppercase tracking-wider">
+                  Hello, {greeting}
+                </span>
+              )}
             </Link>
             <button
               onClick={onCartOpen}

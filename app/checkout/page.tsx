@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,8 +9,21 @@ import Input from "@/components/ui/Input";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import type { ShippingAddress } from "@/types";
+import dynamic from "next/dynamic";
 
+const RazorpaySection = dynamic(() => import("@/components/store/RazorpaySection"), { ssr: false });
 const PayPalSection = dynamic(() => import("@/components/store/PayPalSection"), { ssr: false });
+
+const AU_STATES = [
+  { value: "NSW", label: "New South Wales" },
+  { value: "VIC", label: "Victoria" },
+  { value: "QLD", label: "Queensland" },
+  { value: "WA", label: "Western Australia" },
+  { value: "SA", label: "South Australia" },
+  { value: "TAS", label: "Tasmania" },
+  { value: "ACT", label: "Australian Capital Territory" },
+  { value: "NT", label: "Northern Territory" },
+];
 
 const schema = z.object({
   fullName: z.string().min(2, "Full name required"),
@@ -20,20 +32,42 @@ const schema = z.object({
   line1: z.string().min(3, "Address required"),
   line2: z.string().optional(),
   city: z.string().min(2, "City required"),
-  state: z.string().min(2, "State required"),
+  state: z.enum(["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]),
   postcode: z.string().min(4, "Postcode required"),
 });
 
 type FormData = z.infer<typeof schema>;
 
-const SHIPPING_THRESHOLD = 80;
-const SHIPPING_COST = 9.95;
+type ShippingConfig = { type: string; rate: number; threshold: number };
+
+function calcShipping(config: ShippingConfig, subtotal: number): number {
+  if (config.type === "free") return 0;
+  if (config.type === "fixed") return config.rate;
+  return subtotal >= config.threshold ? 0 : config.rate;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, total, clearCart } = useCartStore();
+  const { items, discountedTotal, clearCart, coupon, giftCard } = useCartStore();
   const [shippingLocked, setShippingLocked] = useState(false);
   const [lockedAddress, setLockedAddress] = useState<ShippingAddress | null>(null);
+  const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
+    type: "threshold",
+    rate: 9.95,
+    threshold: 80,
+  });
+  const [paymentPortal, setPaymentPortal] = useState<"razorpay" | "paypal">("razorpay");
+
+  useEffect(() => {
+    fetch("/api/settings/shipping")
+      .then((r) => r.json())
+      .then(setShippingConfig)
+      .catch(() => {});
+    fetch("/api/settings/payment")
+      .then((r) => r.json())
+      .then((d) => setPaymentPortal(d.portal ?? "razorpay"))
+      .catch(() => {});
+  }, []);
 
   const {
     register,
@@ -45,8 +79,8 @@ export default function CheckoutPage() {
     mode: "onChange",
   });
 
-  const subtotal = total();
-  const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+  const subtotal = discountedTotal();
+  const shippingCost = calcShipping(shippingConfig, subtotal);
   const orderTotal = subtotal + shippingCost;
 
   if (items.length === 0) {
@@ -68,11 +102,15 @@ export default function CheckoutPage() {
     setShippingLocked(true);
   });
 
+  const selectClass =
+    "w-full border border-brand-contrast/20 px-3 py-2.5 text-sm font-body text-brand-navy bg-white focus:outline-none focus:border-brand-blue";
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-      <h1 className="font-heading font-bold text-3xl text-brand-navy mb-8">
-        Checkout
-      </h1>
+      <h1 className="font-heading font-bold text-3xl text-brand-navy mb-2">Checkout</h1>
+      <p className="text-xs font-body text-brand-contrast mb-8 flex items-center gap-1">
+        🇦🇺 Shipping within Australia only
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
         {/* Left: Shipping form */}
@@ -121,19 +159,32 @@ export default function CheckoutPage() {
           />
           <div className="grid grid-cols-3 gap-3">
             <Input
-              label="City"
+              label="City / Suburb"
               id="city"
               {...register("city")}
               error={errors.city?.message}
               disabled={shippingLocked}
             />
-            <Input
-              label="State"
-              id="state"
-              {...register("state")}
-              error={errors.state?.message}
-              disabled={shippingLocked}
-            />
+            <div>
+              <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">
+                State *
+              </label>
+              <select
+                {...register("state")}
+                disabled={shippingLocked}
+                className={`${selectClass} ${errors.state ? "border-red-400" : ""} disabled:opacity-60`}
+              >
+                <option value="">State</option>
+                {AU_STATES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.value}
+                  </option>
+                ))}
+              </select>
+              {errors.state && (
+                <p className="text-xs text-red-500 mt-1 font-body">{errors.state.message}</p>
+              )}
+            </div>
             <Input
               label="Postcode"
               id="postcode"
@@ -141,6 +192,11 @@ export default function CheckoutPage() {
               error={errors.postcode?.message}
               disabled={shippingLocked}
             />
+          </div>
+
+          {/* Country display — always Australia */}
+          <div className="flex items-center gap-2 text-xs font-body text-brand-contrast border border-brand-contrast/10 bg-[#F8F9FC] px-3 py-2.5">
+            🇦🇺 <span>Country: <strong>Australia</strong></span>
           </div>
 
           {!shippingLocked && (
@@ -165,7 +221,6 @@ export default function CheckoutPage() {
 
         {/* Right: Summary + PayPal */}
         <div className="md:col-span-2 space-y-4">
-          {/* Order summary */}
           <div className="border border-brand-contrast/20 bg-brand-white p-5 space-y-3">
             <h3 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">
               Order Summary
@@ -173,18 +228,20 @@ export default function CheckoutPage() {
             <ul className="divide-y divide-brand-contrast/10 text-sm font-body">
               {items.map((item) => (
                 <li key={item.id} className="flex justify-between py-2">
-                  <span className="text-brand-navy">
-                    {item.name} × {item.quantity}
-                  </span>
-                  <span className="font-bold text-brand-navy">
-                    {formatPrice(item.price * item.quantity)}
-                  </span>
+                  <span className="text-brand-navy">{item.name} × {item.quantity}</span>
+                  <span className="font-bold text-brand-navy">{formatPrice(item.price * item.quantity)}</span>
                 </li>
               ))}
             </ul>
             <div className="border-t border-brand-contrast/20 pt-3 space-y-1 text-sm font-body">
+              {(coupon || giftCard) && (
+                <div className="flex justify-between text-green-600 text-xs font-heading font-bold">
+                  <span>Discount applied</span>
+                  <span>−{formatPrice(useCartStore.getState().discount())}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span className="text-brand-contrast">Subtotal</span>
+                <span className="text-brand-contrast">Subtotal (after discount)</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
@@ -198,22 +255,28 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* PayPal */}
           {shippingLocked && lockedAddress && (
             <div>
               <p className="text-xs font-heading font-bold uppercase tracking-widest text-brand-navy mb-3">
                 Payment
               </p>
-              <PayPalSection
-                items={items}
-                lockedAddress={lockedAddress}
-                email={getValues("email")}
-                orderTotal={orderTotal}
-                onSuccess={(orderNumber) => {
-                  clearCart();
-                  router.push(`/order-confirmation/${orderNumber}`);
-                }}
-              />
+              {paymentPortal === "paypal" ? (
+                <PayPalSection
+                  items={items}
+                  lockedAddress={lockedAddress}
+                  email={getValues("email")}
+                  orderTotal={orderTotal}
+                  onSuccess={(orderNumber) => { clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
+                />
+              ) : (
+                <RazorpaySection
+                  items={items}
+                  lockedAddress={lockedAddress}
+                  email={getValues("email")}
+                  orderTotal={orderTotal}
+                  onSuccess={(orderNumber) => { clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
+                />
+              )}
             </div>
           )}
         </div>

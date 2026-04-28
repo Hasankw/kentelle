@@ -481,6 +481,131 @@ async function subscriberUpsert(args: any) {
   }
 }
 
+// ─── skin profile ──────────────────────────────────────────────────────────
+
+async function skinProfileFindUnique(args: any) {
+  let q: any = supabase.from("SkinProfile").select("*");
+  q = applyWhere(q, args.where);
+  const { data, error } = await q.maybeSingle();
+  throwIfError(data, error, "skinProfile.findUnique");
+  return data ?? null;
+}
+
+async function skinProfileUpsert(args: any) {
+  const { data: existing } = await supabase
+    .from("SkinProfile")
+    .select("id")
+    .eq("userEmail", args.where.userEmail)
+    .maybeSingle();
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("SkinProfile")
+      .update({ ...args.update, updatedAt: new Date().toISOString() })
+      .eq("id", (existing as any).id)
+      .select()
+      .single();
+    throwIfError(data, error, "skinProfile.upsert(update)");
+    return data;
+  } else {
+    const { data, error } = await supabase.from("SkinProfile").insert(args.create).select().single();
+    throwIfError(data, error, "skinProfile.upsert(create)");
+    return data;
+  }
+}
+
+// ─── gift card ─────────────────────────────────────────────────────────────
+
+async function giftCardCreate(args: any) {
+  const { data, error } = await supabase.from("GiftCard").insert(args.data).select().single();
+  throwIfError(data, error, "giftCard.create");
+  return data;
+}
+
+async function giftCardFindMany(args: any = {}) {
+  let q: any = supabase.from("GiftCard").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy);
+  if (args.take) q = q.limit(args.take);
+  const { data, error } = await q;
+  throwIfError(data, error, "giftCard.findMany");
+  return data ?? [];
+}
+
+async function giftCardFindUnique(args: any) {
+  let q: any = supabase.from("GiftCard").select("*");
+  q = applyWhere(q, args.where);
+  const { data, error } = await q.maybeSingle();
+  throwIfError(data, error, "giftCard.findUnique");
+  return data ?? null;
+}
+
+async function giftCardUpdate(args: any) {
+  let q: any = supabase.from("GiftCard").update(args.data);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "giftCard.update");
+  return data;
+}
+
+async function giftCardCount(args: any = {}) {
+  let q: any = supabase.from("GiftCard").select("id", { count: "exact", head: true });
+  q = applyWhere(q, args.where);
+  const { count, error } = await q;
+  throwIfError(count, error, "giftCard.count");
+  return count ?? 0;
+}
+
+// ─── coupon ────────────────────────────────────────────────────────────────
+
+async function couponFindMany(args: any = {}) {
+  let q: any = supabase.from("Coupon").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy);
+  if (args.take) q = q.limit(args.take);
+  const { data, error } = await q;
+  throwIfError(data, error, "coupon.findMany");
+  return data ?? [];
+}
+
+async function couponFindUnique(args: any) {
+  let q: any = supabase.from("Coupon").select("*");
+  q = applyWhere(q, args.where);
+  const { data, error } = await q.maybeSingle();
+  throwIfError(data, error, "coupon.findUnique");
+  return data ?? null;
+}
+
+async function couponCreate(args: any) {
+  const { data, error } = await supabase.from("Coupon").insert(args.data).select().single();
+  throwIfError(data, error, "coupon.create");
+  return data;
+}
+
+async function couponUpdate(args: any) {
+  let q: any = supabase.from("Coupon").update(args.data);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "coupon.update");
+  return data;
+}
+
+async function couponDelete(args: any) {
+  let q: any = supabase.from("Coupon").delete();
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { error } = await q;
+  throwIfError(true, error, "coupon.delete");
+  return { id: args.where.id };
+}
+
+async function couponCount(args: any = {}) {
+  let q: any = supabase.from("Coupon").select("id", { count: "exact", head: true });
+  q = applyWhere(q, args.where);
+  const { count, error } = await q;
+  throwIfError(count, error, "coupon.count");
+  return count ?? 0;
+}
+
 // ─── exported db object ────────────────────────────────────────────────────
 
 export const db = {
@@ -538,5 +663,24 @@ export const db = {
   },
   subscriber: {
     upsert: subscriberUpsert,
+  },
+  skinProfile: {
+    findUnique: skinProfileFindUnique,
+    upsert: skinProfileUpsert,
+  },
+  giftCard: {
+    create: giftCardCreate,
+    findMany: giftCardFindMany,
+    findUnique: giftCardFindUnique,
+    update: giftCardUpdate,
+    count: giftCardCount,
+  },
+  coupon: {
+    findMany: couponFindMany,
+    findUnique: couponFindUnique,
+    create: couponCreate,
+    update: couponUpdate,
+    delete: couponDelete,
+    count: couponCount,
   },
 };
