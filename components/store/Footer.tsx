@@ -12,6 +12,7 @@ const shopLinks = [
 
 const helpLinks = [
   { label: "Find Your Routine", href: "/find-your-routine" },
+  { label: "Skin Regimen", href: "/skin-regimen" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact Us", href: "/contact" },
   { label: "About Kentelle", href: "/about" },
