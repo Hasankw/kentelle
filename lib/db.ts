@@ -383,12 +383,23 @@ async function customerUpsert(args: any) {
     const now = new Date().toISOString();
     const { data, error } = await supabase
       .from("Customer")
-      .insert({ id: crypto.randomUUID(), createdAt: now, ...args.create })
+      .insert({ id: crypto.randomUUID(), createdAt: now, addresses: [], ...args.create })
       .select()
       .single();
     throwIfError(data, error, "customer.upsert(create)");
     return data;
   }
+}
+
+async function customerUpdate(args: any) {
+  const { data, error } = await supabase
+    .from("Customer")
+    .update(args.data)
+    .eq("id", args.where.id)
+    .select()
+    .single();
+  throwIfError(data, error, "customer.update");
+  return data;
 }
 
 async function customerCount(args: any = {}) {
@@ -412,7 +423,7 @@ async function leadFindMany(args: any = {}) {
 }
 
 async function leadCreate(args: any) {
-  const { data, error } = await supabase.from("Lead").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data }).select().single();
+  const { data, error } = await supabase.from("Lead").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), reviewed: false, ...args.data }).select().single();
   throwIfError(data, error, "lead.create");
   return data;
 }
@@ -670,6 +681,7 @@ export const db = {
     findMany: customerFindMany,
     findUnique: customerFindUnique,
     upsert: customerUpsert,
+    update: customerUpdate,
     count: customerCount,
   },
   lead: {

@@ -31,6 +31,19 @@ export async function POST(req: NextRequest) {
     data: { status: "CONFIRMED", paymentId },
   });
 
+  // Upsert customer so guest purchasers appear in admin
+  const guestEmail = order.guestEmail;
+  if (guestEmail && !order.customerId) {
+    const addr = order.shippingAddress as any;
+    try {
+      await db.customer.upsert({
+        where: { email: guestEmail },
+        create: { name: addr?.fullName ?? guestEmail, email: guestEmail, phone: addr?.phone ?? null },
+        update: {},
+      });
+    } catch { /* non-fatal */ }
+  }
+
   const emailTo = order.guestEmail || order.customer?.email;
   if (emailTo) {
     try {

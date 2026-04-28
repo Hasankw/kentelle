@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { Metadata } from "next";
+import Link from "next/link";
 import { db } from "@/lib/db";
 import AdminShell from "@/components/admin/AdminShell";
 
@@ -23,7 +24,7 @@ export default async function AdminCustomersPage() {
           <table className="w-full text-sm font-body">
             <thead>
               <tr className="border-b border-brand-contrast/10 bg-[#F8F9FC]">
-                {["Name", "Email", "Phone", "Orders", "Joined"].map((h) => (
+                {["Name", "Email", "Phone", "Orders", "Joined", ""].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-heading font-bold uppercase tracking-wider text-brand-contrast whitespace-nowrap">
                     {h}
                   </th>
@@ -40,11 +41,19 @@ export default async function AdminCustomersPage() {
                   <td className="px-5 py-3 text-brand-contrast whitespace-nowrap">
                     {new Date(c.createdAt).toLocaleDateString("en-AU")}
                   </td>
+                  <td className="px-5 py-3">
+                    <Link
+                      href={`/admin/customers/${c.id}`}
+                      className="text-xs font-heading font-bold uppercase tracking-wider text-brand-blue hover:underline"
+                    >
+                      Edit
+                    </Link>
+                  </td>
                 </tr>
               ))}
               {customers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-brand-contrast">
+                  <td colSpan={6} className="px-6 py-10 text-center text-brand-contrast">
                     No customers yet.
                   </td>
                 </tr>

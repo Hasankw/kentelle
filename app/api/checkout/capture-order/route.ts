@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     include: { items: true },
     take: 1,
   });
-  const order = (orders[0] ?? null) as { id: string; guestEmail: string | null; orderNumber: string; subtotal: number; shippingCost: number; total: number; discount?: number; couponCode?: string; shippingAddress?: any; items: Array<{ name: string; image?: string; quantity: number; price: number }> } | null;
+  const order = (orders[0] ?? null) as any;
 
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -35,6 +35,19 @@ export async function POST(req: NextRequest) {
       paymentId: capture.captureId,
     },
   });
+
+  // Upsert customer so guest purchasers appear in admin
+  const guestEmail = order.guestEmail;
+  if (guestEmail && !order.customerId) {
+    const addr = order.shippingAddress as any;
+    try {
+      await db.customer.upsert({
+        where: { email: guestEmail },
+        create: { name: addr?.fullName ?? guestEmail, email: guestEmail, phone: addr?.phone ?? null },
+        update: {},
+      });
+    } catch { /* non-fatal */ }
+  }
 
   // Send confirmation email (best-effort)
   const email = order.guestEmail;
