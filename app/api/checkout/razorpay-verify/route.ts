@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing payment details" }, { status: 400 });
   }
 
-  const valid = verifyRazorpaySignature(rzOrderId, paymentId, signature);
+  const valid = await verifyRazorpaySignature(rzOrderId, paymentId, signature);
   if (!valid) {
     return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
   }

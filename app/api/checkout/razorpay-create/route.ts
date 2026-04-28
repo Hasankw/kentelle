@@ -49,6 +49,6 @@ export async function POST(req: NextRequest) {
     amount: rzOrder.amount,
     currency: rzOrder.currency,
     orderId: order.id,
-    keyId: process.env.RAZORPAY_KEY_ID,
+    keyId: rzOrder.keyId,
   });
 }
