@@ -12,8 +12,6 @@ const navLinks = [
   { label: "Collections", href: "/collections" },
   { label: "Skin Regimen", href: "/skin-regimen" },
   { label: "About", href: "/about" },
-  { label: "Blog", href: "/blog" },
-  { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
 ];
 
