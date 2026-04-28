@@ -27,7 +27,7 @@ export default function SkinRegimenPage() {
       {/* HERO IMAGE */}
       <div className="relative w-full h-[55vh] min-h-[400px] overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=1600&q=85&auto=format&fit=crop"
+          src="/images/regimen/regimen-banner.webp"
           alt="Skincare routine"
           fill
           priority
@@ -64,7 +64,7 @@ export default function SkinRegimenPage() {
       <div className="border-t border-brand-contrast/10">
         <div className="relative w-full h-72 md:h-96 overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=1400&q=85&auto=format&fit=crop&crop=top"
+            src="/images/regimen/regimen-1.jpg"
             alt="Daily skincare routine"
             fill
             className="object-cover object-top"
@@ -124,7 +124,7 @@ export default function SkinRegimenPage() {
       <div className="bg-[#F8F9FC] border-t border-brand-contrast/10">
         <div className="relative w-full h-64 md:h-80 overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=1400&q=85&auto=format&fit=crop&crop=face"
+            src="/images/regimen/regimen-2.jpg"
             alt="Skincare treatment"
             fill
             className="object-cover object-top"
@@ -197,7 +197,7 @@ export default function SkinRegimenPage() {
       {/* SUN SAFETY */}
       <div className="relative w-full h-64 md:h-80 overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1526758097130-bab247274f58?w=1400&q=85&auto=format&fit=crop"
+          src="/images/regimen/regimen-3.jpg"
           alt="Sun protection"
           fill
           className="object-cover object-center"
@@ -219,7 +219,7 @@ export default function SkinRegimenPage() {
         <div className="grid md:grid-cols-2">
           <div className="relative h-72 md:h-auto min-h-[320px] overflow-hidden">
             <Image
-              src="https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=800&q=85&auto=format&fit=crop"
+              src="/images/about/about-2.jpg"
               alt="Serum application — post-procedure care"
               fill
               className="object-cover"
@@ -261,7 +261,7 @@ export default function SkinRegimenPage() {
       <div className="bg-[#F8F9FC] border-t border-brand-contrast/10">
         <div className="relative w-full h-64 md:h-80 overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1400&q=85&auto=format&fit=crop&crop=face"
+            src="/images/library/lib-3.jpg"
             alt="Glowing healthy skin"
             fill
             className="object-cover object-top"
@@ -345,7 +345,7 @@ export default function SkinRegimenPage() {
       {/* FINAL CTA */}
       <div className="relative w-full h-80 md:h-96 overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1400&q=85&auto=format&fit=crop"
+          src="/images/about/about-banner.jpg"
           alt="Glowing healthy skin"
           fill
           className="object-cover object-center"

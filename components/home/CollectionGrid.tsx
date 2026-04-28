@@ -1,43 +1,42 @@
 import Link from "next/link";
 import Image from "next/image";
 
-// Generic skincare photography — editorial, warm-muted tones
 const collections = [
   {
     name: "Cleansers",
     slug: "cleansers",
     tagline: "Fresh start, every day",
-    image: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=600&q=85",
+    image: "/images/collections/col-1.jpg",
   },
   {
     name: "Serums",
     slug: "serums",
     tagline: "Target. Transform. Glow.",
-    image: "https://images.unsplash.com/photo-1550159930-40066082a4fc?auto=format&fit=crop&w=600&q=85",
+    image: "/images/collections/col-2.jpg",
   },
   {
     name: "Moisturisers",
     slug: "moisturisers",
     tagline: "Hydration redefined",
-    image: "https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=600&q=85",
+    image: "/images/collections/col-3.jpg",
   },
   {
     name: "Eye Care",
     slug: "eye-care",
     tagline: "Bright eyes, every morning",
-    image: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&w=600&q=85",
+    image: "/images/collections/col-4.jpg",
   },
   {
     name: "Toners",
     slug: "toners",
     tagline: "Balance and refine",
-    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=85",
+    image: "/images/library/lib-1.jpg",
   },
   {
     name: "Sun Care",
     slug: "sun-care",
     tagline: "Protected, all day",
-    image: "https://images.unsplash.com/photo-1570194065650-d99fb4d8a609?auto=format&fit=crop&w=600&q=85",
+    image: "/images/library/lib-2.jpg",
   },
 ];
 
@@ -65,7 +64,6 @@ export default function CollectionGrid() {
               src={col.image}
               alt={col.name}
               fill
-              unoptimized
               className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
               sizes="(max-width: 768px) 50vw, 33vw"
             />

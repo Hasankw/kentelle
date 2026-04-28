@@ -12,15 +12,24 @@ export default function AboutPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-brand-navy text-brand-white py-20 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-3">
+      <section className="relative h-[55vh] min-h-[400px] overflow-hidden">
+        <Image
+          src="/images/about/about-banner.jpg"
+          alt="Kentelle skincare"
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-navy/40 via-brand-navy/50 to-brand-navy/85" />
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 px-4 text-center">
+          <p className="text-[10px] font-heading font-bold tracking-[0.3em] uppercase text-brand-accent mb-3">
             Our Story
           </p>
-          <h1 className="font-heading font-bold text-4xl md:text-5xl leading-tight mb-5">
+          <h1 className="font-heading font-bold text-4xl md:text-5xl leading-tight text-white mb-4">
             Skincare That Performs,<br />Not Just Promises
           </h1>
-          <p className="font-body text-brand-white/70 text-base leading-relaxed max-w-xl mx-auto">
+          <p className="font-body text-white/70 text-base leading-relaxed max-w-xl mx-auto">
             Kentelle was founded with a simple belief: everyone deserves access to
             high-performance skincare formulated with integrity, science, and care.
           </p>
@@ -51,7 +60,7 @@ export default function AboutPage() {
         </div>
         <div className="relative aspect-square bg-brand-contrast/10">
           <Image
-            src="/images/about-lab.jpg"
+            src="/images/about/about-2.jpg"
             alt="Kentelle lab"
             fill
             className="object-cover"

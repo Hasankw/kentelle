@@ -6,7 +6,6 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// Generic skincare photography — warm, muted, editorial
 const slides = [
   {
     id: 1,
@@ -14,8 +13,7 @@ const slides = [
     headline: "Your Skin,\nReimagined",
     sub: "Science-backed formulas for every skin concern. Shop our latest arrivals.",
     cta: { label: "Shop Now", href: "/shop" },
-    bg: "#0E1B4D",
-    image: "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?auto=format&fit=crop&w=1000&q=85",
+    image: "/images/hero/hero-1.jpg",
   },
   {
     id: 2,
@@ -23,8 +21,7 @@ const slides = [
     headline: "Glow From\nWithin",
     sub: "Our clinically-tested serums deliver visible results in just 4 weeks.",
     cta: { label: "Shop Serums", href: "/collections/serums" },
-    bg: "#12205a",
-    image: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=1000&q=85",
+    image: "/images/hero/hero-2.jpg",
   },
   {
     id: 3,
@@ -32,8 +29,15 @@ const slides = [
     headline: "Made For\nAustralian Skin",
     sub: "Every product developed for Australian climate, UV intensity and lifestyle.",
     cta: { label: "Explore All", href: "/shop" },
-    bg: "#0a163a",
-    image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=1000&q=85",
+    image: "/images/hero/hero-3.jpg",
+  },
+  {
+    id: 4,
+    tagline: "Skin Regimen",
+    headline: "Layer Right,\nGlow Bright",
+    sub: "Follow the Kentelle skin layering protocol — morning and night — for transformative results.",
+    cta: { label: "View Regimen", href: "/skin-regimen" },
+    image: "/images/hero/hero-4.jpg",
   },
 ];
 
