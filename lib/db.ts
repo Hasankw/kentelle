@@ -91,7 +91,8 @@ async function productCount(args: any = {}) {
 
 async function productCreate(args: any) {
   const { categories, ...data } = args.data;
-  const { data: row, error } = await supabase.from("Product").insert(data).select().single();
+  const now = new Date().toISOString();
+  const { data: row, error } = await supabase.from("Product").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...data }).select().single();
   throwIfError(row, error, "product.create");
   if (categories?.connect?.length) {
     await supabase.from("_ProductCategories").insert(
@@ -103,7 +104,7 @@ async function productCreate(args: any) {
 
 async function productUpdate(args: any) {
   const { categories, ...data } = args.data;
-  let uq: any = supabase.from("Product").update(data);
+  let uq: any = supabase.from("Product").update({ ...data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) uq = uq.eq(k, v);
   const { data: row, error } = await uq.select().single();
   throwIfError(row, error, "product.update");
@@ -136,7 +137,20 @@ async function categoryFindMany(args: any = {}) {
   q = applyOrder(q, args.orderBy);
   const { data, error } = await q;
   throwIfError(data, error, "category.findMany");
-  return data ?? [];
+  const rows = data ?? [];
+
+  if (args.include?._count) {
+    return await Promise.all(
+      rows.map(async (cat: any) => {
+        const { count } = await supabase
+          .from("_ProductCategories")
+          .select("A", { count: "exact", head: true })
+          .eq("A", cat.id);
+        return { ...cat, _count: { products: count ?? 0 } };
+      })
+    );
+  }
+  return rows;
 }
 
 async function categoryFindUnique(args: any) {
@@ -170,7 +184,7 @@ async function reviewFindMany(args: any = {}) {
 }
 
 async function reviewCreate(args: any) {
-  const { data, error } = await supabase.from("Review").insert(args.data).select().single();
+  const { data, error } = await supabase.from("Review").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data }).select().single();
   throwIfError(data, error, "review.create");
   return data;
 }
@@ -204,13 +218,14 @@ async function blogFindUnique(args: any) {
 }
 
 async function blogCreate(args: any) {
-  const { data, error } = await supabase.from("Blog").insert(args.data).select().single();
+  const now = new Date().toISOString();
+  const { data, error } = await supabase.from("Blog").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
   throwIfError(data, error, "blog.create");
   return data;
 }
 
 async function blogUpdate(args: any) {
-  let q: any = supabase.from("Blog").update(args.data);
+  let q: any = supabase.from("Blog").update({ ...args.data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "blog.update");
@@ -365,9 +380,10 @@ async function customerUpsert(args: any) {
     throwIfError(data, error, "customer.upsert(update)");
     return data;
   } else {
+    const now = new Date().toISOString();
     const { data, error } = await supabase
       .from("Customer")
-      .insert(args.create)
+      .insert({ id: crypto.randomUUID(), createdAt: now, ...args.create })
       .select()
       .single();
     throwIfError(data, error, "customer.upsert(create)");
@@ -396,7 +412,7 @@ async function leadFindMany(args: any = {}) {
 }
 
 async function leadCreate(args: any) {
-  const { data, error } = await supabase.from("Lead").insert(args.data).select().single();
+  const { data, error } = await supabase.from("Lead").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data }).select().single();
   throwIfError(data, error, "lead.create");
   return data;
 }
@@ -479,7 +495,7 @@ async function subscriberUpsert(args: any) {
   } else {
     const { data, error } = await supabase
       .from("Subscriber")
-      .insert(args.create)
+      .insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.create })
       .select()
       .single();
     throwIfError(data, error, "subscriber.upsert(create)");
@@ -523,7 +539,8 @@ async function skinProfileUpsert(args: any) {
 // ─── gift card ─────────────────────────────────────────────────────────────
 
 async function giftCardCreate(args: any) {
-  const { data, error } = await supabase.from("GiftCard").insert(args.data).select().single();
+  const now = new Date().toISOString();
+  const { data, error } = await supabase.from("GiftCard").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
   throwIfError(data, error, "giftCard.create");
   return data;
 }
@@ -583,13 +600,14 @@ async function couponFindUnique(args: any) {
 }
 
 async function couponCreate(args: any) {
-  const { data, error } = await supabase.from("Coupon").insert(args.data).select().single();
+  const now = new Date().toISOString();
+  const { data, error } = await supabase.from("Coupon").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
   throwIfError(data, error, "coupon.create");
   return data;
 }
 
 async function couponUpdate(args: any) {
-  let q: any = supabase.from("Coupon").update(args.data);
+  let q: any = supabase.from("Coupon").update({ ...args.data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "coupon.update");
