@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     ? "https://api-m.sandbox.paypal.com"
     : "https://api-m.paypal.com";
 
-  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"}/api/auth/paypal/callback`;
+  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://kentelle.vercel.app"}/api/auth/paypal/callback`;
 
   try {
     // Exchange code for access token

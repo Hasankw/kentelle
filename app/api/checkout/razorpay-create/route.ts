@@ -20,6 +20,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    if (!total || total < 0.5) {
+      return NextResponse.json({ error: "Order amount must be at least $0.50" }, { status: 400 });
+    }
+
     const rzOrder = await createRazorpayOrder(total);
 
     const storedAddress = billingAddress

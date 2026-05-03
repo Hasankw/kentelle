@@ -22,7 +22,7 @@ export async function GET() {
     : "https://www.paypal.com";
 
   const redirectUri = encodeURIComponent(
-    `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"}/api/auth/paypal/callback`
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://kentelle.vercel.app"}/api/auth/paypal/callback`
   );
 
   const scope = encodeURIComponent("openid profile email https://uri.paypal.com/services/paypalattributes");

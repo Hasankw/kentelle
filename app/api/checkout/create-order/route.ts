@@ -45,6 +45,10 @@ export async function POST(req: NextRequest) {
   }
 
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+
+  if (subtotal <= 0) {
+    return NextResponse.json({ error: "Order amount must be greater than $0" }, { status: 400 });
+  }
   const shippingCost = await getShippingCost(subtotal);
   const serverTotal = parseFloat((subtotal + shippingCost).toFixed(2));
 
