@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Kentelle brand colors */
-  --color-brand-bg:       #EFF0F5;
-  --color-brand-navy:     #0E1B4D;
-  --color-brand-blue:     #4770DB;
-  --color-brand-shadow:   #0E1B4D;
-  --color-brand-contrast: #A1A6C4;
+  /* Kentelle brand colors — Rose Quartz & Pearl */
+  --color-brand-bg:       #FAF8F7;
+  --color-brand-navy:     #3A3240;
+  --color-brand-blue:     #B5C9C5;
+  --color-brand-shadow:   #3A3240;
+  --color-brand-contrast: #9B8FA0;
   --color-brand-white:    #FFFFFF;
-  --color-brand-pink:     #E28999;
-  --color-brand-mint:     #39CD99;
-  --color-brand-accent:   #3DECC2;
+  --color-brand-pink:     #F5EEF3;
+  --color-brand-mint:     #B5C9C5;
+  --color-brand-accent:   #D4A5B5;
 
   /* Typography */
   --font-body:    var(--font-questrial), sans-serif;
@@ -23,8 +23,8 @@
   }
 
   body {
-    background: #EFF0F5;
-    color: #0E1B4D;
+    background: #FAF8F7;
+    color: #3A3240;
     font-family: var(--font-questrial), sans-serif;
     letter-spacing: 0.06rem;
     line-height: 1.76;
@@ -36,7 +36,11 @@
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.2;
-    color: #0E1B4D;
+    color: #3A3240;
+  }
+
+  button {
+    border-radius: 4px;
   }
 
   a {

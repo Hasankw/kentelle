@@ -45,7 +45,7 @@ export default function OrderStatusForm({
         <button
           onClick={handleSave}
           disabled={isPending || status === currentStatus}
-          className="px-5 py-2 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+          className="px-5 py-2 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
         >
           {isPending ? "Saving..." : "Save"}
         </button>

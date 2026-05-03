@@ -34,7 +34,8 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
 
   if (!order) notFound();
 
-  const address = order.shippingAddress as Record<string, string>;
+  const address = order.shippingAddress as Record<string, any>;
+  const billingAddr = address?.billingAddress as Record<string, string> | undefined;
 
   return (
     <AdminShell>
@@ -112,8 +113,29 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
                 <p>{address.line1}</p>
                 {address.line2 && <p>{address.line2}</p>}
                 <p>{address.city}, {address.state} {address.postcode}</p>
-                <p>{address.country}</p>
+                <p>{address.country ?? "Australia"}</p>
                 {address.phone && <p className="mt-1 text-brand-contrast">{address.phone}</p>}
+              </div>
+            </div>
+
+            <div className="bg-white border border-brand-contrast/10 shadow-sm">
+              <div className="px-5 py-3 border-b border-brand-contrast/10">
+                <h2 className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy">
+                  Billing Address
+                </h2>
+              </div>
+              <div className="px-5 py-4 font-body text-sm text-brand-navy/80 space-y-0.5">
+                {billingAddr ? (
+                  <>
+                    <p className="font-bold text-brand-navy">{billingAddr.fullName}</p>
+                    <p>{billingAddr.line1}</p>
+                    {billingAddr.line2 && <p>{billingAddr.line2}</p>}
+                    <p>{billingAddr.city}, {billingAddr.state} {billingAddr.postcode}</p>
+                    <p>Australia</p>
+                  </>
+                ) : (
+                  <p className="text-brand-contrast/60 italic">Same as shipping address</p>
+                )}
               </div>
             </div>
 

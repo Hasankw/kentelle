@@ -24,7 +24,7 @@ export default async function AdminBlogPage() {
           </h1>
           <Link
             href="/admin/blog/new"
-            className="flex items-center gap-2 bg-brand-accent text-brand-navy px-4 py-2.5 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
+            className="flex items-center gap-2 bg-brand-accent text-brand-navy rounded px-4 py-2.5 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
           >
             <Plus size={14} />
             New Post

@@ -3,40 +3,35 @@ import Image from "next/image";
 
 const collections = [
   {
-    name: "Cleansers",
-    slug: "cleansers",
-    tagline: "Fresh start, every day",
+    name: "Everyday Essentials",
+    slug: "everyday-essentials",
+    tagline: "Your daily ritual, perfected",
     image: "/images/collections/col-1.jpg",
   },
   {
-    name: "Serums",
-    slug: "serums",
-    tagline: "Target. Transform. Glow.",
+    name: "Peel & Glow",
+    slug: "peel-and-glow",
+    tagline: "Reveal radiant, renewed skin",
     image: "/images/collections/col-2.jpg",
   },
   {
-    name: "Moisturisers",
-    slug: "moisturisers",
-    tagline: "Hydration redefined",
+    name: "Skin Nutrients",
+    slug: "skin-nutrients",
+    tagline: "Nourish from within",
     image: "/images/collections/col-3.jpg",
   },
   {
-    name: "Eye Care",
-    slug: "eye-care",
-    tagline: "Bright eyes, every morning",
+    name: "Beauty Accessories",
+    slug: "beauty-accessories",
+    tagline: "Tools for your ritual",
     image: "/images/collections/col-4.jpg",
   },
   {
-    name: "Toners",
-    slug: "toners",
-    tagline: "Balance and refine",
-    image: "/images/library/lib-1.jpg",
-  },
-  {
-    name: "Sun Care",
-    slug: "sun-care",
-    tagline: "Protected, all day",
-    image: "/images/library/lib-2.jpg",
+    name: "Professional Use",
+    slug: "professional-use",
+    tagline: "Clinical-grade formulas",
+    image: "/images/collections/col-2.jpg",
+    badge: "Under Construction",
   },
 ];
 
@@ -55,11 +50,10 @@ export default function CollectionGrid() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {collections.map((col) => (
           <Link
-            key={col.slug}
+            key={col.name}
             href={`/collections/${col.slug}`}
             className="group relative aspect-[4/5] overflow-hidden bg-brand-navy"
           >
-            {/* Photo */}
             <Image
               src={col.image}
               alt={col.name}
@@ -68,16 +62,19 @@ export default function CollectionGrid() {
               sizes="(max-width: 768px) 50vw, 33vw"
             />
 
-            {/* Warm vintage tone */}
             <div
               className="absolute inset-0"
               style={{ background: "rgba(20,10,0,0.20)", mixBlendMode: "multiply" }}
             />
 
-            {/* Bottom gradient for text */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0E1B4D]/90 via-[#0E1B4D]/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#3A3240]/90 via-[#3A3240]/20 to-transparent" />
 
-            {/* Text */}
+            {(col as any).badge && (
+              <div className="absolute top-3 right-3 px-2 py-1 bg-brand-accent text-brand-navy rounded text-[9px] font-heading font-bold uppercase tracking-widest">
+                {(col as any).badge}
+              </div>
+            )}
+
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
               <h3 className="font-heading font-bold text-sm md:text-base text-white uppercase tracking-wider">
                 {col.name}

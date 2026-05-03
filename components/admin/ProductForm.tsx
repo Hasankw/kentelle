@@ -233,7 +233,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={addImage}
-            className="px-4 py-2 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
+            className="px-4 py-2 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
           >
             <Plus size={14} />
           </button>
@@ -241,7 +241,7 @@ export default function ProductForm({
         {form.images.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {form.images.map((url) => (
-              <div key={url} className="flex items-center gap-1 bg-brand-contrast/10 px-2 py-1 text-xs font-body text-brand-navy">
+              <div key={url} className="flex items-center gap-1 bg-brand-contrast/10 px-2 py-1 text-xs font-body text-brand-navy rounded">
                 <span className="max-w-[200px] truncate">{url}</span>
                 <button type="button" onClick={() => removeImage(url)} className="text-red-500 hover:text-red-700">
                   <X size={12} />
@@ -265,7 +265,7 @@ export default function ProductForm({
               onClick={() => toggleCategory(cat.id)}
               className={`px-3 py-1.5 text-xs font-heading font-bold uppercase tracking-wider border transition-colors ${
                 form.categoryIds.includes(cat.id)
-                  ? "border-brand-navy bg-brand-navy text-brand-white"
+                  ? "border-brand-navy bg-brand-navy text-brand-white rounded"
                   : "border-brand-contrast/20 text-brand-contrast hover:border-brand-navy hover:text-brand-navy"
               }`}
             >
@@ -293,7 +293,7 @@ export default function ProductForm({
         <button
           type="submit"
           disabled={isPending}
-          className="px-6 py-2.5 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+          className="px-6 py-2.5 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
         >
           {isPending ? "Saving..." : form.id ? "Update Product" : "Create Product"}
         </button>

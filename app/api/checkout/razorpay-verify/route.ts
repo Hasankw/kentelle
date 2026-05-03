@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
   if (emailTo) {
     try {
       const addr = order.shippingAddress as any;
+      const billing = addr?.billingAddress ?? null;
       await sendOrderConfirmation(
         emailTo,
         order.orderNumber,
@@ -55,17 +56,10 @@ export async function POST(req: NextRequest) {
         order.subtotal,
         order.shippingCost ?? 0,
         order.total,
-        addr ? {
-          fullName: addr.fullName,
-          line1: addr.line1,
-          line2: addr.line2,
-          city: addr.city,
-          state: addr.state,
-          postcode: addr.postcode,
-          phone: addr.phone,
-        } : undefined,
+        addr ? { fullName: addr.fullName, line1: addr.line1, line2: addr.line2, city: addr.city, state: addr.state, postcode: addr.postcode, phone: addr.phone } : undefined,
         order.discount ?? 0,
-        order.couponCode ?? undefined
+        order.couponCode ?? undefined,
+        billing ? { fullName: billing.fullName, line1: billing.line1, line2: billing.line2, city: billing.city, state: billing.state, postcode: billing.postcode } : undefined,
       );
     } catch { /* non-fatal */ }
   }

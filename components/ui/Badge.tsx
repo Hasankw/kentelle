@@ -13,9 +13,9 @@ export default function Badge({
 }: BadgeProps) {
   const variants = {
     sale: "bg-red-500 text-white",
-    new: "bg-brand-blue text-white",
-    soldout: "bg-brand-contrast text-white",
-    default: "bg-brand-navy text-white",
+    new: "bg-brand-blue text-white rounded",
+    soldout: "bg-brand-contrast text-white rounded",
+    default: "bg-brand-navy text-white rounded",
   };
 
   return (

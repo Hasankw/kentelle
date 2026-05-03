@@ -107,13 +107,13 @@ export default function FindYourRoutinePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Link
               href="/login?redirect=/find-your-routine"
-              className="px-8 py-4 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
+              className="px-8 py-4 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
             >
               Get My Recommendations
             </Link>
             <Link
               href="/signup"
-              className="px-8 py-4 border-2 border-brand-navy text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-navy hover:text-brand-white transition-colors"
+              className="px-8 py-4 border-2 border-brand-navy text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-navy hover:text-brand-white rounded transition-colors"
             >
               Create Free Account
             </Link>
@@ -137,7 +137,7 @@ export default function FindYourRoutinePage() {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-accent/15 text-brand-navy text-xs font-heading font-bold uppercase tracking-wider mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-accent/15 text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-wider mb-4">
             <Sparkles size={13} /> Your Personalised Picks
           </div>
           <h1 className="font-heading font-bold text-3xl text-brand-navy mb-2">
@@ -174,7 +174,7 @@ export default function FindYourRoutinePage() {
                 </p>
                 <button
                   onClick={() => addItem({ id: p.id, name: p.name, slug: p.slug, image: p.images[0] ?? "", price: p.salePrice ?? p.price })}
-                  className="w-full py-2 border border-brand-navy text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-navy hover:text-brand-white transition-colors"
+                  className="w-full py-2 border border-brand-navy text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-navy hover:text-brand-white rounded transition-colors"
                 >
                   Add to Cart
                 </button>
@@ -182,6 +182,144 @@ export default function FindYourRoutinePage() {
             ))}
           </div>
         )}
+
+        {/* Routine Guide */}
+        <div className="border-t border-brand-contrast/10 pt-12 mb-12">
+          <div className="text-center mb-8">
+            <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-2">
+              Your Routine Guide
+            </p>
+            <h2 className="font-heading font-bold text-2xl text-brand-navy">
+              How to Layer Your Skincare
+            </h2>
+            <p className="font-body text-sm text-brand-contrast mt-2 max-w-md mx-auto">
+              Follow one of these clinically-designed protocols for the best results with your Kentelle products.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* BASIC */}
+            <div className="border border-brand-contrast/15 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent">Basic</span>
+              </div>
+              <h3 className="font-heading font-bold text-base text-brand-navy mb-4">Starter Routine</h3>
+              <div className="space-y-3">
+                {[
+                  { step: "AM & PM", label: "Cleanse", detail: "Ceramide or Milk Cleanser" },
+                  { step: "AM & PM", label: "Tone", detail: "Vitamin B Facial Toner" },
+                  { step: "AM", label: "Moisturise + SPF", detail: "Collagen Cream + sunscreen" },
+                  { step: "PM", label: "Night Moisturise", detail: "Nightcare Moisturizer" },
+                ].map((s, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-5 h-5 rounded-full bg-brand-accent/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[10px] font-heading font-bold text-brand-navy">{i + 1}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-heading font-bold tracking-wider uppercase text-brand-contrast/60 block">{s.step}</span>
+                      <p className="text-sm font-heading font-bold text-brand-navy">{s.label}</p>
+                      <p className="text-xs font-body text-brand-contrast">{s.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dry & Normal */}
+            <div className="border border-brand-contrast/15 p-6 bg-brand-accent/5">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent">Dry & Normal</span>
+              </div>
+              <h3 className="font-heading font-bold text-base text-brand-navy mb-4">Hydration Routine</h3>
+              <div className="space-y-3">
+                {[
+                  { step: "AM", label: "Cleanse", detail: "Milk Cleanser" },
+                  { step: "AM", label: "Tone + Serum", detail: "Vitamin B Toner → Hyaluron Booster" },
+                  { step: "AM", label: "Moisturise + SPF", detail: "Collagen Cream + sunscreen" },
+                  { step: "PM", label: "Cleanse", detail: "Ceramide Cleanser" },
+                  { step: "PM", label: "Repair + Moisturise", detail: "Night Beauty Repair → Nightcare Moisturizer" },
+                ].map((s, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-5 h-5 rounded-full bg-brand-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[10px] font-heading font-bold text-brand-navy">{i + 1}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-heading font-bold tracking-wider uppercase text-brand-contrast/60 block">{s.step}</span>
+                      <p className="text-sm font-heading font-bold text-brand-navy">{s.label}</p>
+                      <p className="text-xs font-body text-brand-contrast">{s.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dry & Sensitive */}
+            <div className="border border-brand-contrast/15 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent">Dry & Sensitive</span>
+              </div>
+              <h3 className="font-heading font-bold text-base text-brand-navy mb-4">Gentle Barrier Routine</h3>
+              <div className="space-y-3">
+                {[
+                  { step: "AM & PM", label: "Cleanse", detail: "Milk Cleanser (gentle, no actives)" },
+                  { step: "AM", label: "Soothe", detail: "Relaxing Comforting Mist" },
+                  { step: "AM & PM", label: "Repair Barrier", detail: "Bio Ferment Barrier Cream" },
+                  { step: "AM", label: "Protect", detail: "Collagen Cream + broad-spectrum SPF" },
+                  { step: "PM", label: "Night Recovery", detail: "Nightcare Moisturizer" },
+                ].map((s, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-5 h-5 rounded-full bg-brand-accent/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[10px] font-heading font-bold text-brand-navy">{i + 1}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-heading font-bold tracking-wider uppercase text-brand-contrast/60 block">{s.step}</span>
+                      <p className="text-sm font-heading font-bold text-brand-navy">{s.label}</p>
+                      <p className="text-xs font-body text-brand-contrast">{s.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Beaubelle Consultation CTA */}
+        <div className="bg-brand-navy text-white rounded px-8 py-10 text-center mb-10">
+          <p className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent mb-3">
+            Expert Consultation
+          </p>
+          <h3 className="font-heading font-bold text-xl md:text-2xl mb-3">
+            Not Sure Where to Start?
+          </h3>
+          <p className="font-body text-sm text-white/70 max-w-lg mx-auto mb-6">
+            Book a personalised skin consultation with our Beaubelle-trained experts in Perth, WA. We&apos;ll analyse your skin and build a bespoke routine just for you.
+          </p>
+          <div className="flex flex-wrap justify-center gap-6 text-sm font-body text-white/80 mb-6">
+            <a href="tel:0892280191" className="hover:text-white transition-colors flex items-center gap-1.5">
+              <span className="text-brand-accent">✆</span> (08) 9228 0191
+            </a>
+            <a href="mailto:info@kentelle.com" className="hover:text-white transition-colors flex items-center gap-1.5">
+              <span className="text-brand-accent">✉</span> info@kentelle.com
+            </a>
+            <span className="text-white/50">Perth, WA</span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a
+              href="tel:0892280191"
+              className="px-7 py-3 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
+            >
+              Call to Book
+            </a>
+            <a
+              href="https://www.beaubelle.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-7 py-3 border border-white/30 text-white text-xs font-heading font-bold uppercase tracking-widest hover:border-white transition-colors"
+            >
+              Visit Beaubelle.com
+            </a>
+          </div>
+        </div>
 
         <div className="text-center flex items-center justify-center gap-6">
           <button
@@ -243,7 +381,7 @@ export default function FindYourRoutinePage() {
           <button
             onClick={() => setStep("concerns")}
             disabled={!skinType}
-            className="w-full mt-8 py-3 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full mt-8 py-3 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             Next <ChevronRight size={16} />
           </button>
@@ -262,7 +400,7 @@ export default function FindYourRoutinePage() {
               <button
                 key={c.value}
                 onClick={() => toggleConcern(c.value)}
-                className={`py-3 px-4 border-2 text-sm font-heading font-bold text-left transition-colors flex items-center gap-2 ${concerns.includes(c.value) ? "border-brand-navy bg-brand-navy/5 text-brand-navy" : "border-brand-contrast/20 text-brand-contrast hover:border-brand-navy/40"}`}
+                className={`py-3 px-4 border-2 text-sm font-heading font-bold text-left transition-colors flex items-center gap-2 ${concerns.includes(c.value) ? "border-brand-navy bg-brand-navy/5 text-brand-navy rounded" : "border-brand-contrast/20 text-brand-contrast hover:border-brand-navy/40"}`}
               >
                 {concerns.includes(c.value) && <Check size={13} className="shrink-0" />}
                 {c.label}
@@ -273,7 +411,7 @@ export default function FindYourRoutinePage() {
             <button onClick={() => setStep("type")} className="flex-1 py-3 border border-brand-contrast/30 text-brand-contrast text-xs font-heading font-bold uppercase tracking-widest hover:border-brand-navy hover:text-brand-navy transition-colors flex items-center justify-center gap-2">
               <ChevronLeft size={16} /> Back
             </button>
-            <button onClick={() => setStep("details")} className="flex-1 py-3 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors flex items-center justify-center gap-2">
+            <button onClick={() => setStep("details")} className="flex-1 py-3 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors flex items-center justify-center gap-2">
               Next <ChevronRight size={16} />
             </button>
           </div>
@@ -290,7 +428,7 @@ export default function FindYourRoutinePage() {
             <div className="grid grid-cols-4 gap-2">
               {AGE_RANGES.map((a) => (
                 <button key={a} onClick={() => setAgeRange(a)}
-                  className={`py-2.5 border-2 text-xs font-heading font-bold text-center transition-colors ${ageRange === a ? "border-brand-navy bg-brand-navy/5 text-brand-navy" : "border-brand-contrast/20 text-brand-contrast hover:border-brand-navy/40"}`}>
+                  className={`py-2.5 border-2 text-xs font-heading font-bold text-center transition-colors ${ageRange === a ? "border-brand-navy bg-brand-navy/5 text-brand-navy rounded" : "border-brand-contrast/20 text-brand-contrast hover:border-brand-navy/40"}`}>
                   {a}
                 </button>
               ))}
@@ -304,7 +442,7 @@ export default function FindYourRoutinePage() {
             <div className="flex flex-wrap gap-2">
               {SKIN_TONES.map((t) => (
                 <button key={t} onClick={() => setSkinTone(skinTone === t ? "" : t)}
-                  className={`px-4 py-2 border-2 text-xs font-heading font-bold transition-colors ${skinTone === t ? "border-brand-navy bg-brand-navy/5 text-brand-navy" : "border-brand-contrast/20 text-brand-contrast hover:border-brand-navy/40"}`}>
+                  className={`px-4 py-2 border-2 text-xs font-heading font-bold transition-colors ${skinTone === t ? "border-brand-navy bg-brand-navy/5 text-brand-navy rounded" : "border-brand-contrast/20 text-brand-contrast hover:border-brand-navy/40"}`}>
                   {t}
                 </button>
               ))}
@@ -318,7 +456,7 @@ export default function FindYourRoutinePage() {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="flex-1 py-3 bg-brand-accent text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">

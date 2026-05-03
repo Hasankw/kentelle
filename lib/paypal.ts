@@ -67,8 +67,9 @@ export async function capturePayPalOrder(paypalOrderId: string) {
   const data = await res.json();
 
   if (data.status !== "COMPLETED") {
-    throw new Error(`Payment not completed. Status: ${data.status}`);
+    return { success: false, captureId: null };
   }
 
-  return data;
+  const captureId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id ?? null;
+  return { success: true, captureId };
 }

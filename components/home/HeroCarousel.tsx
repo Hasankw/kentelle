@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const slides = [
   {
@@ -20,7 +19,7 @@ const slides = [
     tagline: "Bestselling Serums",
     headline: "Glow From\nWithin",
     sub: "Our clinically-tested serums deliver visible results in just 4 weeks.",
-    cta: { label: "Shop Serums", href: "/collections/serums" },
+    cta: { label: "Shop Serums", href: "/shop" },
     image: "/images/hero/hero-2.jpg",
   },
   {
@@ -28,7 +27,7 @@ const slides = [
     tagline: "Find Your Routine",
     headline: "Made For\nAustralian Skin",
     sub: "Every product developed for Australian climate, UV intensity and lifestyle.",
-    cta: { label: "Explore All", href: "/shop" },
+    cta: { label: "Find Your Routine", href: "/find-your-routine" },
     image: "/images/hero/hero-3.jpg",
   },
   {
@@ -36,8 +35,34 @@ const slides = [
     tagline: "Skin Regimen",
     headline: "Layer Right,\nGlow Bright",
     sub: "Follow the Kentelle skin layering protocol — morning and night — for transformative results.",
-    cta: { label: "View Regimen", href: "/skin-regimen" },
+    cta: { label: "Shop Now", href: "/shop" },
     image: "/images/hero/hero-4.jpg",
+  },
+  {
+    id: 5,
+    tagline: "Clean Beauty",
+    headline: "Feel Good\nIn Your Skin",
+    sub: "Gentle, effective formulas that work with your skin — not against it.",
+    cta: { label: "Shop Now", href: "/shop" },
+    image: "/images/hero/hero-5.jpg",
+  },
+  {
+    id: 6,
+    tagline: "Clinical Services",
+    headline: "Professional\nSkin Treatments",
+    sub: "Our clinical skin services are arriving soon — premium professional treatments for transformative, lasting results.",
+    cta: { label: "Learn More", href: "/shop" },
+    image: "/images/hero/hero-2.jpg",
+    badge: "Coming Soon",
+  },
+  {
+    id: 7,
+    tagline: "Diagnosis & Prescription",
+    headline: "Expert Skin\nAnalysis",
+    sub: "Personalised skin diagnosis and product prescription services — launching in Phase 2.",
+    cta: { label: "Shop Now", href: "/shop" },
+    image: "/images/hero/hero-4.jpg",
+    badge: "Phase 2",
   },
 ];
 
@@ -56,7 +81,7 @@ export default function HeroCarousel() {
         setDirection(1);
         return (c + 1) % slides.length;
       });
-    }, 5500);
+    }, 8000);
     return () => clearInterval(id);
   }, []);
 
@@ -74,7 +99,6 @@ export default function HeroCarousel() {
           transition={{ type: "tween", duration: 0.55 }}
           className="absolute inset-0"
         >
-          {/* Full-bleed background image */}
           <Image
             src={slide.image}
             alt={slide.headline.replace("\n", " ")}
@@ -85,24 +109,21 @@ export default function HeroCarousel() {
             sizes="100vw"
           />
 
-          {/* Subtle warm vintage overlay */}
-          <div
-            className="absolute inset-0"
-            style={{ background: "rgba(30,20,10,0.25)" }}
-          />
-
-          {/* Left text gradient — soft, not too dark */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(to right, rgba(14,27,77,0.85) 0%, rgba(14,27,77,0.60) 35%, rgba(14,27,77,0.15) 65%, transparent 100%)",
+                "linear-gradient(to right, rgba(58,50,64,0.80) 0%, rgba(58,50,64,0.52) 38%, rgba(58,50,64,0.10) 62%, transparent 82%)",
             }}
           />
 
-          {/* Text content */}
           <div className="relative z-10 h-full flex items-center">
             <div className="px-8 md:px-20 max-w-lg">
+              {(slide as any).badge && (
+                <span className="inline-block mb-3 px-3 py-1 bg-brand-accent text-brand-navy rounded text-[10px] font-heading font-bold tracking-widest uppercase">
+                  {(slide as any).badge}
+                </span>
+              )}
               <span className="text-[10px] font-heading font-bold tracking-[0.3em] uppercase text-white/60 block mb-4">
                 {slide.tagline}
               </span>
@@ -114,7 +135,7 @@ export default function HeroCarousel() {
               </p>
               <Link
                 href={slide.cta.href}
-                className="inline-flex items-center px-8 py-3.5 bg-brand-accent text-brand-navy text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-accent/85 transition-all duration-200"
+                className="inline-flex items-center px-8 py-3.5 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-accent/85 transition-all duration-200"
               >
                 {slide.cta.label}
               </Link>
@@ -123,34 +144,20 @@ export default function HeroCarousel() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Slide controls */}
-      <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
-        <button
-          onClick={() => go((current - 1 + slides.length) % slides.length, -1)}
-          className="text-white/50 hover:text-white transition-colors"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <div className="flex gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => go(i, i > current ? 1 : -1)}
-              aria-label={`Go to slide ${i + 1}`}
-              className={`h-[2px] rounded-full transition-all duration-300 ${
-                i === current ? "bg-white w-8" : "bg-white/35 w-2.5 hover:bg-white/60"
-              }`}
-            />
-          ))}
-        </div>
-        <button
-          onClick={() => go((current + 1) % slides.length, 1)}
-          className="text-white/50 hover:text-white transition-colors"
-          aria-label="Next slide"
-        >
-          <ChevronRight size={18} />
-        </button>
+      {/* Vertical bubble navigation — right edge */}
+      <div className="absolute right-5 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 z-20">
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => go(i, i > current ? 1 : -1)}
+            aria-label={`Go to slide ${i + 1}`}
+            className={`rounded-full transition-all duration-300 ${
+              i === current
+                ? "w-2.5 h-2.5 bg-white shadow-md"
+                : "w-1.5 h-1.5 bg-white/40 hover:bg-white/70"
+            }`}
+          />
+        ))}
       </div>
     </section>
   );

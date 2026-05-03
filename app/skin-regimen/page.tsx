@@ -356,7 +356,7 @@ export default function SkinRegimenPage() {
           <p className="font-heading font-bold text-2xl md:text-3xl text-white uppercase tracking-widest mb-3">The Result Is In The Routine</p>
           <p className="font-body text-sm text-brand-contrast max-w-sm mx-auto mb-7">Consistency with the right products in the right order is what transforms skin over time.</p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/find-your-routine" className="px-8 py-3 bg-brand-accent text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors">Find My Routine</Link>
+            <Link href="/find-your-routine" className="px-8 py-3 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors">Find My Routine</Link>
             <Link href="/shop" className="px-8 py-3 border border-white/40 text-white text-xs font-heading font-bold uppercase tracking-widest hover:border-white transition-colors">Shop All Products</Link>
           </div>
         </div>

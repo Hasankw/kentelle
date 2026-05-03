@@ -6,9 +6,10 @@ import type { CartItem, ShippingAddress } from "@/types";
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, shippingAddress, email, total, couponCode, discount }: {
+    const { items, shippingAddress, billingAddress, email, total, couponCode, discount }: {
       items: CartItem[];
       shippingAddress: ShippingAddress;
+      billingAddress?: ShippingAddress;
       email: string;
       total: number;
       couponCode?: string;
@@ -21,15 +22,19 @@ export async function POST(req: NextRequest) {
 
     const rzOrder = await createRazorpayOrder(total);
 
+    const storedAddress = billingAddress
+      ? { ...shippingAddress, billingAddress }
+      : shippingAddress;
+
     const order = await db.order.create({
       data: {
         orderNumber: generateOrderNumber(),
         guestEmail: email,
         subtotal: items.reduce((s, i) => s + i.price * i.quantity, 0),
-        shippingCost: 0,
+        shippingCost: parseFloat(Number(total - items.reduce((s, i) => s + i.price * i.quantity, 0)).toFixed(2)),
         total: parseFloat(Number(total).toFixed(2)),
         paypalOrderId: rzOrder.id,
-        shippingAddress: JSON.parse(JSON.stringify(shippingAddress)),
+        shippingAddress: JSON.parse(JSON.stringify(storedAddress)),
         status: "PENDING",
         ...(couponCode ? { couponCode } : {}),
         ...(discount ? { discount: parseFloat(Number(discount).toFixed(2)) } : {}),

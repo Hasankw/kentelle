@@ -4,11 +4,12 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CreditCard, Check, Eye, EyeOff, Link2 } from "lucide-react";
+import { CreditCard, Check, Eye, EyeOff, Link2, ToggleLeft, ToggleRight } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 
 type Settings = {
-  payment_portal: string;
+  razorpay_enabled: boolean;
+  paypal_enabled: boolean;
   razorpay_key_id: string;
   razorpay_key_secret: string;
   paypal_client_id: string;
@@ -16,7 +17,8 @@ type Settings = {
 };
 
 const DEFAULTS: Settings = {
-  payment_portal: "razorpay",
+  razorpay_enabled: true,
+  paypal_enabled: false,
   razorpay_key_id: "",
   razorpay_key_secret: "",
   paypal_client_id: "",
@@ -48,6 +50,26 @@ function PayPalStatus() {
   return null;
 }
 
+function Toggle({ enabled, onToggle, disabled }: { enabled: boolean; onToggle: () => void; disabled: boolean }) {
+  return (
+    <button
+      onClick={onToggle}
+      disabled={disabled}
+      aria-label={enabled ? "Disable" : "Enable"}
+      className={`flex items-center gap-2 text-xs font-heading font-bold uppercase tracking-wider transition-colors disabled:opacity-50 ${
+        enabled ? "text-green-600" : "text-brand-contrast"
+      }`}
+    >
+      {enabled ? (
+        <ToggleRight size={28} className="text-green-500" />
+      ) : (
+        <ToggleLeft size={28} className="text-brand-contrast/40" />
+      )}
+      {enabled ? "Enabled" : "Disabled"}
+    </button>
+  );
+}
+
 export default function AdminPaymentsPage() {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
@@ -60,7 +82,12 @@ export default function AdminPaymentsPage() {
     fetch("/api/admin/payments")
       .then((r) => r.json())
       .then((data) => {
-        setSettings({ ...DEFAULTS, ...data });
+        setSettings({
+          ...DEFAULTS,
+          ...data,
+          razorpay_enabled: data.razorpay_enabled === "true" || data.razorpay_enabled === true,
+          paypal_enabled: data.paypal_enabled === "true" || data.paypal_enabled === true,
+        });
         setLoading(false);
       });
   }, []);
@@ -72,20 +99,19 @@ export default function AdminPaymentsPage() {
     await fetch("/api/admin/payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
+      body: JSON.stringify({
+        ...next,
+        razorpay_enabled: String(next.razorpay_enabled),
+        paypal_enabled: String(next.paypal_enabled),
+      }),
     });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const activate = (portal: string) => save({ payment_portal: portal });
-
   const fieldClass =
-    "w-full border border-brand-contrast/20 px-3 py-2.5 text-sm font-body text-brand-navy bg-white focus:outline-none focus:border-brand-blue";
-
-  const isRzActive = settings.payment_portal === "razorpay";
-  const isPpActive = settings.payment_portal === "paypal";
+    "w-full border border-brand-contrast/20 px-3 py-2.5 text-sm font-body text-brand-navy bg-white focus:outline-none focus:border-brand-accent";
 
   if (loading) {
     return (
@@ -97,6 +123,8 @@ export default function AdminPaymentsPage() {
     );
   }
 
+  const activeCount = [settings.razorpay_enabled, settings.paypal_enabled].filter(Boolean).length;
+
   return (
     <AdminShell>
       <div className="p-8 max-w-3xl">
@@ -104,8 +132,17 @@ export default function AdminPaymentsPage() {
           <CreditCard size={22} className="text-brand-navy" />
           <h1 className="font-heading font-bold text-2xl text-brand-navy">Payment Portals</h1>
         </div>
-        <p className="text-sm font-body text-brand-contrast mb-8">
-          Activate one payment portal at a time. Keys are stored securely in the database.
+        <p className="text-sm font-body text-brand-contrast mb-2">
+          Enable one or both payment portals. Both can be active simultaneously at checkout.
+        </p>
+        <p className="text-xs font-body text-brand-contrast/60 mb-8">
+          {activeCount === 0
+            ? "⚠ No portals enabled — customers cannot pay."
+            : activeCount === 2
+            ? "Both portals active — customers choose at checkout."
+            : settings.razorpay_enabled
+            ? "Razorpay only — customers pay with card/UPI."
+            : "PayPal only — customers pay with PayPal."}
         </p>
 
         {saved && (
@@ -116,32 +153,22 @@ export default function AdminPaymentsPage() {
         )}
 
         {/* ── Razorpay ─────────────────────────────────────── */}
-        <div className={`border-2 rounded-none mb-6 ${isRzActive ? "border-brand-accent" : "border-brand-contrast/20"}`}>
+        <div className={`border-2 rounded-none mb-6 ${settings.razorpay_enabled ? "border-green-400" : "border-brand-contrast/20"}`}>
           <div className="flex items-center justify-between px-6 py-4 border-b border-brand-contrast/10">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#072654] flex items-center justify-center">
+              <div className="w-8 h-8 bg-brand-navy flex items-center justify-center">
                 <span className="text-white font-bold text-xs">Rz</span>
               </div>
               <div>
                 <p className="font-heading font-bold text-sm text-brand-navy">Razorpay</p>
-                <p className="text-xs text-brand-contrast font-body">Recommended for testing (INR)</p>
+                <p className="text-xs text-brand-contrast font-body">Card / UPI / Net Banking (INR)</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              {isRzActive ? (
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-brand-accent/20 text-brand-navy text-xs font-heading font-bold uppercase tracking-wider">
-                  <Check size={12} /> Active
-                </span>
-              ) : (
-                <button
-                  onClick={() => activate("razorpay")}
-                  disabled={saving}
-                  className="px-4 py-1.5 border border-brand-navy text-brand-navy text-xs font-heading font-bold uppercase tracking-wider hover:bg-brand-navy hover:text-white transition-colors disabled:opacity-50"
-                >
-                  Activate
-                </button>
-              )}
-            </div>
+            <Toggle
+              enabled={settings.razorpay_enabled}
+              disabled={saving}
+              onToggle={() => save({ razorpay_enabled: !settings.razorpay_enabled })}
+            />
           </div>
 
           <div className="px-6 py-5 space-y-4">
@@ -180,7 +207,7 @@ export default function AdminPaymentsPage() {
             <button
               onClick={() => save({ razorpay_key_id: settings.razorpay_key_id, razorpay_key_secret: settings.razorpay_key_secret })}
               disabled={saving}
-              className="px-5 py-2 bg-brand-navy text-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+              className="px-5 py-2 bg-brand-navy text-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:opacity-80 transition-opacity disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Razorpay Keys"}
             </button>
@@ -188,7 +215,7 @@ export default function AdminPaymentsPage() {
         </div>
 
         {/* ── PayPal ───────────────────────────────────────── */}
-        <div className={`border-2 rounded-none mb-6 ${isPpActive ? "border-brand-accent" : "border-brand-contrast/20"}`}>
+        <div className={`border-2 rounded-none mb-6 ${settings.paypal_enabled ? "border-green-400" : "border-brand-contrast/20"}`}>
           <div className="flex items-center justify-between px-6 py-4 border-b border-brand-contrast/10">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-[#003087] flex items-center justify-center">
@@ -196,24 +223,14 @@ export default function AdminPaymentsPage() {
               </div>
               <div>
                 <p className="font-heading font-bold text-sm text-brand-navy">PayPal</p>
-                <p className="text-xs text-brand-contrast font-body">Use for live / AUD production</p>
+                <p className="text-xs text-brand-contrast font-body">PayPal / Debit / Credit (AUD live)</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              {isPpActive ? (
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-brand-accent/20 text-brand-navy text-xs font-heading font-bold uppercase tracking-wider">
-                  <Check size={12} /> Active
-                </span>
-              ) : (
-                <button
-                  onClick={() => activate("paypal")}
-                  disabled={saving}
-                  className="px-4 py-1.5 border border-brand-navy text-brand-navy text-xs font-heading font-bold uppercase tracking-wider hover:bg-brand-navy hover:text-white transition-colors disabled:opacity-50"
-                >
-                  Activate
-                </button>
-              )}
-            </div>
+            <Toggle
+              enabled={settings.paypal_enabled}
+              disabled={saving}
+              onToggle={() => save({ paypal_enabled: !settings.paypal_enabled })}
+            />
           </div>
 
           <div className="px-6 py-5 space-y-4">
@@ -253,7 +270,7 @@ export default function AdminPaymentsPage() {
               <button
                 onClick={() => save({ paypal_client_id: settings.paypal_client_id, paypal_secret: settings.paypal_secret })}
                 disabled={saving}
-                className="px-5 py-2 bg-brand-navy text-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+                className="px-5 py-2 bg-brand-navy text-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:opacity-80 transition-opacity disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save PayPal Keys"}
               </button>
@@ -270,17 +287,11 @@ export default function AdminPaymentsPage() {
             <Suspense fallback={null}>
               <PayPalStatus />
             </Suspense>
-            {!settings.paypal_client_id && (
-              <p className="text-xs text-brand-contrast/60 font-body">
-                Save your Client ID and Secret first to enable the Connect button.
-              </p>
-            )}
           </div>
         </div>
 
-        <div className="bg-yellow-50 border border-yellow-200 px-4 py-3 text-xs font-body text-yellow-800">
-          <strong>Note:</strong> Razorpay test mode processes in INR. Switch to PayPal when going live with AUD.
-          Only one portal is active at a time — the active portal handles all checkout and gift card payments.
+        <div className="bg-brand-pink/20 border border-brand-pink/40 px-4 py-3 text-xs font-body text-brand-navy rounded">
+          <strong>Tip:</strong> You can enable both portals at the same time. Customers will see both options at checkout and choose which to use.
         </div>
       </div>
     </AdminShell>

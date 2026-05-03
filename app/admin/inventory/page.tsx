@@ -70,7 +70,7 @@ export default function AdminInventoryPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 bg-brand-accent text-brand-navy px-4 py-2.5 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-brand-accent text-brand-navy rounded px-4 py-2.5 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50"
           >
             <Save size={14} />
             {saving ? "Saving..." : saved ? "Saved!" : "Save All"}

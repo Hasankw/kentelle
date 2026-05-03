@@ -28,6 +28,14 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
     postcode: string;
     country?: string;
     phone?: string;
+    billingAddress?: {
+      fullName: string;
+      line1: string;
+      line2?: string;
+      city: string;
+      state: string;
+      postcode: string;
+    };
   };
 
   return (
@@ -43,7 +51,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
         <p className="font-body text-brand-contrast text-sm">
           Thank you, <strong>{address.fullName}</strong>. Your order has been placed successfully.
         </p>
-        <div className="inline-block mt-3 px-4 py-1.5 bg-brand-accent/15 text-brand-navy text-xs font-heading font-bold uppercase tracking-widest">
+        <div className="inline-block mt-3 px-4 py-1.5 bg-brand-accent/15 text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest">
           Order #{orderNumber}
         </div>
       </div>
@@ -111,25 +119,47 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Shipping address */}
-      <div className="border border-brand-contrast/15 bg-white mb-6">
-        <div className="flex items-center gap-2 px-5 py-4 border-b border-brand-contrast/10">
-          <MapPin size={16} className="text-brand-navy" />
-          <h2 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">
-            Shipping To
-          </h2>
+      {/* Addresses */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="border border-brand-contrast/15 bg-white">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-brand-contrast/10">
+            <MapPin size={16} className="text-brand-navy" />
+            <h2 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">
+              Shipping To
+            </h2>
+          </div>
+          <div className="px-5 py-4 font-body text-sm text-brand-contrast space-y-0.5">
+            <p className="font-bold text-brand-navy">{address.fullName}</p>
+            <p>{address.line1}{address.line2 ? `, ${address.line2}` : ""}</p>
+            <p>{address.city} {address.state} {address.postcode}</p>
+            <p>Australia</p>
+            {address.phone && <p className="text-brand-contrast/60 text-xs mt-1">{address.phone}</p>}
+          </div>
         </div>
-        <div className="px-5 py-4 font-body text-sm text-brand-contrast space-y-0.5">
-          <p className="font-bold text-brand-navy">{address.fullName}</p>
-          <p>{address.line1}{address.line2 ? `, ${address.line2}` : ""}</p>
-          <p>{address.city} {address.state} {address.postcode}</p>
-          <p>Australia</p>
-          {address.phone && <p className="text-brand-contrast/60 text-xs mt-1">{address.phone}</p>}
+        <div className="border border-brand-contrast/15 bg-white">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-brand-contrast/10">
+            <MapPin size={16} className="text-brand-navy" />
+            <h2 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">
+              Billing To
+            </h2>
+          </div>
+          <div className="px-5 py-4 font-body text-sm text-brand-contrast space-y-0.5">
+            {address.billingAddress ? (
+              <>
+                <p className="font-bold text-brand-navy">{address.billingAddress.fullName}</p>
+                <p>{address.billingAddress.line1}{address.billingAddress.line2 ? `, ${address.billingAddress.line2}` : ""}</p>
+                <p>{address.billingAddress.city} {address.billingAddress.state} {address.billingAddress.postcode}</p>
+                <p>Australia</p>
+              </>
+            ) : (
+              <p className="italic text-brand-contrast/60">Same as shipping address</p>
+            )}
+          </div>
         </div>
       </div>
 
       {/* What's next */}
-      <div className="bg-brand-accent/10 border border-brand-accent/30 px-5 py-4 mb-8 text-sm font-body text-brand-navy">
+      <div className="bg-brand-accent/10 border border-brand-accent/30 px-5 py-4 mb-8 text-sm font-body text-brand-navy rounded">
         <p className="font-heading font-bold text-xs uppercase tracking-widest mb-1">What happens next?</p>
         <p>We&apos;ll email you when your order ships. Delivery typically takes 3–7 business days within Australia.</p>
       </div>
@@ -137,13 +167,13 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
       <div className="flex gap-4 justify-center">
         <Link
           href="/shop"
-          className="px-6 py-3 border-2 border-brand-navy text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-navy hover:text-white transition-colors"
+          className="px-6 py-3 border-2 border-brand-navy text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-navy hover:text-white rounded transition-colors"
         >
           Continue Shopping
         </Link>
         <Link
           href="/account/orders"
-          className="px-6 py-3 bg-brand-navy text-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
+          className="px-6 py-3 bg-brand-navy text-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
         >
           My Orders
         </Link>

@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useCartStore } from "@/store/cart";
-import type { CartItem, ShippingAddress } from "@/types";
+import type { CartItem, ShippingAddress, BillingAddress } from "@/types";
 
 interface Props {
   items: CartItem[];
   lockedAddress: ShippingAddress;
+  billingAddress?: BillingAddress;
   email: string;
   orderTotal: number;
   onSuccess: (orderNumber: string) => void;
@@ -29,7 +30,7 @@ function loadScript(): Promise<boolean> {
   });
 }
 
-export default function RazorpaySection({ items, lockedAddress, email, orderTotal, onSuccess }: Props) {
+export default function RazorpaySection({ items, lockedAddress, billingAddress, email, orderTotal, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { coupon, giftCard, discount } = useCartStore();
@@ -55,6 +56,7 @@ export default function RazorpaySection({ items, lockedAddress, email, orderTota
         body: JSON.stringify({
           items,
           shippingAddress: lockedAddress,
+          ...(billingAddress ? { billingAddress } : {}),
           email,
           total: orderTotal,
           ...(couponCode ? { couponCode } : {}),
@@ -81,7 +83,7 @@ export default function RazorpaySection({ items, lockedAddress, email, orderTota
           contact: lockedAddress.phone,
           name: lockedAddress.fullName,
         },
-        theme: { color: "#3DECC2" },
+        theme: { color: "#D4A5B5" },
         handler: async (response: any) => {
           setLoading(true);
           try {
@@ -126,7 +128,7 @@ export default function RazorpaySection({ items, lockedAddress, email, orderTota
       <button
         onClick={handlePay}
         disabled={loading}
-        className="w-full bg-brand-navy text-brand-white py-3.5 text-sm font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full bg-brand-navy text-brand-white rounded py-3.5 text-sm font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {loading ? (
           <>

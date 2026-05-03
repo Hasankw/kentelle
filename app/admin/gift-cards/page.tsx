@@ -73,7 +73,7 @@ export default function AdminGiftCardsPage() {
           </div>
           <button
             onClick={() => { setShowForm((v) => !v); setCreated(null); }}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-brand-navy text-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
           >
             {showForm ? <X size={14} /> : <Plus size={14} />}
             {showForm ? "Cancel" : "Generate Gift Card"}
@@ -149,7 +149,7 @@ export default function AdminGiftCardsPage() {
                     onClick={() => setForm((f) => ({ ...f, amount: a.toString() }))}
                     className={`px-4 py-2 border-2 text-xs font-heading font-bold transition-colors ${
                       form.amount === a.toString()
-                        ? "border-brand-navy bg-brand-navy/5 text-brand-navy"
+                        ? "border-brand-navy bg-brand-navy/5 text-brand-navy rounded"
                         : "border-brand-contrast/20 text-brand-contrast hover:border-brand-navy/40"
                     }`}
                   >
@@ -207,7 +207,7 @@ export default function AdminGiftCardsPage() {
               <button
                 onClick={handleCreate}
                 disabled={creating || !form.recipientEmail || !form.amount}
-                className="flex items-center gap-2 px-6 py-2.5 bg-brand-accent text-brand-navy text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50"
               >
                 <Send size={13} />
                 {creating ? "Creating..." : "Create & Send"}

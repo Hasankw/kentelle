@@ -79,7 +79,7 @@ export default function FAQPage() {
         </p>
         <a
           href="/contact"
-          className="inline-block bg-brand-accent text-brand-navy px-6 py-3 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
+          className="inline-block bg-brand-accent text-brand-navy rounded px-6 py-3 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
         >
           Contact Us
         </a>

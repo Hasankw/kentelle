@@ -55,7 +55,7 @@ export default async function AdminLeadsPage() {
                     {new Date(lead.createdAt).toLocaleDateString("en-AU")}
                   </p>
                   {!lead.reviewed && (
-                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-heading font-bold uppercase bg-brand-blue text-white">
+                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-heading font-bold uppercase bg-brand-blue text-white rounded">
                       New
                     </span>
                   )}

@@ -81,6 +81,19 @@ async function productFindUnique(args: any) {
   return data ? parseProduct(data) : null;
 }
 
+async function productFindManyByCategory(slug: string, args: any = {}) {
+  const { data: cat } = await supabase.from("Category").select("id").eq("slug", slug).maybeSingle();
+  if (!cat) return [];
+  const { data: links } = await supabase.from("_ProductCategories").select("B").eq("A", (cat as any).id);
+  const ids = (links ?? []).map((l: any) => l.B);
+  if (!ids.length) return [];
+  let q = supabase.from("Product").select(PRODUCT_SELECT).in("id", ids).eq("isActive", true);
+  q = applyOrder(q, args.orderBy ?? { name: "asc" });
+  const { data, error } = await q;
+  throwIfError(data, error, "product.findManyByCategory");
+  return (data ?? []).map(parseProduct);
+}
+
 async function productCount(args: any = {}) {
   let q: any = supabase.from("Product").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
@@ -167,6 +180,32 @@ async function categoryCount(args: any = {}) {
   const { count, error } = await q;
   throwIfError(count, error, "category.count");
   return count ?? 0;
+}
+
+async function categoryCreate(args: any) {
+  const { data, error } = await supabase
+    .from("Category")
+    .insert({ id: crypto.randomUUID(), ...args.data })
+    .select()
+    .single();
+  throwIfError(data, error, "category.create");
+  return data;
+}
+
+async function categoryUpdate(args: any) {
+  let q: any = supabase.from("Category").update(args.data);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "category.update");
+  return data;
+}
+
+async function categoryDelete(args: any) {
+  let q: any = supabase.from("Category").delete();
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { error } = await q;
+  throwIfError(true, error, "category.delete");
+  return { id: args.where.id };
 }
 
 // ─── review ────────────────────────────────────────────────────────────────
@@ -469,17 +508,22 @@ async function contentUpsert(args: any) {
     .eq("key", args.where.key)
     .maybeSingle();
 
+  const now = new Date().toISOString();
   if (existing) {
     const { data, error } = await supabase
       .from("Content")
-      .update(args.update)
+      .update({ ...args.update, updatedAt: now })
       .eq("id", (existing as any).id)
       .select()
       .single();
     throwIfError(data, error, "content.upsert(update)");
     return data;
   } else {
-    const { data, error } = await supabase.from("Content").insert(args.create).select().single();
+    const { data, error } = await supabase
+      .from("Content")
+      .insert({ id: crypto.randomUUID(), updatedAt: now, ...args.create })
+      .select()
+      .single();
     throwIfError(data, error, "content.upsert(create)");
     return data;
   }
@@ -646,6 +690,7 @@ async function couponCount(args: any = {}) {
 export const db = {
   product: {
     findMany: productFindMany,
+    findManyByCategory: productFindManyByCategory,
     findUnique: productFindUnique,
     count: productCount,
     create: productCreate,
@@ -656,6 +701,9 @@ export const db = {
     findMany: categoryFindMany,
     findUnique: categoryFindUnique,
     count: categoryCount,
+    create: categoryCreate,
+    update: categoryUpdate,
+    delete: categoryDelete,
   },
   review: {
     findMany: reviewFindMany,

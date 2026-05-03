@@ -127,7 +127,7 @@ export default async function ShopPage({ searchParams }: PageProps) {
                         href={`/shop?page=${p}&sort=${params.sort ?? ""}&category=${params.category ?? ""}`}
                         className={`w-9 h-9 flex items-center justify-center text-xs font-heading font-bold border transition-colors ${
                           p === page
-                            ? "bg-brand-accent text-brand-navy border-brand-accent"
+                            ? "bg-brand-accent text-brand-navy rounded border-brand-accent"
                             : "border-brand-contrast/30 text-brand-navy hover:border-brand-navy"
                         }`}
                       >

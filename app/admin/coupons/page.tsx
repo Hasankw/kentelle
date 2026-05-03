@@ -86,7 +86,7 @@ export default function AdminCouponsPage() {
           </h1>
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="flex items-center gap-2 bg-brand-accent text-brand-navy px-4 py-2.5 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
+            className="flex items-center gap-2 bg-brand-accent text-brand-navy rounded px-4 py-2.5 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
           >
             <Plus size={14} />
             New Coupon
@@ -181,7 +181,7 @@ export default function AdminCouponsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2.5 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+                  className="px-6 py-2.5 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
                 >
                   {saving ? "Creating..." : "Create Coupon"}
                 </button>

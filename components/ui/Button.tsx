@@ -25,9 +25,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        "bg-brand-accent text-brand-navy hover:bg-brand-accent/85 border border-brand-accent",
+        "bg-brand-accent text-brand-navy rounded hover:bg-brand-accent/85 border border-brand-accent",
       outline:
-        "bg-transparent text-brand-navy border border-brand-navy hover:bg-brand-accent hover:text-brand-navy hover:border-brand-accent",
+        "bg-transparent text-brand-navy border border-brand-navy hover:bg-brand-accent hover:text-brand-navy rounded hover:border-brand-accent",
       ghost:
         "bg-transparent text-brand-navy hover:bg-brand-accent/15 border border-transparent",
       danger:

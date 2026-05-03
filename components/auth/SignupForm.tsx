@@ -101,7 +101,7 @@ export default function SignupForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full py-3 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+        className="w-full py-3 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
       >
         {isPending ? "Creating account..." : "Create Account"}
       </button>

@@ -6,10 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
+import { Check } from "lucide-react";
 import Input from "@/components/ui/Input";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
-import type { ShippingAddress } from "@/types";
+import type { ShippingAddress, BillingAddress } from "@/types";
 import dynamic from "next/dynamic";
 
 const RazorpaySection = dynamic(() => import("@/components/store/RazorpaySection"), { ssr: false });
@@ -26,7 +27,7 @@ const AU_STATES = [
   { value: "NT", label: "Northern Territory" },
 ];
 
-const schema = z.object({
+const addressSchema = z.object({
   fullName: z.string().min(2, "Full name required"),
   email: z.string().email("Valid email required"),
   phone: z.string().min(6, "Phone required"),
@@ -37,7 +38,7 @@ const schema = z.object({
   postcode: z.string().min(4, "Postcode required"),
 });
 
-type FormData = z.infer<typeof schema>;
+type FormData = z.infer<typeof addressSchema>;
 
 type ShippingConfig = { type: string; rate: number; threshold: number };
 
@@ -54,12 +55,28 @@ export default function CheckoutPage() {
   const [navigating, setNavigating] = useState(false);
   const [shippingLocked, setShippingLocked] = useState(false);
   const [lockedAddress, setLockedAddress] = useState<ShippingAddress | null>(null);
+  const [lockedBilling, setLockedBilling] = useState<BillingAddress | undefined>(undefined);
+  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
+  const [billingFields, setBillingFields] = useState({
+    fullName: "",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postcode: "",
+  });
+  const [billingErrors, setBillingErrors] = useState<Record<string, string>>({});
   const [shippingConfig, setShippingConfig] = useState<ShippingConfig>({
     type: "threshold",
     rate: 9.95,
     threshold: 80,
   });
-  const [paymentPortal, setPaymentPortal] = useState<"razorpay" | "paypal">("razorpay");
+  const [paymentSettings, setPaymentSettings] = useState<{
+    razorpayEnabled: boolean;
+    paypalEnabled: boolean;
+    razorpayKeyId: string;
+    paypalClientId: string;
+  }>({ razorpayEnabled: true, paypalEnabled: false, razorpayKeyId: "", paypalClientId: "" });
 
   useEffect(() => {
     const supabase = createBrowserClient(
@@ -82,7 +99,12 @@ export default function CheckoutPage() {
       .catch(() => {});
     fetch("/api/settings/payment")
       .then((r) => r.json())
-      .then((d) => setPaymentPortal(d.portal ?? "razorpay"))
+      .then((d) => setPaymentSettings({
+        razorpayEnabled: d.razorpayEnabled ?? true,
+        paypalEnabled: d.paypalEnabled ?? false,
+        razorpayKeyId: d.razorpayKeyId ?? "",
+        paypalClientId: d.paypalClientId ?? "",
+      }))
       .catch(() => {});
   }, []);
 
@@ -92,7 +114,7 @@ export default function CheckoutPage() {
     getValues,
     formState: { errors, isValid },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(addressSchema),
     mode: "onChange",
   });
 
@@ -107,8 +129,22 @@ export default function CheckoutPage() {
     return null;
   }
 
+  const validateBilling = (): boolean => {
+    if (billingSameAsShipping) return true;
+    const errs: Record<string, string> = {};
+    if (!billingFields.fullName.trim()) errs.fullName = "Name required";
+    if (!billingFields.line1.trim() || billingFields.line1.trim().length < 3) errs.line1 = "Address required";
+    if (!billingFields.city.trim() || billingFields.city.trim().length < 2) errs.city = "City required";
+    if (!billingFields.state) errs.state = "State required";
+    if (!billingFields.postcode.trim() || billingFields.postcode.trim().length < 4) errs.postcode = "Postcode required";
+    setBillingErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const lockShipping = handleSubmit((data) => {
-    setLockedAddress({
+    if (!validateBilling()) return;
+
+    const shipping: ShippingAddress = {
       fullName: data.fullName,
       line1: data.line1,
       line2: data.line2,
@@ -117,11 +153,27 @@ export default function CheckoutPage() {
       postcode: data.postcode,
       country: "AU",
       phone: data.phone,
-    });
+    };
+
+    const billing: BillingAddress | undefined = billingSameAsShipping
+      ? undefined
+      : {
+          fullName: billingFields.fullName,
+          line1: billingFields.line1,
+          line2: billingFields.line2 || undefined,
+          city: billingFields.city,
+          state: billingFields.state,
+          postcode: billingFields.postcode,
+        };
+
+    setLockedAddress(shipping);
+    setLockedBilling(billing);
     setShippingLocked(true);
   });
 
   const selectClass =
+    "w-full border border-brand-contrast/20 px-3 py-2.5 text-sm font-body text-brand-navy bg-white focus:outline-none focus:border-brand-blue";
+  const fieldClass =
     "w-full border border-brand-contrast/20 px-3 py-2.5 text-sm font-body text-brand-navy bg-white focus:outline-none focus:border-brand-blue";
 
   return (
@@ -132,7 +184,7 @@ export default function CheckoutPage() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-        {/* Left: Shipping form */}
+        {/* Left: Shipping + Billing form */}
         <div className="md:col-span-3 space-y-4">
           <h2 className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-4">
             Shipping Information
@@ -213,16 +265,124 @@ export default function CheckoutPage() {
             />
           </div>
 
-          {/* Country display — always Australia */}
           <div className="flex items-center gap-2 text-xs font-body text-brand-contrast border border-brand-contrast/10 bg-[#F8F9FC] px-3 py-2.5">
             🇦🇺 <span>Country: <strong>Australia</strong></span>
+          </div>
+
+          {/* ── Billing Address ─────────────────────────────── */}
+          <div className="pt-4 border-t border-brand-contrast/10">
+            <h2 className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-4">
+              Billing Address
+            </h2>
+
+            {!shippingLocked && (
+              <label className="flex items-center gap-2.5 cursor-pointer mb-4 select-none">
+                <div
+                  onClick={() => setBillingSameAsShipping((v) => !v)}
+                  className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer ${
+                    billingSameAsShipping
+                      ? "bg-brand-navy border-brand-navy"
+                      : "border-brand-contrast/40 bg-white"
+                  }`}
+                >
+                  {billingSameAsShipping && <Check size={12} className="text-white" strokeWidth={3} />}
+                </div>
+                <span className="text-sm font-body text-brand-navy">Same as shipping address</span>
+              </label>
+            )}
+
+            {shippingLocked && lockedBilling === undefined && (
+              <p className="text-sm font-body text-brand-contrast/70 italic mb-2">Same as shipping address</p>
+            )}
+
+            {!billingSameAsShipping && !shippingLocked && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">Full Name *</label>
+                  <input
+                    value={billingFields.fullName}
+                    onChange={(e) => setBillingFields((f) => ({ ...f, fullName: e.target.value }))}
+                    className={`${fieldClass} ${billingErrors.fullName ? "border-red-400" : ""}`}
+                    placeholder="Cardholder name"
+                  />
+                  {billingErrors.fullName && <p className="text-xs text-red-500 mt-1 font-body">{billingErrors.fullName}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">Address Line 1 *</label>
+                  <input
+                    value={billingFields.line1}
+                    onChange={(e) => setBillingFields((f) => ({ ...f, line1: e.target.value }))}
+                    className={`${fieldClass} ${billingErrors.line1 ? "border-red-400" : ""}`}
+                    placeholder="Street address"
+                  />
+                  {billingErrors.line1 && <p className="text-xs text-red-500 mt-1 font-body">{billingErrors.line1}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">Address Line 2 (optional)</label>
+                  <input
+                    value={billingFields.line2}
+                    onChange={(e) => setBillingFields((f) => ({ ...f, line2: e.target.value }))}
+                    className={fieldClass}
+                    placeholder="Apt, suite, unit..."
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">City *</label>
+                    <input
+                      value={billingFields.city}
+                      onChange={(e) => setBillingFields((f) => ({ ...f, city: e.target.value }))}
+                      className={`${fieldClass} ${billingErrors.city ? "border-red-400" : ""}`}
+                      placeholder="City"
+                    />
+                    {billingErrors.city && <p className="text-xs text-red-500 mt-1 font-body">{billingErrors.city}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">State *</label>
+                    <select
+                      value={billingFields.state}
+                      onChange={(e) => setBillingFields((f) => ({ ...f, state: e.target.value }))}
+                      className={`${selectClass} ${billingErrors.state ? "border-red-400" : ""}`}
+                    >
+                      <option value="">State</option>
+                      {AU_STATES.map((s) => (
+                        <option key={s.value} value={s.value}>{s.value}</option>
+                      ))}
+                    </select>
+                    {billingErrors.state && <p className="text-xs text-red-500 mt-1 font-body">{billingErrors.state}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">Postcode *</label>
+                    <input
+                      value={billingFields.postcode}
+                      onChange={(e) => setBillingFields((f) => ({ ...f, postcode: e.target.value }))}
+                      className={`${fieldClass} ${billingErrors.postcode ? "border-red-400" : ""}`}
+                      placeholder="0000"
+                    />
+                    {billingErrors.postcode && <p className="text-xs text-red-500 mt-1 font-body">{billingErrors.postcode}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-body text-brand-contrast border border-brand-contrast/10 bg-[#F8F9FC] px-3 py-2.5">
+                  🇦🇺 <span>Country: <strong>Australia</strong></span>
+                </div>
+              </div>
+            )}
+
+            {shippingLocked && lockedBilling && (
+              <div className="text-sm font-body text-brand-contrast/80 space-y-0.5">
+                <p className="font-bold text-brand-navy">{lockedBilling.fullName}</p>
+                <p>{lockedBilling.line1}{lockedBilling.line2 ? `, ${lockedBilling.line2}` : ""}</p>
+                <p>{lockedBilling.city} {lockedBilling.state} {lockedBilling.postcode}</p>
+                <p>Australia</p>
+              </div>
+            )}
           </div>
 
           {!shippingLocked && (
             <button
               onClick={lockShipping}
               disabled={!isValid}
-              className="w-full mt-2 bg-brand-accent text-brand-navy py-3 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-2 bg-brand-accent text-brand-navy rounded py-3 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue to Payment
             </button>
@@ -238,7 +398,7 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* Right: Summary + PayPal */}
+        {/* Right: Summary + Payment */}
         <div className="md:col-span-2 space-y-4">
           <div className="border border-brand-contrast/20 bg-brand-white p-5 space-y-3">
             <h3 className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">
@@ -279,23 +439,41 @@ export default function CheckoutPage() {
               <p className="text-xs font-heading font-bold uppercase tracking-widest text-brand-navy mb-3">
                 Payment
               </p>
-              {paymentPortal === "paypal" ? (
-                <PayPalSection
-                  items={items}
-                  lockedAddress={lockedAddress}
-                  email={getValues("email")}
-                  orderTotal={orderTotal}
-                  onSuccess={(orderNumber) => { setNavigating(true); clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
-                />
-              ) : (
-                <RazorpaySection
-                  items={items}
-                  lockedAddress={lockedAddress}
-                  email={getValues("email")}
-                  orderTotal={orderTotal}
-                  onSuccess={(orderNumber) => { setNavigating(true); clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
-                />
-              )}
+              <div className="space-y-3">
+                {paymentSettings.razorpayEnabled && (
+                  <RazorpaySection
+                    items={items}
+                    lockedAddress={lockedAddress}
+                    billingAddress={lockedBilling}
+                    email={getValues("email")}
+                    orderTotal={orderTotal}
+                    onSuccess={(orderNumber) => { setNavigating(true); clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
+                  />
+                )}
+                {paymentSettings.razorpayEnabled && paymentSettings.paypalEnabled && (
+                  <div className="flex items-center gap-3 my-1">
+                    <div className="flex-1 h-px bg-brand-contrast/20" />
+                    <span className="text-[11px] text-brand-contrast/50 font-body uppercase tracking-widest">or</span>
+                    <div className="flex-1 h-px bg-brand-contrast/20" />
+                  </div>
+                )}
+                {paymentSettings.paypalEnabled && (
+                  <PayPalSection
+                    items={items}
+                    lockedAddress={lockedAddress}
+                    billingAddress={lockedBilling}
+                    email={getValues("email")}
+                    orderTotal={orderTotal}
+                    clientId={paymentSettings.paypalClientId}
+                    onSuccess={(orderNumber) => { setNavigating(true); clearCart(); router.push(`/order-confirmation/${orderNumber}`); }}
+                  />
+                )}
+                {!paymentSettings.razorpayEnabled && !paymentSettings.paypalEnabled && (
+                  <p className="text-sm text-brand-contrast font-body text-center py-4">
+                    No payment method is currently enabled. Please contact support.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>

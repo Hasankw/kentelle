@@ -4,10 +4,28 @@ import { createPayPalOrder } from "@/lib/paypal";
 import { generateOrderNumber } from "@/lib/utils";
 import type { CartItem, ShippingAddress } from "@/types";
 
+async function getShippingCost(subtotal: number): Promise<number> {
+  try {
+    const rows = await db.content.findMany({
+      where: { key: { in: ["shipping_type", "shipping_rate", "free_shipping_threshold"] } },
+    });
+    const s = Object.fromEntries(rows.map((r: any) => [r.key, r.value]));
+    const type = (s.shipping_type as string) ?? "threshold";
+    const rate = parseFloat(s.shipping_rate ?? "9.95");
+    const threshold = parseFloat(s.free_shipping_threshold ?? "80");
+    if (type === "free") return 0;
+    if (type === "fixed") return rate;
+    return subtotal >= threshold ? 0 : rate;
+  } catch {
+    return subtotal >= 80 ? 0 : 9.95;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const {
     items,
     shippingAddress,
+    billingAddress,
     email,
     total,
     couponCode,
@@ -15,6 +33,7 @@ export async function POST(req: NextRequest) {
   }: {
     items: CartItem[];
     shippingAddress: ShippingAddress;
+    billingAddress?: ShippingAddress;
     email: string;
     total: number;
     couponCode?: string;
@@ -26,11 +45,15 @@ export async function POST(req: NextRequest) {
   }
 
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shippingCost = subtotal >= 80 ? 0 : 9.95;
+  const shippingCost = await getShippingCost(subtotal);
   const serverTotal = parseFloat((subtotal + shippingCost).toFixed(2));
 
   // Create PayPal order first to get ID
   const paypalOrderId = await createPayPalOrder(serverTotal, "AUD");
+
+  const storedAddress = billingAddress
+    ? { ...shippingAddress, billingAddress }
+    : shippingAddress;
 
   // Create order in DB
   const order = await db.order.create({
@@ -41,7 +64,7 @@ export async function POST(req: NextRequest) {
       shippingCost,
       total: serverTotal,
       paypalOrderId,
-      shippingAddress: JSON.parse(JSON.stringify(shippingAddress)),
+      shippingAddress: JSON.parse(JSON.stringify(storedAddress)),
       status: "PENDING",
       ...(couponCode ? { couponCode } : {}),
       ...(discount ? { discount: parseFloat(Number(discount).toFixed(2)) } : {}),

@@ -75,7 +75,7 @@ export default function GiftCardsPage() {
       description: `Gift Card — ${formatPrice(finalAmount)}`,
       order_id: order.rzOrderId,
       prefill: { email: senderEmail, name: senderName },
-      theme: { color: "#3DECC2" },
+      theme: { color: "#D4A5B5" },
       handler: async (response: any) => {
         setPaying(true);
         const capture = await fetch("/api/gift-cards/razorpay-capture", {
@@ -167,7 +167,7 @@ export default function GiftCardsPage() {
                 onClick={() => { setAmount(a); setUseCustom(false); }}
                 className={`py-3 border text-sm font-heading font-bold transition-colors ${
                   !useCustom && amount === a
-                    ? "border-brand-navy bg-brand-navy text-brand-white"
+                    ? "border-brand-navy bg-brand-navy text-brand-white rounded"
                     : "border-brand-contrast/30 text-brand-navy hover:border-brand-navy"
                 }`}
               >
@@ -180,7 +180,7 @@ export default function GiftCardsPage() {
               onClick={() => setUseCustom(true)}
               className={`py-2 px-4 border text-xs font-heading font-bold transition-colors ${
                 useCustom
-                  ? "border-brand-navy bg-brand-navy text-brand-white"
+                  ? "border-brand-navy bg-brand-navy text-brand-white rounded"
                   : "border-brand-contrast/30 text-brand-navy hover:border-brand-navy"
               }`}
             >
@@ -287,7 +287,7 @@ export default function GiftCardsPage() {
           <button
             onClick={handlePay}
             disabled={!isFormValid || paying}
-            className="w-full bg-brand-navy text-brand-white py-3.5 text-sm font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-brand-navy text-brand-white rounded py-3.5 text-sm font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {paying ? (
               <>

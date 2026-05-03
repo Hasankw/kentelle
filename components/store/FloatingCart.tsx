@@ -18,7 +18,7 @@ export default function FloatingCart() {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           onClick={() => router.push("/cart")}
-          className="fixed bottom-6 right-6 z-30 bg-brand-navy text-brand-white w-14 h-14 flex items-center justify-center shadow-xl hover:bg-brand-blue transition-colors"
+          className="fixed bottom-6 right-6 z-30 bg-brand-navy text-brand-white rounded-full w-14 h-14 flex items-center justify-center shadow-xl hover:bg-brand-blue transition-colors"
           aria-label={`Open cart — ${count} items`}
         >
           <ShoppingBag size={22} />

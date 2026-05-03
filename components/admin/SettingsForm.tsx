@@ -18,7 +18,7 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      await fetch("/api/admin/settings", {
+      const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -26,8 +26,10 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
           announcement_enabled: String(form.announcement_enabled),
         }),
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
     });
   };
 
@@ -155,7 +157,7 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
       <button
         type="submit"
         disabled={isPending}
-        className="px-6 py-2.5 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+        className="px-6 py-2.5 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
       >
         {isPending ? "Saving..." : saved ? "Saved!" : "Save Settings"}
       </button>

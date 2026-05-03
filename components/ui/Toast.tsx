@@ -40,7 +40,7 @@ export function ToastContainer() {
           className={cn(
             "flex items-center gap-3 px-4 py-3 shadow-lg text-sm font-body min-w-[240px]",
             t.type === "success"
-              ? "bg-brand-navy text-white"
+              ? "bg-brand-navy text-white rounded"
               : "bg-red-600 text-white"
           )}
         >

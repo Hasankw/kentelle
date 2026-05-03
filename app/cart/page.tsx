@@ -247,7 +247,7 @@ export default function CartPage() {
                 <button
                   onClick={handleApplyCoupon}
                   disabled={couponLoading || !couponInput.trim()}
-                  className="px-4 py-2 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
                 >
                   {couponLoading ? "..." : "Apply"}
                 </button>
@@ -288,7 +288,7 @@ export default function CartPage() {
                   <button
                     onClick={handleApplyGiftCard}
                     disabled={gcLoading || !gcInput.trim()}
-                    className="px-4 py-2 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
                   >
                     {gcLoading ? "..." : "Apply"}
                   </button>

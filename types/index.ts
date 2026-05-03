@@ -53,6 +53,15 @@ export interface ShippingAddress {
   phone: string;
 }
 
+export interface BillingAddress {
+  fullName: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postcode: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;

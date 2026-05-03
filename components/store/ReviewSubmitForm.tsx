@@ -92,7 +92,7 @@ export default function ReviewSubmitForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full py-2.5 bg-brand-navy text-brand-white text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
+        className="w-full py-2.5 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors disabled:opacity-50"
       >
         {isPending ? "Submitting..." : "Submit Review"}
       </button>
