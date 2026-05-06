@@ -13,13 +13,12 @@ export async function POST(req: NextRequest) {
   const { ids } = await req.json();
   if (!Array.isArray(ids)) return NextResponse.json({ error: "ids must be array" }, { status: 400 });
 
-  const existing = await db.content.findMany({ where: { key: CONTENT_KEY } });
-
-  if (existing.length > 0) {
-    await db.content.updateMany({ where: { key: CONTENT_KEY }, data: { value: JSON.stringify(ids) } });
-  } else {
-    await db.content.create({ data: { key: CONTENT_KEY, value: JSON.stringify(ids) } as any });
-  }
+  const value = JSON.stringify(ids);
+  await db.content.upsert({
+    where: { key: CONTENT_KEY },
+    update: { value },
+    create: { key: CONTENT_KEY, value },
+  });
 
   return NextResponse.json({ success: true });
 }

@@ -19,7 +19,6 @@ import {
   CreditCard,
   MessageCircle,
   CalendarDays,
-  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
