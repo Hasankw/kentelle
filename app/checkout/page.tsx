@@ -78,7 +78,6 @@ export default function CheckoutPage() {
     razorpayKeyId: string;
     paypalClientId: string;
   }>({ razorpayEnabled: true, paypalEnabled: false, razorpayKeyId: "", paypalClientId: "" });
-  const [announcement, setAnnouncement] = useState<{ text: string; enabled: boolean } | null>(null);
 
   useEffect(() => {
     const supabase = createBrowserClient(
@@ -103,10 +102,6 @@ export default function CheckoutPage() {
         razorpayKeyId: d.razorpayKeyId ?? "",
         paypalClientId: d.paypalClientId ?? "",
       }))
-      .catch(() => {});
-    fetch("/api/admin/settings")
-      .then((r) => r.json())
-      .then((d) => setAnnouncement({ text: d.announcement_text, enabled: d.announcement_enabled }))
       .catch(() => {});
   }, []);
 
@@ -217,16 +212,9 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
       <h1 className="font-heading font-bold text-3xl text-brand-navy mb-2">Checkout</h1>
-      <p className="text-xs font-body text-brand-contrast mb-4 flex items-center gap-1">
+      <p className="text-xs font-body text-brand-contrast mb-8 flex items-center gap-1">
         🇦🇺 Shipping within Australia only
       </p>
-
-      {announcement?.enabled && announcement.text && (
-        <div className="mb-8 flex items-start gap-3 bg-amber-50 border border-amber-300 rounded px-4 py-3">
-          <span className="text-amber-500 text-base mt-0.5">⚠️</span>
-          <p className="text-sm font-body text-amber-800 leading-relaxed">{announcement.text}</p>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
         {/* Left: Shipping + Billing form */}

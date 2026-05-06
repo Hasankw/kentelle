@@ -39,11 +39,16 @@ export default function CartPage() {
   const [gcError, setGcError] = useState("");
 
   const [shipping, setShipping] = useState<ShippingConfig>(DEFAULT_SHIPPING);
+  const [cartAnnouncement, setCartAnnouncement] = useState<{ text: string; enabled: boolean } | null>(null);
 
   useEffect(() => {
     fetch("/api/settings/shipping")
       .then((r) => r.json())
       .then(setShipping)
+      .catch(() => {});
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((d) => setCartAnnouncement({ text: d.announcement_text, enabled: d.announcement_enabled }))
       .catch(() => {});
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -215,6 +220,14 @@ export default function CartPage() {
               />
             )}
           </div>
+
+          {/* Checkout announcement */}
+          {cartAnnouncement?.enabled && cartAnnouncement.text && (
+            <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-300 rounded px-4 py-3 my-1">
+              <span className="text-amber-500 text-sm mt-0.5">⚠️</span>
+              <p className="text-sm font-body text-amber-800 leading-relaxed">{cartAnnouncement.text}</p>
+            </div>
+          )}
 
           {/* Coupon */}
           <div className="py-4">
