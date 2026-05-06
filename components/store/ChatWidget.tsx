@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useCartStore } from "@/store/cart";
 
 type Product = { slug: string; name: string; price: number };
 
@@ -36,6 +37,8 @@ function getOrCreateSessionId(): string {
 }
 
 export default function ChatWidget() {
+  const cartCount = useCartStore((s) => s.itemCount());
+  const hasCart = cartCount > 0;
   const [enabled, setEnabled] = useState(true);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -139,7 +142,7 @@ export default function ChatWidget() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Open chat"
-        className="fixed bottom-24 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+        className={`fixed ${hasCart ? "bottom-24" : "bottom-6"} right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95`}
         style={{ background: "linear-gradient(135deg, #D4A5B5 0%, #B5C9C5 100%)" }}
       >
         {open ? <X size={22} color="#3A3240" /> : <MessageCircle size={22} color="#3A3240" />}
@@ -148,7 +151,7 @@ export default function ChatWidget() {
       {/* Panel */}
       {open && (
         <div
-          className="fixed bottom-[11rem] right-6 z-50 w-[360px] max-w-[calc(100vw-24px)] flex flex-col shadow-2xl overflow-hidden"
+          className={`fixed ${hasCart ? "bottom-[11rem]" : "bottom-[5.5rem]"} right-6 z-50 w-[360px] max-w-[calc(100vw-24px)] flex flex-col shadow-2xl overflow-hidden`}
           style={{ borderRadius: 16, height: 520, background: "#FAF8F7", border: "1px solid #E8DFEA" }}
         >
           {/* Header */}
