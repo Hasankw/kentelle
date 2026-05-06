@@ -18,7 +18,8 @@ async function getPayPalCredentials(): Promise<{ clientId: string; secret: strin
   const clientId = process.env.PAYPAL_CLIENT_ID ?? "";
   const secret = process.env.PAYPAL_CLIENT_SECRET ?? "";
   if (!clientId || !secret) throw new Error("PayPal credentials not configured");
-  return { clientId, secret, sandbox: true };
+  const sandbox = (process.env.PAYPAL_MODE ?? "live") !== "live";
+  return { clientId, secret, sandbox };
 }
 
 async function getAccessToken(): Promise<string> {
