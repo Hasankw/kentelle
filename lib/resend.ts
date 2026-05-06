@@ -445,3 +445,51 @@ export async function sendAdminFailedPaymentAlert(
     html,
   });
 }
+
+// ─── Order Status Update Email ────────────────────────────────────────────────
+
+const STATUS_COPY: Record<string, { label: string; color: string; message: string }> = {
+  CONFIRMED:  { label: "Order Confirmed",    color: "#22a26a", message: "Great news! Your order has been confirmed and is being prepared." },
+  PROCESSING: { label: "Being Processed",    color: "#3B82F6", message: "Your order is currently being processed and packed by our team." },
+  SHIPPED:    { label: "On Its Way!",         color: "#6366F1", message: "Your order has been dispatched and is on its way to you. Delivery typically takes 3–7 business days within Australia." },
+  DELIVERED:  { label: "Delivered",           color: "#10B981", message: "Your order has been delivered. We hope you love your Kentelle products!" },
+  CANCELLED:  { label: "Order Cancelled",     color: "#EF4444", message: "Your order has been cancelled. If you have any questions, please contact our support team." },
+  REFUNDED:   { label: "Refund Processed",    color: "#F59E0B", message: "Your refund has been processed. Please allow 3–5 business days for it to appear in your account." },
+};
+
+export async function sendOrderStatusUpdate(
+  email: string,
+  orderNumber: string,
+  status: string,
+) {
+  const copy = STATUS_COPY[status];
+  if (!copy) return;
+
+  const html = emailWrapper(`
+    <div style="background:${copy.color}18;padding:32px 40px;text-align:center;border-bottom:2px solid ${copy.color}40;">
+      <p style="margin:0 0 4px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:${copy.color};font-family:Arial,sans-serif;">Order Update</p>
+      <h2 style="margin:0 0 8px;font-size:22px;color:#3A3240;font-family:Arial,sans-serif;">${copy.label}</h2>
+      <p style="margin:0;font-size:14px;color:#9B8FA0;font-family:Arial,sans-serif;">Order <strong style="color:#3A3240;">#${orderNumber}</strong></p>
+    </div>
+
+    <div style="padding:32px 40px;">
+      <p style="margin:0 0 24px;font-size:15px;color:#444;font-family:Arial,sans-serif;line-height:1.6;">${copy.message}</p>
+
+      <div style="background:#F5EEF3;border-left:3px solid #B5C9C5;padding:16px 20px;margin-bottom:28px;">
+        <p style="margin:0;font-size:13px;color:#555;font-family:Arial,sans-serif;">
+          Questions about your order? Reply to this email or contact us at
+          <a href="mailto:support@kentelle.com" style="color:#3A3240;font-weight:bold;">support@kentelle.com</a>
+        </p>
+      </div>
+
+      <a href="https://kentelle.vercel.app/account/orders" style="display:inline-block;background:#3A3240;color:#ffffff;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View My Orders</a>
+    </div>
+  `);
+
+  await getResend().emails.send({
+    from: "Kentelle Skincare <noreply@kentelle.com>",
+    to: email,
+    subject: `${copy.label} — Order #${orderNumber} | Kentelle Skincare`,
+    html,
+  });
+}
