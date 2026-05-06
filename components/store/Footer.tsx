@@ -27,9 +27,57 @@ const accountLinks = [
   { label: "Returns & Refunds", href: "/faq#returns" },
 ];
 
-const paymentMethods = [
-  "Visa", "Mastercard", "PayPal", "Amex", "Apple Pay", "Google Pay",
-];
+function PaymentIcons() {
+  return (
+    <div className="flex flex-wrap gap-2 items-center">
+      {/* Visa */}
+      <svg viewBox="0 0 50 32" className="h-7 w-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="50" height="32" rx="4" fill="white" />
+        <rect width="50" height="32" rx="4" fill="none" stroke="#e0e0e0" strokeWidth="1" />
+        <text x="25" y="22" textAnchor="middle" fill="#1A1F71" fontWeight="900" fontSize="13" fontFamily="Arial, sans-serif" letterSpacing="0.5">VISA</text>
+      </svg>
+      {/* Mastercard */}
+      <svg viewBox="0 0 50 32" className="h-7 w-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="50" height="32" rx="4" fill="white" />
+        <rect width="50" height="32" rx="4" fill="none" stroke="#e0e0e0" strokeWidth="1" />
+        <circle cx="19" cy="16" r="8" fill="#EB001B" />
+        <circle cx="31" cy="16" r="8" fill="#F79E1B" />
+        <path d="M25 9.54a8 8 0 0 1 0 12.92A8 8 0 0 1 25 9.54z" fill="#FF5F00" />
+      </svg>
+      {/* Amex */}
+      <svg viewBox="0 0 54 32" className="h-7 w-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="54" height="32" rx="4" fill="#2557D6" />
+        <text x="27" y="21" textAnchor="middle" fill="white" fontWeight="800" fontSize="11" fontFamily="Arial, sans-serif" letterSpacing="1.5">AMEX</text>
+      </svg>
+      {/* PayPal */}
+      <svg viewBox="0 0 58 32" className="h-7 w-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="58" height="32" rx="4" fill="white" />
+        <rect width="58" height="32" rx="4" fill="none" stroke="#e0e0e0" strokeWidth="1" />
+        <text x="29" y="22" textAnchor="middle" fill="#253B80" fontWeight="bold" fontSize="12" fontFamily="Arial, sans-serif">
+          <tspan fill="#009CDE">Pay</tspan><tspan fill="#253B80">Pal</tspan>
+        </text>
+      </svg>
+      {/* Apple Pay */}
+      <svg viewBox="0 0 58 32" className="h-7 w-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="58" height="32" rx="4" fill="black" />
+        <text x="29" y="22" textAnchor="middle" fill="white" fontWeight="500" fontSize="11" fontFamily="-apple-system, Arial, sans-serif" letterSpacing="0.2"> Pay</text>
+      </svg>
+      {/* Google Pay */}
+      <svg viewBox="0 0 64 32" className="h-7 w-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="32" rx="4" fill="white" />
+        <rect width="64" height="32" rx="4" fill="none" stroke="#e0e0e0" strokeWidth="1" />
+        <text x="32" y="22" textAnchor="middle" fontSize="12" fontFamily="Arial, sans-serif" fontWeight="500">
+          <tspan fill="#4285F4">G</tspan><tspan fill="#555"> Pay</tspan>
+        </text>
+      </svg>
+      {/* Shopify / Shop Pay */}
+      <svg viewBox="0 0 58 32" className="h-7 w-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="58" height="32" rx="4" fill="#5A31F4" />
+        <text x="29" y="22" textAnchor="middle" fill="white" fontWeight="700" fontSize="11" fontFamily="Arial, sans-serif" letterSpacing="0.5">shop</text>
+      </svg>
+    </div>
+  );
+}
 
 export default function Footer() {
   return (
@@ -159,16 +207,7 @@ export default function Footer() {
           <span className="text-xs text-brand-contrast font-body flex items-center gap-1.5">
             🇦🇺 Australia (AUD $)
           </span>
-          <div className="flex flex-wrap gap-1.5">
-            {paymentMethods.map((m) => (
-              <span
-                key={m}
-                className="border border-brand-white/20 rounded px-2 py-0.5 text-[10px] font-heading font-bold text-brand-contrast/70 tracking-wide"
-              >
-                {m}
-              </span>
-            ))}
-          </div>
+          <PaymentIcons />
         </div>
       </div>
 

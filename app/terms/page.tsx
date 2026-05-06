@@ -3,6 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "Kentelle Skincare terms of service.",
+  robots: { index: false, follow: false },
 };
 
 export default function TermsPage() {

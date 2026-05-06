@@ -4,10 +4,10 @@ import Button from "@/components/ui/Button";
 import type { Product } from "@/types";
 
 interface FeaturedProductsProps {
-  products: Pick<
+  products: (Pick<
     Product,
     "id" | "name" | "slug" | "price" | "salePrice" | "images" | "stock"
-  >[];
+  > & { description?: string | null })[];
   title?: string;
   subtitle?: string;
   viewAllHref?: string;

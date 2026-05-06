@@ -7,8 +7,9 @@ import ShopFilters from "@/components/store/ShopFilters";
 import type { SortOption } from "@/types";
 
 export const metadata: Metadata = {
-  title: "Shop All Products",
-  description: "Browse Kentelle's complete range of skincare products.",
+  title: "Shop All Skincare Products",
+  description: "Browse Kentelle's complete range of professional-grade Australian skincare — cleansers, serums, moisturisers, eye creams and more. Free shipping on orders over $80.",
+  robots: { index: true, follow: true },
 };
 
 interface PageProps {
@@ -68,6 +69,7 @@ async function getProducts(params: Awaited<PageProps["searchParams"]>) {
         salePrice: true,
         images: true,
         stock: true,
+        description: true,
       },
     }),
     db.product.count({ where }),
@@ -97,8 +99,8 @@ export default async function ShopPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Filters sidebar */}
+      <div className="flex flex-col gap-2 md:flex-row md:gap-8">
+        {/* Filters sidebar / mobile dropdowns */}
         <aside className="md:w-56 shrink-0">
           <ShopFilters categories={categories} />
         </aside>

@@ -8,6 +8,7 @@ import SearchOverlay from "./SearchOverlay";
 import CartDrawer from "./CartDrawer";
 import FloatingCart from "./FloatingCart";
 import Footer from "./Footer";
+import ChatWidget from "./ChatWidget";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useCartStore } from "@/store/cart";
 
@@ -42,6 +43,7 @@ export default function StoreLayout({
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <CartDrawer />
       <FloatingCart />
+      <ChatWidget />
       <ToastContainer />
     </>
   );

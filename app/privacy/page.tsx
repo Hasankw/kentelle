@@ -3,6 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "Kentelle Skincare privacy policy.",
+  robots: { index: false, follow: false },
 };
 
 export default function PrivacyPage() {

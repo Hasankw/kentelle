@@ -19,19 +19,33 @@ const archivo = Archivo({
 
 export const metadata: Metadata = {
   title: {
-    default: "Kentelle Skincare",
+    default: "Kentelle Skincare — Science-Backed Australian Skincare",
     template: "%s | Kentelle Skincare",
   },
   description:
-    "Professional-grade skincare that feels indulgent, performs exceptionally, and empowers confidence in your natural beauty.",
-  keywords: [
-    "skincare",
-    "beauty",
-    "serum",
-    "cleanser",
-    "moisturiser",
-    "kentelle",
-  ],
+    "Professional-grade, cruelty-free skincare crafted for Australian skin. Shop cleansers, serums, moisturisers and more from Kentelle Skincare, Perth WA.",
+  keywords: ["kentelle", "skincare", "australian skincare", "professional skincare", "serum", "cleanser", "moisturiser", "perth skincare"],
+  authors: [{ name: "Kentelle Skincare" }],
+  creator: "Kentelle Skincare",
+  metadataBase: new URL("https://kentelle.vercel.app"),
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_AU",
+    url: "https://kentelle.vercel.app",
+    siteName: "Kentelle Skincare",
+    title: "Kentelle Skincare — Science-Backed Australian Skincare",
+    description: "Professional-grade, cruelty-free skincare crafted for Australian skin. Shop cleansers, serums, moisturisers and more.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

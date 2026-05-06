@@ -14,7 +14,7 @@ interface ProductCardProps {
   product: Pick<
     Product,
     "id" | "name" | "slug" | "price" | "salePrice" | "images" | "stock"
-  >;
+  > & { description?: string | null };
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
@@ -22,8 +22,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
   const router = useRouter();
 
-  const image1 = product.images[0] ?? "/images/placeholder.jpg";
+  const image1 = product.images[0] ?? "/images/placeholder.svg";
+  const sizeMatch = product.description?.match(/\b(\d+(?:\.\d+)?(?:\s*x\s*\d+(?:\.\d+)?)?\s*(?:ml|g|L))\b/i);
+  const sizeLabel = sizeMatch?.[1]?.trim().replace(/\s+/g, "");
   const image2 = product.images[1] ?? image1;
+  const isPlaceholder = !product.images[0];
   const discount = product.salePrice
     ? calcDiscount(product.price, product.salePrice)
     : 0;
@@ -47,7 +50,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Link href={`/products/${product.slug}`}>
         {/* Image container */}
         <div
-          className="relative aspect-[3/4] bg-brand-contrast/10 overflow-hidden mb-3"
+          className="relative aspect-[3/4] bg-brand-contrast/10 overflow-hidden mb-3 rounded-[6px]"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
@@ -57,7 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             unoptimized={image1.startsWith("http")}
-            className={`object-cover transition-opacity duration-500 ${
+            className={`transition-opacity duration-500 ${isPlaceholder ? "object-contain p-8" : "object-cover"} ${
               hovered ? "opacity-0" : "opacity-100"
             }`}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -68,7 +71,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             unoptimized={image2.startsWith("http")}
-            className={`object-cover transition-opacity duration-500 ${
+            className={`transition-opacity duration-500 ${isPlaceholder ? "object-contain p-8" : "object-cover"} ${
               hovered ? "opacity-100" : "opacity-0"
             }`}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -101,6 +104,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           <p className="font-heading font-bold text-sm text-brand-navy group-hover:text-brand-blue transition-colors truncate">
             {product.name}
           </p>
+          {sizeLabel && (
+            <span className="inline-block text-[10px] font-heading font-bold tracking-widest uppercase text-brand-contrast/60 bg-brand-contrast/8 px-2 py-0.5 rounded mt-1">
+              {sizeLabel}
+            </span>
+          )}
           <div className="flex items-center gap-2 mt-1">
             {product.salePrice ? (
               <>

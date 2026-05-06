@@ -16,13 +16,12 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await db.product.findUnique({
-    where: { slug, isActive: true },
-  });
-  if (!product) return { title: "Product Not Found" };
+  const product = await db.product.findUnique({ where: { slug, isActive: true } });
+  if (!product) return { title: "Product Not Found", robots: { index: false } };
   return {
     title: product.name,
-    description: product.description ?? undefined,
+    description: product.description ?? `${product.name} — professional-grade skincare from Kentelle.`,
+    robots: { index: true, follow: true },
   };
 }
 
@@ -201,7 +200,7 @@ export default async function ProductPage({ params }: PageProps) {
       {related.length > 0 && (
         <div className="mt-20">
           <FeaturedProducts
-            products={related}
+            products={related as any}
             title="You May Also Like"
             subtitle=""
             viewAllHref="/shop"

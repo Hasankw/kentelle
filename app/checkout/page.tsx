@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
 import { Check } from "lucide-react";
 import Input from "@/components/ui/Input";
@@ -51,7 +52,7 @@ function calcShipping(config: ShippingConfig, subtotal: number): number {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, discountedTotal, clearCart, coupon, giftCard } = useCartStore();
-  const [authChecked, setAuthChecked] = useState(false);
+  const [checkoutMode, setCheckoutMode] = useState<"checking" | "prompt" | "guest" | "auth">("checking");
   const [navigating, setNavigating] = useState(false);
   const [shippingLocked, setShippingLocked] = useState(false);
   const [lockedAddress, setLockedAddress] = useState<ShippingAddress | null>(null);
@@ -84,11 +85,7 @@ export default function CheckoutPage() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     supabase.auth.getUser().then(({ data }) => {
-      if (!data?.user) {
-        router.replace("/login?redirect=/checkout");
-      } else {
-        setAuthChecked(true);
-      }
+      setCheckoutMode(data?.user ? "auth" : "prompt");
     });
   }, [router]);
 
@@ -122,11 +119,47 @@ export default function CheckoutPage() {
   const shippingCost = calcShipping(shippingConfig, subtotal);
   const orderTotal = subtotal + shippingCost;
 
-  if (!authChecked || navigating) return null;
+  if (checkoutMode === "checking" || navigating) return null;
 
   if (items.length === 0) {
     router.replace("/cart");
     return null;
+  }
+
+  if (checkoutMode === "prompt") {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center">
+        <h1 className="font-heading font-bold text-2xl text-brand-navy mb-2">How would you like to continue?</h1>
+        <p className="text-sm font-body text-brand-contrast mb-10">Sign in for faster checkout and order history, or continue as a guest.</p>
+
+        <div className="space-y-3">
+          <button
+            onClick={() => setCheckoutMode("guest")}
+            className="w-full py-3.5 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
+          >
+            Continue as Guest
+          </button>
+
+          <Link
+            href="/login?redirect=/checkout"
+            className="w-full py-3.5 bg-brand-navy text-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors flex items-center justify-center"
+          >
+            Sign In
+          </Link>
+
+          <Link
+            href="/signup?redirect=/checkout"
+            className="w-full py-3.5 border border-brand-contrast/30 text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest hover:border-brand-navy transition-colors flex items-center justify-center"
+          >
+            Create Account
+          </Link>
+        </div>
+
+        <p className="text-[11px] font-body text-brand-contrast/50 mt-8">
+          Creating an account lets you track orders and reorder easily.
+        </p>
+      </div>
+    );
   }
 
   const validateBilling = (): boolean => {

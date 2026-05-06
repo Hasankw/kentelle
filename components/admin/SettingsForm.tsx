@@ -11,6 +11,7 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
     shipping_rate: settings.shipping_rate ?? "9.95",
     footer_email: settings.footer_email ?? "",
     footer_phone: settings.footer_phone ?? "",
+    chatbot_enabled: settings.chatbot_enabled !== "false",
   });
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -24,6 +25,7 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
         body: JSON.stringify({
           ...form,
           announcement_enabled: String(form.announcement_enabled),
+          chatbot_enabled: String(form.chatbot_enabled),
         }),
       });
       if (res.ok) {
@@ -152,6 +154,28 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
             />
           </div>
         </div>
+      </div>
+
+      {/* Chatbot */}
+      <div>
+        <h2 className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy mb-4">
+          Keni Chatbot
+        </h2>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="chatbot_enabled"
+            checked={form.chatbot_enabled}
+            onChange={(e) => setForm((f) => ({ ...f, chatbot_enabled: e.target.checked }))}
+            className="accent-brand-blue w-4 h-4"
+          />
+          <label htmlFor="chatbot_enabled" className="text-sm font-body text-brand-navy">
+            Enable Keni chatbot on storefront
+          </label>
+        </div>
+        <p className="text-xs font-body text-brand-contrast/60 mt-1.5">
+          When enabled, the chat bubble appears on all store pages. Powered by Google Gemini 1.5 Flash.
+        </p>
       </div>
 
       <button

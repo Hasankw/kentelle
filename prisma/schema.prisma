@@ -32,14 +32,15 @@ model Product {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?   @db.Text
-  tagline     String?
-  image       String?
-  sortOrder   Int       @default(0)
-  products    Product[] @relation("ProductCategories")
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique
+  description       String?   @db.Text
+  tagline           String?
+  image             String?
+  sortOrder         Int       @default(0)
+  showInCollections Boolean   @default(true)
+  products          Product[] @relation("ProductCategories")
 
   @@index([slug])
 }

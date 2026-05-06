@@ -14,9 +14,11 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = await db.blog.findUnique({ where: { slug } });
+  if (!post) return { title: "Blog", robots: { index: false } };
   return {
-    title: post?.title ?? "Blog",
-    description: post?.excerpt ?? undefined,
+    title: post.title,
+    description: post.excerpt ?? `Read ${post.title} on the Kentelle Skincare blog.`,
+    robots: { index: true, follow: true },
   };
 }
 

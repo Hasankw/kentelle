@@ -46,6 +46,34 @@ function emailWrapper(content: string) {
 </html>`;
 }
 
+// ─── OTP Verification Email ─────────────────────────────────────────────────
+
+export async function sendOTPEmail(email: string, name: string, code: string) {
+  const html = emailWrapper(`
+    <div style="padding:40px 40px 0;">
+      <p style="margin:0 0 4px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#B5C9C5;font-family:Arial,sans-serif;">Verify Your Account</p>
+      <h2 style="margin:0 0 16px;font-size:24px;color:#3A3240;font-family:Arial,sans-serif;">Your verification code</h2>
+      <p style="margin:0 0 24px;font-size:15px;color:#444;font-family:Arial,sans-serif;">Hi <strong>${name || "there"}</strong>, use the code below to verify your email address and complete your account setup.</p>
+    </div>
+
+    <div style="margin:0 40px 32px;background:#F5EEF3;border-radius:4px;padding:28px;text-align:center;border:1px solid #E8D8E8;">
+      <p style="margin:0 0 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#9B8FA0;font-family:Arial,sans-serif;">Verification Code</p>
+      <p style="margin:0;font-size:40px;font-weight:bold;letter-spacing:12px;color:#3A3240;font-family:monospace;">${code}</p>
+    </div>
+
+    <div style="padding:0 40px 40px;">
+      <p style="margin:0;font-size:13px;color:#9B8FA0;font-family:Arial,sans-serif;">This code expires in <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email.</p>
+    </div>
+  `);
+
+  await getResend().emails.send({
+    from: "Kentelle Skincare <noreply@kentelle.com>",
+    to: email,
+    subject: `${code} — Your Kentelle verification code`,
+    html,
+  });
+}
+
 // ─── Gift Card Email ────────────────────────────────────────────────────────
 
 export async function sendGiftCard(
@@ -85,7 +113,7 @@ export async function sendGiftCard(
   `);
 
   await getResend().emails.send({
-    from: "onboarding@resend.dev",
+    from: "Kentelle Skincare <noreply@kentelle.com>",
     to: recipientEmail,
     subject: `You received a $${amount.toFixed(2)} Kentelle Gift Card!`,
     html,
@@ -222,9 +250,198 @@ export async function sendOrderConfirmation(
   `);
 
   await getResend().emails.send({
-    from: "onboarding@resend.dev",
+    from: "Kentelle Skincare <noreply@kentelle.com>",
     to: email,
     subject: `Order Confirmed — #${orderNumber} | Kentelle Skincare`,
+    html,
+  });
+}
+
+// ─── Admin Notification Helpers ─────────────────────────────────────────────
+
+const ADMIN_EMAILS = ["info@kentelle.com"];
+
+function adminWrapper(content: string) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F4F4F4;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F4F4;padding:24px 16px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:4px;overflow:hidden;">
+      <tr><td style="background:#3A3240;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="color:#ffffff;font-size:13px;font-weight:bold;letter-spacing:4px;text-transform:uppercase;font-family:Arial,sans-serif;">KENTELLE · Admin</span>
+      </td></tr>
+      <tr><td style="padding:28px;">
+        ${content}
+      </td></tr>
+      <tr><td style="background:#F8F8F8;padding:14px 28px;border-top:1px solid #E8E8E8;">
+        <p style="margin:0;font-size:11px;color:#999;font-family:Arial,sans-serif;">Internal notification — kentelle.vercel.app</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+}
+
+function adminRow(label: string, value: string) {
+  return `<tr>
+    <td style="padding:7px 0;font-size:13px;color:#888;font-family:Arial,sans-serif;width:40%;vertical-align:top;">${label}</td>
+    <td style="padding:7px 0;font-size:13px;color:#1a1a1a;font-weight:bold;font-family:Arial,sans-serif;">${value}</td>
+  </tr>`;
+}
+
+// ─── Admin: New Order ────────────────────────────────────────────────────────
+
+export async function sendAdminOrderAlert(
+  orderNumber: string,
+  customerEmail: string,
+  items: OrderItem[],
+  subtotal: number,
+  shippingCost: number,
+  total: number,
+  couponCode?: string,
+  discount?: number,
+  shippingAddress?: ShippingAddress,
+  paymentMethod?: string
+) {
+  const itemList = items.map((i) =>
+    `<tr>
+      <td style="padding:6px 0;font-size:13px;color:#1a1a1a;font-family:Arial,sans-serif;border-bottom:1px solid #F0F0F0;">${i.name} × ${i.quantity}</td>
+      <td style="padding:6px 0;font-size:13px;color:#1a1a1a;font-family:Arial,sans-serif;border-bottom:1px solid #F0F0F0;text-align:right;">$${(i.price * i.quantity).toFixed(2)}</td>
+    </tr>`
+  ).join("");
+
+  const addr = shippingAddress
+    ? `${shippingAddress.fullName}, ${shippingAddress.line1}${shippingAddress.line2 ? ` ${shippingAddress.line2}` : ""}, ${shippingAddress.city} ${shippingAddress.state} ${shippingAddress.postcode}`
+    : "—";
+
+  const html = adminWrapper(`
+    <div style="background:#E8F5EE;border-left:4px solid #22a26a;padding:14px 18px;border-radius:2px;margin-bottom:24px;">
+      <p style="margin:0;font-size:15px;font-weight:bold;color:#1a5c36;font-family:Arial,sans-serif;">New Order Received</p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      ${adminRow("Order #", orderNumber)}
+      ${adminRow("Customer", customerEmail)}
+      ${adminRow("Payment", paymentMethod ?? "Online")}
+      ${couponCode ? adminRow("Coupon", `${couponCode} (−$${(discount ?? 0).toFixed(2)})`) : ""}
+      ${adminRow("Ship To", addr)}
+    </table>
+
+    <p style="margin:0 0 8px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;color:#888;font-family:Arial,sans-serif;">Items</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      ${itemList}
+      <tr>
+        <td style="padding:6px 0;font-size:12px;color:#888;font-family:Arial,sans-serif;">Shipping</td>
+        <td style="padding:6px 0;font-size:12px;color:#888;font-family:Arial,sans-serif;text-align:right;">${shippingCost === 0 ? "Free" : `$${shippingCost.toFixed(2)}`}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0 4px;font-size:15px;font-weight:bold;color:#3A3240;font-family:Arial,sans-serif;border-top:2px solid #E0E0E0;">Total Paid</td>
+        <td style="padding:10px 0 4px;font-size:15px;font-weight:bold;color:#3A3240;font-family:Arial,sans-serif;border-top:2px solid #E0E0E0;text-align:right;">$${total.toFixed(2)} AUD</td>
+      </tr>
+    </table>
+
+    <a href="https://kentelle.vercel.app/admin/orders" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View in Admin</a>
+  `);
+
+  await getResend().emails.send({
+    from: "Kentelle Skincare <noreply@kentelle.com>",
+    to: ADMIN_EMAILS,
+    subject: `New Order #${orderNumber} — $${total.toFixed(2)} AUD`,
+    html,
+  });
+}
+
+// ─── Admin: Gift Card Sold ───────────────────────────────────────────────────
+
+export async function sendAdminGiftCardAlert(
+  amount: number,
+  code: string,
+  senderName: string,
+  senderEmail: string,
+  recipientName: string,
+  recipientEmail: string
+) {
+  const html = adminWrapper(`
+    <div style="background:#EEF3FF;border-left:4px solid #5B7FFF;padding:14px 18px;border-radius:2px;margin-bottom:24px;">
+      <p style="margin:0;font-size:15px;font-weight:bold;color:#1a2e6c;font-family:Arial,sans-serif;">Gift Card Sold</p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      ${adminRow("Amount", `$${amount.toFixed(2)} AUD`)}
+      ${adminRow("Code", code)}
+      ${adminRow("From", `${senderName} (${senderEmail})`)}
+      ${adminRow("To", `${recipientName || "—"} (${recipientEmail})`)}
+    </table>
+
+    <a href="https://kentelle.vercel.app/admin/gift-cards" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Gift Cards</a>
+  `);
+
+  await getResend().emails.send({
+    from: "Kentelle Skincare <noreply@kentelle.com>",
+    to: ADMIN_EMAILS,
+    subject: `Gift Card Sold — $${amount.toFixed(2)} AUD (${code})`,
+    html,
+  });
+}
+
+// ─── Admin: New User Registered ──────────────────────────────────────────────
+
+export async function sendAdminNewUserAlert(name: string, email: string) {
+  const html = adminWrapper(`
+    <div style="background:#FFF8E8;border-left:4px solid #F5A623;padding:14px 18px;border-radius:2px;margin-bottom:24px;">
+      <p style="margin:0;font-size:15px;font-weight:bold;color:#7a4c00;font-family:Arial,sans-serif;">New Customer Registered</p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      ${adminRow("Name", name || "—")}
+      ${adminRow("Email", email)}
+      ${adminRow("Registered", new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth", dateStyle: "long", timeStyle: "short" }))}
+    </table>
+
+    <a href="https://kentelle.vercel.app/admin/customers" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Customers</a>
+  `);
+
+  await getResend().emails.send({
+    from: "Kentelle Skincare <noreply@kentelle.com>",
+    to: ADMIN_EMAILS,
+    subject: `New Customer — ${name || email}`,
+    html,
+  });
+}
+
+// ─── Admin: Failed Payment ───────────────────────────────────────────────────
+
+export async function sendAdminFailedPaymentAlert(
+  orderNumber: string,
+  customerEmail: string,
+  amount: number,
+  reason: string,
+  paymentMethod?: string
+) {
+  const html = adminWrapper(`
+    <div style="background:#FFF0F0;border-left:4px solid #E53E3E;padding:14px 18px;border-radius:2px;margin-bottom:24px;">
+      <p style="margin:0;font-size:15px;font-weight:bold;color:#7a0000;font-family:Arial,sans-serif;">Payment Failed</p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      ${adminRow("Order #", orderNumber || "—")}
+      ${adminRow("Customer", customerEmail || "—")}
+      ${adminRow("Amount", `$${amount.toFixed(2)} AUD`)}
+      ${adminRow("Payment", paymentMethod ?? "Online")}
+      ${adminRow("Reason", reason)}
+      ${adminRow("Time", new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth", dateStyle: "long", timeStyle: "short" }))}
+    </table>
+
+    <a href="https://kentelle.vercel.app/admin/orders" style="display:inline-block;background:#E53E3E;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Orders</a>
+  `);
+
+  await getResend().emails.send({
+    from: "Kentelle Skincare <noreply@kentelle.com>",
+    to: ADMIN_EMAILS,
+    subject: `Payment Failed — #${orderNumber || "unknown"} ($${amount.toFixed(2)} AUD)`,
     html,
   });
 }

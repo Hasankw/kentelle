@@ -8,6 +8,7 @@ import ReviewSubmitForm from "@/components/store/ReviewSubmitForm";
 export const metadata: Metadata = {
   title: "Reviews",
   description: "Real reviews from Kentelle customers.",
+  robots: { index: true, follow: true },
 };
 
 export default async function ReviewsPage() {

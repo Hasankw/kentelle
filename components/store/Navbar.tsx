@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 const navLinks = [
   { label: "Shop", href: "/shop" },
   { label: "Collections", href: "/collections" },
-  { label: "Skin Regimen", href: "/skin-regimen" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];

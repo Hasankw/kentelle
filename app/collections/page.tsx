@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Image from "next/image";
 import { db } from "@/lib/db";
@@ -8,19 +10,29 @@ export const metadata: Metadata = {
   description: "Explore Kentelle's skincare collections — everyday essentials, peels, nutrients, accessories and professional products.",
 };
 
-const SLUGS = ["everyday-essentials","peel-and-glow","skin-nutrients","beauty-accessories","professional-use"];
-
 const BANNERS: Record<string, string> = {
-  "everyday-essentials": "/images/collections/col-1.jpg",
-  "peel-and-glow": "/images/collections/col-2.jpg",
-  "skin-nutrients": "/images/collections/col-3.jpg",
-  "beauty-accessories": "/images/collections/col-4.jpg",
-  "professional-use": "/images/collections/col-2.jpg",
+  "everyday-essentials": "/images/hero/hero-slide2.jpg",
+  "peel-and-glow":       "/images/hero/hero-slide3.jpg",
+  "skin-nutrients":      "/images/hero/hero-slide4.jpg",
+  "beauty-accessories":  "/images/hero/hero-beauty-accessories.jpg",
+  "professional-use":    "/images/hero/hero-professional-use.jpg",
+  "cleansers":           "/images/hero/hero-slide1.png",
+  "serums":              "/images/hero/hero-slide4.jpg",
+  "moisturisers":        "/images/hero/hero-slide2.jpg",
+  "face-masks":          "/images/hero/hero-slide3.jpg",
+  "toners":              "/images/hero/hero-slide2.jpg",
+  "eye-care":            "/images/hero/hero-slide2.jpg",
+  "sun-care":            "/images/hero/hero-slide1.png",
 };
 
 export default async function CollectionsPage() {
-  const all = await db.category.findMany({ orderBy: { sortOrder: "asc" } });
-  const collections = all.filter((c: any) => SLUGS.includes(c.slug));
+  const [all, [hiddenContent]] = await Promise.all([
+    db.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    db.content.findMany({ where: { key: "collections:hidden" } }),
+  ]);
+
+  const hiddenSlugs: string[] = hiddenContent ? JSON.parse(hiddenContent.value) : [];
+  const collections = (all as any[]).filter((c) => !hiddenSlugs.includes(c.slug));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
@@ -41,7 +53,7 @@ export default async function CollectionsPage() {
           <Link
             key={col.slug}
             href={`/collections/${col.slug}`}
-            className="group relative aspect-[4/3] overflow-hidden bg-brand-navy"
+            className="group relative aspect-[4/3] overflow-hidden bg-brand-navy rounded-[6px]"
           >
             <Image
               src={col.image ?? BANNERS[col.slug] ?? "/images/collections/col-1.jpg"}

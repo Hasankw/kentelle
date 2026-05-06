@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 export const metadata: Metadata = {
   title: "Blog",
   description: "Skincare tips, ingredient deep-dives, and expert advice from Kentelle.",
+  robots: { index: true, follow: true },
 };
 
 export default async function BlogPage() {

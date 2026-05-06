@@ -4,6 +4,7 @@ import Accordion from "@/components/ui/Accordion";
 export const metadata: Metadata = {
   title: "FAQ",
   description: "Frequently asked questions about Kentelle Skincare.",
+  robots: { index: true, follow: true },
 };
 
 const faqs = [

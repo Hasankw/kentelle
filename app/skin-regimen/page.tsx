@@ -5,8 +5,8 @@ import { Sun, Moon, AlertTriangle, ShieldAlert } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Kentelle Skin Regimen | Complete Skincare Layering Guide",
-  description:
-    "Your step-by-step Kentelle skincare layering guide — designed for Australian skin. From cleansers to SPF, morning to night.",
+  description: "Your step-by-step Kentelle skincare layering guide — designed for Australian skin. From cleansers to SPF, morning to night.",
+  robots: { index: false, follow: false },
 };
 
 const DayBadge = () => (

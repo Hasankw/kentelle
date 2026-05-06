@@ -15,19 +15,27 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const category = await db.category.findUnique({ where: { slug } });
-  if (!category) return { title: "Collection Not Found" };
+  if (!category) return { title: "Collection Not Found", robots: { index: false } };
   return {
-    title: `${category.name} | Kentelle`,
-    description: category.description ?? `Shop ${category.name} products from Kentelle Skincare.`,
+    title: `${category.name} Skincare | Kentelle`,
+    description: category.description ?? `Shop ${category.name} — professional-grade Australian skincare products from Kentelle. Cruelty-free, science-backed formulas.`,
+    robots: { index: true, follow: true },
   };
 }
 
 const CATEGORY_BANNERS: Record<string, { bg: string; position: string }> = {
-  "everyday-essentials": { bg: "/images/collections/col-1.jpg", position: "object-top" },
-  "peel-and-glow":       { bg: "/images/collections/col-2.jpg", position: "object-center" },
-  "skin-nutrients":      { bg: "/images/collections/col-3.jpg", position: "object-center" },
-  "beauty-accessories":  { bg: "/images/collections/col-4.jpg", position: "object-center" },
-  "professional-use":    { bg: "/images/collections/col-2.jpg", position: "object-top" },
+  "everyday-essentials": { bg: "/images/hero/hero-slide2.jpg", position: "object-center" },
+  "peel-and-glow":       { bg: "/images/hero/hero-slide3.jpg", position: "object-center" },
+  "skin-nutrients":      { bg: "/images/hero/hero-slide4.jpg", position: "object-center" },
+  "beauty-accessories":  { bg: "/images/hero/hero-beauty-accessories.jpg", position: "object-center" },
+  "professional-use":    { bg: "/images/hero/hero-professional-use.jpg", position: "object-center" },
+  "cleansers":           { bg: "/images/hero/hero-slide1.png", position: "object-center" },
+  "serums":              { bg: "/images/hero/hero-slide4.jpg", position: "object-center" },
+  "moisturisers":        { bg: "/images/hero/hero-slide2.jpg", position: "object-center" },
+  "face-masks":          { bg: "/images/hero/hero-slide3.jpg", position: "object-center" },
+  "toners":              { bg: "/images/hero/hero-slide2.jpg", position: "object-center" },
+  "eye-care":            { bg: "/images/hero/hero-slide2.jpg", position: "object-center" },
+  "sun-care":            { bg: "/images/hero/hero-slide1.png", position: "object-center" },
 };
 
 export default async function CollectionPage({ params }: PageProps) {
@@ -141,16 +149,27 @@ export default async function CollectionPage({ params }: PageProps) {
 }
 
 async function OtherCollections({ currentSlug }: { currentSlug: string }) {
-  const categories = await db.category.findMany({ orderBy: { sortOrder: "asc" } });
-  const others = categories.filter((c: any) => c.slug === currentSlug ? false : ["everyday-essentials","peel-and-glow","skin-nutrients","beauty-accessories","professional-use"].includes(c.slug));
+  const [categories, [hiddenContent]] = await Promise.all([
+    db.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    db.content.findMany({ where: { key: "collections:hidden" } }),
+  ]);
+  const hiddenSlugs: string[] = hiddenContent ? JSON.parse(hiddenContent.value) : [];
+  const others = categories.filter((c: any) => c.slug !== currentSlug && !hiddenSlugs.includes(c.slug));
   if (!others.length) return null;
 
   const bannerMap: Record<string, string> = {
-    "everyday-essentials": "/images/collections/col-1.jpg",
-    "peel-and-glow": "/images/collections/col-2.jpg",
-    "skin-nutrients": "/images/collections/col-3.jpg",
-    "beauty-accessories": "/images/collections/col-4.jpg",
-    "professional-use": "/images/collections/col-2.jpg",
+    "everyday-essentials": "/images/hero/hero-slide2.jpg",
+    "peel-and-glow":       "/images/hero/hero-slide3.jpg",
+    "skin-nutrients":      "/images/hero/hero-slide4.jpg",
+    "beauty-accessories":  "/images/hero/hero-beauty-accessories.jpg",
+    "professional-use":    "/images/hero/hero-professional-use.jpg",
+    "cleansers":           "/images/hero/hero-slide1.png",
+    "serums":              "/images/hero/hero-slide4.jpg",
+    "moisturisers":        "/images/hero/hero-slide2.jpg",
+    "face-masks":          "/images/hero/hero-slide3.jpg",
+    "toners":              "/images/hero/hero-slide2.jpg",
+    "eye-care":            "/images/hero/hero-slide2.jpg",
+    "sun-care":            "/images/hero/hero-slide1.png",
   };
 
   return (
@@ -164,7 +183,7 @@ async function OtherCollections({ currentSlug }: { currentSlug: string }) {
             <Link
               key={c.slug}
               href={`/collections/${c.slug}`}
-              className="group relative h-28 w-44 overflow-hidden"
+              className="group relative h-28 w-44 overflow-hidden rounded-[6px]"
             >
               <Image
                 src={c.image ?? bannerMap[c.slug] ?? "/images/collections/col-1.jpg"}

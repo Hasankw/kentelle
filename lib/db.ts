@@ -63,8 +63,21 @@ function parseProduct(p: any) {
 const PRODUCT_SELECT = "*, categories:_ProductCategories(category:Category(*))";
 
 async function productFindMany(args: any = {}) {
+  const catSlug = args.where?.categories?.some?.slug;
+  const { categories: _cat, ...restWhere } = args.where ?? {};
+
   let q = supabase.from("Product").select(PRODUCT_SELECT);
-  q = applyWhere(q, args.where);
+
+  if (catSlug) {
+    const { data: cat } = await supabase.from("Category").select("id").eq("slug", catSlug).maybeSingle();
+    if (!cat) return [];
+    const { data: links } = await supabase.from("_ProductCategories").select("B").eq("A", (cat as any).id);
+    const ids = (links ?? []).map((l: any) => l.B);
+    if (!ids.length) return [];
+    q = (q as any).in("id", ids);
+  }
+
+  q = applyWhere(q, catSlug ? restWhere : args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = (q as any).limit(args.take);
   if (args.skip && args.take) q = (q as any).range(args.skip, args.skip + args.take - 1);
@@ -95,8 +108,23 @@ async function productFindManyByCategory(slug: string, args: any = {}) {
 }
 
 async function productCount(args: any = {}) {
+  const catSlug = args.where?.categories?.some?.slug;
+  const { categories: _cat, ...restWhere } = args.where ?? {};
+
   let q: any = supabase.from("Product").select("id", { count: "exact", head: true });
-  q = applyWhere(q, args.where);
+
+  if (catSlug) {
+    const { data: cat } = await supabase.from("Category").select("id").eq("slug", catSlug).maybeSingle();
+    if (!cat) return 0;
+    const { data: links } = await supabase.from("_ProductCategories").select("B").eq("A", (cat as any).id);
+    const ids = (links ?? []).map((l: any) => l.B);
+    if (!ids.length) return 0;
+    q = q.in("id", ids);
+    q = applyWhere(q, restWhere);
+  } else {
+    q = applyWhere(q, args.where);
+  }
+
   const { count, error } = await q;
   throwIfError(count, error, "product.count");
   return count ?? 0;
@@ -449,6 +477,115 @@ async function customerCount(args: any = {}) {
   return count ?? 0;
 }
 
+// ─── featured events ───────────────────────────────────────────────────────
+
+async function featuredEventFindMany(args: any = {}) {
+  let q: any = supabase.from("FeaturedEvent").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy ?? { sortOrder: "asc" });
+  const { data, error } = await q;
+  throwIfError(data, error, "featuredEvent.findMany");
+  return data ?? [];
+}
+
+async function featuredEventFindUnique(args: any) {
+  let q: any = supabase.from("FeaturedEvent").select("*");
+  q = applyWhere(q, args.where);
+  const { data, error } = await q.maybeSingle();
+  throwIfError(data, error, "featuredEvent.findUnique");
+  return data ?? null;
+}
+
+async function featuredEventCreate(args: any) {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase.from("FeaturedEvent").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, enabled: false, sortOrder: 0, ...args.data }).select().single();
+  throwIfError(data, error, "featuredEvent.create");
+  return data;
+}
+
+async function featuredEventUpdate(args: any) {
+  const now = new Date().toISOString();
+  let q: any = supabase.from("FeaturedEvent").update({ ...args.data, updatedAt: now });
+  q = applyWhere(q, args.where);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "featuredEvent.update");
+  return data;
+}
+
+async function featuredEventDelete(args: any) {
+  let q: any = supabase.from("FeaturedEvent").delete();
+  q = applyWhere(q, args.where);
+  const { error } = await q;
+  throwIfError(true, error, "featuredEvent.delete");
+}
+
+async function featuredEventProductFindMany(args: any = {}) {
+  let q: any = supabase.from("FeaturedEventProduct").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy ?? { sortOrder: "asc" });
+  const { data, error } = await q;
+  throwIfError(data, error, "featuredEventProduct.findMany");
+  return data ?? [];
+}
+
+async function featuredEventProductCreate(args: any) {
+  const { data, error } = await supabase.from("FeaturedEventProduct").insert({ id: crypto.randomUUID(), sortOrder: 0, ...args.data }).select().single();
+  throwIfError(data, error, "featuredEventProduct.create");
+  return data;
+}
+
+async function featuredEventProductDelete(args: any) {
+  let q: any = supabase.from("FeaturedEventProduct").delete();
+  q = applyWhere(q, args.where);
+  const { error } = await q;
+  throwIfError(true, error, "featuredEventProduct.delete");
+}
+
+async function featuredEventProductDeleteMany(args: any) {
+  let q: any = supabase.from("FeaturedEventProduct").delete();
+  q = applyWhere(q, args.where);
+  const { error } = await q;
+  throwIfError(true, error, "featuredEventProduct.deleteMany");
+}
+
+// ─── chat ──────────────────────────────────────────────────────────────────
+
+async function chatSessionUpsert(sessionId: string, email?: string) {
+  const { data: existing } = await supabase.from("ChatSession").select("id").eq("sessionId", sessionId).maybeSingle();
+  if (existing) {
+    if (email) await supabase.from("ChatSession").update({ userEmail: email }).eq("sessionId", sessionId);
+    return existing;
+  }
+  const { data, error } = await supabase.from("ChatSession").insert({ id: crypto.randomUUID(), sessionId, userEmail: email ?? null, createdAt: new Date().toISOString() }).select().single();
+  throwIfError(data, error, "chatSession.upsert");
+  return data;
+}
+
+async function chatSessionFindMany(args: any = {}) {
+  let q: any = supabase.from("ChatSession").select("*");
+  q = applyOrder(q, args.orderBy ?? { createdAt: "desc" });
+  if (args.take) q = q.limit(args.take);
+  const { data, error } = await q;
+  throwIfError(data, error, "chatSession.findMany");
+  return data ?? [];
+}
+
+async function chatMessageCreate(args: any) {
+  const { data, error } = await supabase.from("ChatMessage").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data }).select().single();
+  throwIfError(data, error, "chatMessage.create");
+  return data;
+}
+
+async function chatMessageFindMany(args: any = {}) {
+  let q: any = supabase.from("ChatMessage").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy ?? { createdAt: "asc" });
+  if (args.take) q = q.limit(args.take);
+  const { data, error } = await q;
+  throwIfError(data, error, "chatMessage.findMany");
+  return data ?? [];
+}
+
 // ─── lead ──────────────────────────────────────────────────────────────────
 
 async function leadFindMany(args: any = {}) {
@@ -736,6 +873,27 @@ export const db = {
     findMany: leadFindMany,
     create: leadCreate,
     count: leadCount,
+  },
+  featuredEvent: {
+    findMany: featuredEventFindMany,
+    findUnique: featuredEventFindUnique,
+    create: featuredEventCreate,
+    update: featuredEventUpdate,
+    delete: featuredEventDelete,
+  },
+  featuredEventProduct: {
+    findMany: featuredEventProductFindMany,
+    create: featuredEventProductCreate,
+    delete: featuredEventProductDelete,
+    deleteMany: featuredEventProductDeleteMany,
+  },
+  chatSession: {
+    upsert: chatSessionUpsert,
+    findMany: chatSessionFindMany,
+  },
+  chatMessage: {
+    create: chatMessageCreate,
+    findMany: chatMessageFindMany,
   },
   admin: {
     findUnique: adminFindUnique,

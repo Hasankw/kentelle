@@ -5,6 +5,7 @@ import SignupForm from "@/components/auth/SignupForm";
 export const metadata: Metadata = {
   title: "Create Account",
   description: "Create your Kentelle account.",
+  robots: { index: false, follow: false },
 };
 
 export default function SignupPage() {

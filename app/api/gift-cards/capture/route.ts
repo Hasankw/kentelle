@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { capturePayPalOrder } from "@/lib/paypal";
 import { db } from "@/lib/db";
 import { generateGiftCardCode } from "@/lib/utils";
-import { sendGiftCard } from "@/lib/resend";
+import { sendGiftCard, sendAdminGiftCardAlert } from "@/lib/resend";
 
 export async function POST(req: NextRequest) {
   const { paypalOrderId, amount, recipientEmail, recipientName, senderEmail, senderName, message } =
@@ -33,17 +33,12 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    await sendGiftCard(
-      recipientEmail,
-      recipientName ?? "",
-      senderName || senderEmail,
-      Number(amount),
-      code,
-      message ?? ""
-    );
-  } catch {
-    // non-fatal
-  }
+    await sendGiftCard(recipientEmail, recipientName ?? "", senderName || senderEmail, Number(amount), code, message ?? "");
+  } catch { /* non-fatal */ }
+
+  try {
+    await sendAdminGiftCardAlert(Number(amount), code, senderName || senderEmail, senderEmail, recipientName ?? "", recipientEmail);
+  } catch { /* non-fatal */ }
 
   return NextResponse.json({ success: true, code });
 }
