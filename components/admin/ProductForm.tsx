@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Plus } from "lucide-react";
+import Image from "next/image";
+import { X, Plus, Upload, Loader2, GripVertical } from "lucide-react";
 import { slugify } from "@/lib/utils";
 
 interface Category {
@@ -53,6 +54,8 @@ export default function ProductForm({
     categoryIds: product?.categoryIds ?? [],
   });
   const [imageInput, setImageInput] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof ProductData>(key: K, value: ProductData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -72,6 +75,21 @@ export default function ProductForm({
 
   const removeImage = (url: string) =>
     set("images", form.images.filter((i) => i !== url));
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setUploading(true);
+    const urls: string[] = [];
+    for (const file of Array.from(files)) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) urls.push(data.url);
+    }
+    set("images", [...form.images, ...urls.filter((u) => !form.images.includes(u))]);
+    setUploading(false);
+  };
 
   const toggleCategory = (id: string) =>
     set(
@@ -219,37 +237,75 @@ export default function ProductForm({
 
       {/* Images */}
       <div>
-        <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">
+        <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-2">
           Images
         </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            value={imageInput}
-            onChange={(e) => setImageInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addImage())}
-            placeholder="Paste image URL…"
-            className={`${fieldClass} flex-1`}
-          />
-          <button
-            type="button"
-            onClick={addImage}
-            className="px-4 py-2 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
+
+        {/* Thumbnail grid */}
         {form.images.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {form.images.map((url) => (
-              <div key={url} className="flex items-center gap-1 bg-brand-contrast/10 px-2 py-1 text-xs font-body text-brand-navy rounded">
-                <span className="max-w-[200px] truncate">{url}</span>
-                <button type="button" onClick={() => removeImage(url)} className="text-red-500 hover:text-red-700">
-                  <X size={12} />
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-3">
+            {form.images.map((url, i) => (
+              <div key={url} className="relative group aspect-square bg-brand-contrast/5 border border-brand-contrast/10 rounded overflow-hidden">
+                <Image
+                  src={url}
+                  alt={`Image ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="120px"
+                  unoptimized
+                />
+                {i === 0 && (
+                  <span className="absolute top-1 left-1 bg-brand-navy text-white text-[9px] font-heading font-bold px-1 py-0.5 rounded uppercase tracking-wide">Main</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeImage(url)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={10} />
                 </button>
               </div>
             ))}
           </div>
         )}
+
+        {/* Upload + URL row */}
+        <div className="flex gap-2 mb-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFileUpload(e.target.files)}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-1.5 px-3 py-2 border border-brand-contrast/20 text-xs font-heading font-bold uppercase tracking-wider text-brand-navy hover:bg-brand-contrast/5 transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+            {uploading ? "Uploading…" : "Upload Images"}
+          </button>
+          <input
+            value={imageInput}
+            onChange={(e) => setImageInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addImage())}
+            placeholder="Or paste image URL…"
+            className={`${fieldClass} flex-1`}
+          />
+          <button
+            type="button"
+            onClick={addImage}
+            className="px-3 py-2 bg-brand-navy text-brand-white rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        <p className="text-[11px] font-body text-brand-contrast/60">
+          First image is the main product photo. Upload multiple at once or paste a URL.
+        </p>
       </div>
 
       {/* Categories */}
