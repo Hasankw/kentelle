@@ -4,10 +4,10 @@ import { useEffect, useState, use } from "react";
 import AdminShell from "@/components/admin/AdminShell";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Search, X, ToggleLeft, ToggleRight, Save } from "lucide-react";
+import { ArrowLeft, Search, X, ToggleLeft, ToggleRight, Save, Upload } from "lucide-react";
 
 type Product = { id: string; name: string; slug: string; price: number; images: string[]; isActive: boolean };
-type EventData = { id: string; title: string; subtitle: string | null; enabled: boolean; products: Product[] };
+type EventData = { id: string; title: string; subtitle: string | null; image: string | null; enabled: boolean; products: Product[] };
 
 export default function AdminEventEditPage({
   params,
@@ -21,7 +21,8 @@ export default function AdminEventEditPage({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [form, setForm] = useState({ title: "", subtitle: "" });
+  const [form, setForm] = useState({ title: "", subtitle: "", image: "" });
+  const [uploadingImg, setUploadingImg] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -32,7 +33,7 @@ export default function AdminEventEditPage({
     if (eventRes.ok) {
       const data = await eventRes.json();
       setEvent(data);
-      setForm({ title: data.title, subtitle: data.subtitle ?? "" });
+      setForm({ title: data.title, subtitle: data.subtitle ?? "", image: data.image ?? "" });
     }
     if (productsRes.ok) {
       const data = await productsRes.json();
@@ -49,12 +50,22 @@ export default function AdminEventEditPage({
     await fetch(`/api/admin/events/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: form.title, subtitle: form.subtitle || null }),
+      body: JSON.stringify({ title: form.title, subtitle: form.subtitle || null, image: form.image || null }),
     });
-    setEvent((e) => e ? { ...e, title: form.title, subtitle: form.subtitle || null } : e);
+    setEvent((e) => e ? { ...e, title: form.title, subtitle: form.subtitle || null, image: form.image || null } : e);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     setSaving(false);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImg(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    if (data.url) setForm((f) => ({ ...f, image: data.url }));
+    setUploadingImg(false);
   };
 
   const toggleEnabled = async () => {
@@ -149,6 +160,29 @@ export default function AdminEventEditPage({
                 <div>
                   <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">Subtitle</label>
                   <input value={form.subtitle} onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))} placeholder="Optional tagline shown below the title" className={fieldClass} />
+                </div>
+                <div>
+                  <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1.5">Cover Image</label>
+                  {form.image && (
+                    <div className="relative mb-2 w-full aspect-video overflow-hidden rounded border border-brand-contrast/10">
+                      <img src={form.image} alt="Cover" className="object-cover w-full h-full" />
+                      <button type="button" onClick={() => setForm((f) => ({ ...f, image: "" }))} className="absolute top-1.5 right-1.5 bg-red-500 text-white rounded-full p-0.5">
+                        <X size={11} />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      value={form.image}
+                      onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
+                      placeholder="Paste image URL or upload…"
+                      className={`${fieldClass} flex-1 text-xs`}
+                    />
+                    <label className="flex items-center gap-1.5 px-3 py-2 border border-brand-contrast/20 text-xs font-heading font-bold uppercase tracking-wider text-brand-navy hover:bg-brand-contrast/5 cursor-pointer whitespace-nowrap">
+                      {uploadingImg ? "…" : <><Upload size={12} /> Upload</>}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
+                    </label>
+                  </div>
                 </div>
                 <button
                   onClick={save}

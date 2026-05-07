@@ -6,7 +6,7 @@ import TrustBadges from "@/components/home/TrustBadges";
 import CollectionGrid from "@/components/home/CollectionGrid";
 import SkinConcernNav from "@/components/home/SkinConcernNav";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
-import EventSection from "@/components/home/EventSection";
+import EventCollectionGrid from "@/components/home/EventCollectionGrid";
 import ReviewsBanner from "@/components/home/ReviewsBanner";
 import FadeIn from "@/components/ui/FadeIn";
 
@@ -37,34 +37,38 @@ async function getFeaturedProducts() {
 async function getActiveEvents() {
   try {
     const events = await db.featuredEvent.findMany({ where: { enabled: true }, orderBy: { sortOrder: "asc" } });
-    return await Promise.all(
-      events.map(async (event: any) => {
-        const eps = await db.featuredEventProduct.findMany({ where: { eventId: event.id }, orderBy: { sortOrder: "asc" } });
-        const productIds = eps.map((ep: any) => ep.productId);
-        const products = productIds.length > 0
-          ? await db.product.findMany({ where: { id: productIds, isActive: true } })
-          : [];
-        return { ...event, products };
-      })
-    );
+    if (!events.length) return { events: [], sectionTitle: "Our Special Offers", eventImages: {} };
+
+    const contentRows = await db.content.findMany({
+      where: { key: { in: ["events_section_title", "event_images"] } },
+    });
+    const contentMap = Object.fromEntries((contentRows as any[]).map((r: any) => [r.key, r.value]));
+    const sectionTitle = contentMap.events_section_title ?? "Our Special Offers";
+    const eventImages = contentMap.event_images ? JSON.parse(contentMap.event_images) : {};
+
+    const eventsWithImages = events.map((e: any) => ({ ...e, image: eventImages[e.id] ?? null }));
+    return { events: eventsWithImages, sectionTitle, eventImages };
   } catch {
-    return [];
+    return { events: [], sectionTitle: "Our Special Offers", eventImages: {} };
   }
 }
 
 export default async function HomePage() {
-  const [products, events] = await Promise.all([getFeaturedProducts(), getActiveEvents()]);
+  const [products, { events, sectionTitle }] = await Promise.all([
+    getFeaturedProducts(),
+    getActiveEvents(),
+  ]);
 
   return (
     <>
       <HeroCarousel />
       <FadeIn><TrustBadges /></FadeIn>
       <FadeIn delay={0.05}><FeaturedProducts products={products as any} title="Bestsellers" subtitle="Loved by thousands of Australian skin types" /></FadeIn>
-      {events.map((event: any) => (
-        <FadeIn key={event.id} delay={0.05}>
-          <EventSection title={event.title} subtitle={event.subtitle} products={event.products} />
+      {events.length > 0 && (
+        <FadeIn delay={0.05}>
+          <EventCollectionGrid events={events as any} sectionTitle={sectionTitle} />
         </FadeIn>
-      ))}
+      )}
       <FadeIn delay={0.05}><SkinConcernNav /></FadeIn>
       <FadeIn delay={0.05}><ReviewsBanner /></FadeIn>
     </>

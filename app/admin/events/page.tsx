@@ -21,15 +21,31 @@ export default function AdminEventsPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newSubtitle, setNewSubtitle] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sectionTitle, setSectionTitle] = useState("Our Special Offers");
+  const [sectionTitleSaved, setSectionTitleSaved] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/events");
-    if (res.ok) setEvents(await res.json());
+    const [eventsRes, titleRes] = await Promise.all([
+      fetch("/api/admin/events"),
+      fetch("/api/admin/events/section-title"),
+    ]);
+    if (eventsRes.ok) setEvents(await eventsRes.json());
+    if (titleRes.ok) { const d = await titleRes.json(); setSectionTitle(d.title ?? "Our Special Offers"); }
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
+
+  const saveSectionTitle = async () => {
+    await fetch("/api/admin/events/section-title", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: sectionTitle }),
+    });
+    setSectionTitleSaved(true);
+    setTimeout(() => setSectionTitleSaved(false), 2000);
+  };
 
   const createEvent = async () => {
     if (!newTitle.trim()) return;
@@ -77,6 +93,28 @@ export default function AdminEventsPage() {
             className="flex items-center gap-2 bg-brand-accent text-brand-navy rounded px-4 py-2.5 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
           >
             <Plus size={14} /> New Event
+          </button>
+        </div>
+
+        {/* Section title */}
+        <div className="mb-6 bg-white border border-brand-contrast/10 rounded p-4 flex items-center gap-3">
+          <div className="flex-1">
+            <label className="block text-xs font-heading font-bold uppercase tracking-wider text-brand-navy mb-1">
+              Homepage Section Title
+            </label>
+            <input
+              value={sectionTitle}
+              onChange={(e) => { setSectionTitle(e.target.value); setSectionTitleSaved(false); }}
+              className="w-full border border-brand-contrast/20 px-3 py-2 text-sm font-body text-brand-navy focus:outline-none focus:border-brand-blue"
+              placeholder="e.g. Our Special Offers"
+              onKeyDown={(e) => e.key === "Enter" && saveSectionTitle()}
+            />
+          </div>
+          <button
+            onClick={saveSectionTitle}
+            className="mt-5 px-4 py-2 bg-brand-navy text-white text-xs font-heading font-bold uppercase tracking-widest rounded hover:bg-brand-blue transition-colors whitespace-nowrap"
+          >
+            {sectionTitleSaved ? "Saved!" : "Save"}
           </button>
         </div>
 
