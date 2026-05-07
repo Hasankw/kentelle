@@ -8,6 +8,7 @@ import { ArrowLeft, Search, X, ToggleLeft, ToggleRight, Save, Upload } from "luc
 
 type Product = { id: string; name: string; slug: string; price: number; images: string[]; isActive: boolean };
 type EventData = { id: string; title: string; subtitle: string | null; image: string | null; enabled: boolean; products: Product[] };
+type Offer = { id: string; productId: string; productName: string; productSlug: string; productImage: string; qty: number; bundlePrice: number; originalPrice: number };
 
 export default function AdminEventEditPage({
   params,
@@ -23,12 +24,16 @@ export default function AdminEventEditPage({
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({ title: "", subtitle: "", image: "" });
   const [uploadingImg, setUploadingImg] = useState(false);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offerForm, setOfferForm] = useState({ productId: "", qty: "2", bundlePrice: "", originalPrice: "" });
+  const [addingOffer, setAddingOffer] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    const [eventRes, productsRes] = await Promise.all([
+    const [eventRes, productsRes, offersRes] = await Promise.all([
       fetch(`/api/admin/events/${id}`),
       fetch("/api/admin/products?take=200"),
+      fetch(`/api/admin/events/${id}/offers`),
     ]);
     if (eventRes.ok) {
       const data = await eventRes.json();
@@ -39,6 +44,7 @@ export default function AdminEventEditPage({
       const data = await productsRes.json();
       setAllProducts(Array.isArray(data) ? data : data.products ?? []);
     }
+    if (offersRes.ok) setOffers(await offersRes.json());
     setLoading(false);
   };
 
@@ -100,6 +106,41 @@ export default function AdminEventEditPage({
     });
   };
 
+  const addOffer = async () => {
+    const product = allProducts.find((p) => p.id === offerForm.productId);
+    if (!product || !offerForm.bundlePrice || !offerForm.originalPrice) return;
+    setAddingOffer(true);
+    const payload = {
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+      productImage: product.images?.[0] ?? "",
+      qty: parseInt(offerForm.qty),
+      bundlePrice: parseFloat(offerForm.bundlePrice),
+      originalPrice: parseFloat(offerForm.originalPrice),
+    };
+    const res = await fetch(`/api/admin/events/${id}/offers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const saved = await res.json();
+      setOffers((prev) => [...prev, saved]);
+      setOfferForm({ productId: "", qty: "2", bundlePrice: "", originalPrice: "" });
+    }
+    setAddingOffer(false);
+  };
+
+  const removeOffer = async (offerId: string) => {
+    setOffers((prev) => prev.filter((o) => o.id !== offerId));
+    await fetch(`/api/admin/events/${id}/offers`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ offerId }),
+    });
+  };
+
   const taggedIds = new Set(event?.products.map((p) => p.id) ?? []);
   const filtered = allProducts.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) && !taggedIds.has(p.id)
@@ -145,6 +186,69 @@ export default function AdminEventEditPage({
               : <><ToggleLeft size={16} /> Hidden</>
             }
           </button>
+        </div>
+
+        {/* Bundle Offers */}
+        <div className="bg-white border border-brand-contrast/10 rounded p-5 mb-8">
+          <h2 className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy mb-1">Bundle Offers</h2>
+          <p className="text-xs font-body text-brand-contrast/60 mb-4">e.g. Buy 2 for $120 instead of $178</p>
+
+          {/* Existing offers */}
+          {offers.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {offers.map((o) => (
+                <div key={o.id} className="flex items-center gap-3 p-3 bg-brand-contrast/5 rounded">
+                  {o.productImage && <img src={o.productImage} alt="" className="w-10 h-10 object-cover rounded shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-body font-bold text-brand-navy truncate">{o.productName}</p>
+                    <p className="text-[11px] font-body text-brand-contrast">
+                      Buy {o.qty} for <span className="font-bold text-brand-navy">${o.bundlePrice}</span>{" "}
+                      <span className="line-through text-brand-contrast/50">${o.originalPrice}</span>
+                    </p>
+                  </div>
+                  <button onClick={() => removeOffer(o.id)} className="p-1.5 text-brand-contrast/40 hover:text-red-500 transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add offer form */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-heading font-bold uppercase tracking-wider text-brand-navy mb-1">Product</label>
+              <select
+                value={offerForm.productId}
+                onChange={(e) => setOfferForm((f) => ({ ...f, productId: e.target.value }))}
+                className="w-full border border-brand-contrast/20 px-2 py-2 text-xs font-body text-brand-navy focus:outline-none focus:border-brand-blue"
+              >
+                <option value="">Select product…</option>
+                {allProducts.filter((p) => p.isActive !== false).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-heading font-bold uppercase tracking-wider text-brand-navy mb-1">Qty</label>
+              <input type="number" min="2" value={offerForm.qty} onChange={(e) => setOfferForm((f) => ({ ...f, qty: e.target.value }))} className="w-full border border-brand-contrast/20 px-2 py-2 text-xs font-body text-brand-navy focus:outline-none focus:border-brand-blue" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-heading font-bold uppercase tracking-wider text-brand-navy mb-1">Bundle $</label>
+              <input type="number" step="0.01" placeholder="120" value={offerForm.bundlePrice} onChange={(e) => setOfferForm((f) => ({ ...f, bundlePrice: e.target.value }))} className="w-full border border-brand-contrast/20 px-2 py-2 text-xs font-body text-brand-navy focus:outline-none focus:border-brand-blue" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-heading font-bold uppercase tracking-wider text-brand-navy mb-1">Original $</label>
+              <input type="number" step="0.01" placeholder="178" value={offerForm.originalPrice} onChange={(e) => setOfferForm((f) => ({ ...f, originalPrice: e.target.value }))} className="w-full border border-brand-contrast/20 px-2 py-2 text-xs font-body text-brand-navy focus:outline-none focus:border-brand-blue" />
+            </div>
+            <button
+              onClick={addOffer}
+              disabled={addingOffer || !offerForm.productId || !offerForm.bundlePrice || !offerForm.originalPrice}
+              className="px-4 py-2 bg-brand-navy text-white text-xs font-heading font-bold uppercase tracking-widest rounded hover:bg-brand-blue transition-colors disabled:opacity-50"
+            >
+              {addingOffer ? "Adding…" : "+ Add Offer"}
+            </button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
