@@ -8,6 +8,7 @@ import ProductImageGallery from "@/components/store/ProductImageGallery";
 import AddToCartSection from "@/components/store/AddToCartSection";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import { formatPrice, calcDiscount } from "@/lib/utils";
+import { isBundleProduct, MOTHERS_DAY_BUNDLE } from "@/lib/bundles";
 import Link from "next/link";
 
 interface PageProps {
@@ -64,6 +65,7 @@ export default async function ProductPage({ params }: PageProps) {
   const discount = product.salePrice
     ? calcDiscount(product.price, product.salePrice)
     : 0;
+  const isBundle = isBundleProduct(product.id);
 
   const tabs = [
     product.description && {
@@ -144,6 +146,21 @@ export default async function ProductPage({ params }: PageProps) {
               (4.9) · 124 reviews
             </span>
           </div>
+
+          {/* Bundle deal banner */}
+          {isBundle && (
+            <div className="flex items-center gap-3 bg-pink-50 border border-pink-200 rounded-lg px-4 py-3 mb-4">
+              <span className="text-xl">🎁</span>
+              <div>
+                <p className="text-xs font-heading font-bold uppercase tracking-wider text-pink-700">Mother's Day Special</p>
+                <p className="text-sm font-body text-pink-800">
+                  Buy 2 for <span className="font-bold">${MOTHERS_DAY_BUNDLE.bundlePrice}</span>
+                  <span className="line-through text-pink-500 ml-2">${MOTHERS_DAY_BUNDLE.unitPrice * 2}</span>
+                  <span className="ml-2 text-xs font-bold text-pink-600">Save 32%</span>
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Price */}
           <div className="flex items-center gap-3 mb-6">

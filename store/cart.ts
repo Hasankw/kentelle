@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem } from "@/types";
+import { MOTHERS_DAY_BUNDLE } from "@/lib/bundles";
 
 interface AppliedCoupon {
   code: string;
@@ -35,6 +36,7 @@ interface CartStore {
   applyGiftCard: (gc: AppliedGiftCard) => void;
   removeGiftCard: () => void;
   discount: () => number;
+  bundleDiscount: () => number;
   discountedTotal: () => number;
 }
 
@@ -93,10 +95,22 @@ export const useCartStore = create<CartStore>()(
       applyGiftCard: (gc) => set({ giftCard: gc }),
       removeGiftCard: () => set({ giftCard: null }),
 
+      bundleDiscount: () => {
+        const items = get().items;
+        let d = 0;
+        for (const item of items) {
+          if (MOTHERS_DAY_BUNDLE.productIds.includes(item.id)) {
+            const pairs = Math.floor(item.quantity / 2);
+            d += pairs * MOTHERS_DAY_BUNDLE.savingsPerPair;
+          }
+        }
+        return d;
+      },
+
       discount: () => {
         const raw = get().total();
         const { coupon, giftCard } = get();
-        let d = 0;
+        let d = get().bundleDiscount();
         if (coupon) {
           d += coupon.type === "PERCENTAGE"
             ? raw * (coupon.value / 100)

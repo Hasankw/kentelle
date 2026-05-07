@@ -8,6 +8,7 @@ import { ShoppingBag } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import { formatPrice, calcDiscount } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
+import { isBundleProduct, MOTHERS_DAY_BUNDLE } from "@/lib/bundles";
 import type { Product } from "@/types";
 
 interface ProductCardProps {
@@ -27,6 +28,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const sizeLabel = sizeMatch?.[1]?.trim().replace(/\s+/g, "");
   const image2 = product.images[1] ?? image1;
   const isPlaceholder = !product.images[0];
+  const isBundle = isBundleProduct(product.id);
   const discount = product.salePrice
     ? calcDiscount(product.price, product.salePrice)
     : 0;
@@ -79,6 +81,11 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {isBundle && (
+              <span className="text-[9px] font-heading font-bold uppercase tracking-wider bg-pink-500 text-white px-2 py-1 rounded leading-tight">
+                Buy 2 for ${MOTHERS_DAY_BUNDLE.bundlePrice}
+              </span>
+            )}
             {discount > 0 && (
               <Badge variant="sale">-{discount}%</Badge>
             )}

@@ -23,7 +23,7 @@ export default function CartPage() {
   const {
     items, removeItem, updateQuantity, total,
     coupon, giftCard, applyCoupon, removeCoupon, applyGiftCard, removeGiftCard,
-    discount, discountedTotal,
+    discount, bundleDiscount, discountedTotal,
   } = useCartStore();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -321,6 +321,12 @@ export default function CartPage() {
             <span className="text-brand-contrast">Subtotal</span>
             <span className="font-bold text-brand-navy">{formatPrice(subtotal)}</span>
           </div>
+          {bundleDiscount() > 0 && (
+            <div className="flex justify-between text-sm font-body text-pink-600 bg-pink-50 border border-pink-200 rounded px-3 py-2">
+              <span className="font-bold">🎁 Mother's Day Bundle</span>
+              <span className="font-bold">−{formatPrice(bundleDiscount())}</span>
+            </div>
+          )}
           {discountAmt > 0 && (
             <div className="flex justify-between text-sm font-body text-green-600">
               <span>Discount</span>

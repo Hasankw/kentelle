@@ -10,7 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, removeItem, updateQuantity, total } =
+  const { items, isOpen, closeCart, removeItem, updateQuantity, total, bundleDiscount, discountedTotal } =
     useCartStore();
 
   useEffect(() => {
@@ -131,16 +131,26 @@ export default function CartDrawer() {
             {items.length > 0 && (
               <div className="border-t border-brand-contrast/20 p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-body text-sm text-brand-navy/70">
-                    Subtotal
-                  </span>
-                  <span className="font-heading font-bold text-brand-navy">
-                    {formatPrice(total())}
-                  </span>
+                  <span className="font-body text-sm text-brand-navy/70">Subtotal</span>
+                  <span className="font-heading font-bold text-brand-navy">{formatPrice(total())}</span>
                 </div>
-                <p className="text-xs text-brand-contrast">
-                  Shipping calculated at checkout
-                </p>
+                {bundleDiscount() > 0 && (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-3 py-2">
+                    <span className="text-xs font-heading font-bold text-green-700 uppercase tracking-wider">
+                      🎁 Mother's Day Bundle
+                    </span>
+                    <span className="text-xs font-heading font-bold text-green-700">
+                      -{formatPrice(bundleDiscount())}
+                    </span>
+                  </div>
+                )}
+                {bundleDiscount() > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-body text-sm font-bold text-brand-navy">Total</span>
+                    <span className="font-heading font-bold text-brand-navy">{formatPrice(discountedTotal())}</span>
+                  </div>
+                )}
+                <p className="text-xs text-brand-contrast">Shipping calculated at checkout</p>
                 <Link href="/checkout" onClick={closeCart}>
                   <Button className="w-full" size="lg">
                     Checkout
