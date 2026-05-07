@@ -29,7 +29,7 @@ const slides = [
     headline: "Peel and\nGlow",
     sub: "Absorb, resurfacing, restore and anti-ageing.",
     cta: { label: "Shop Collection", href: "/collections/peel-and-glow" },
-    image: "/images/hero/hero-slide3.jpg",
+    image: "https://siwgptjhirmkabyjmddm.supabase.co/storage/v1/object/public/products/hero-peel-and-glow-new.jpg",
   },
   {
     id: 4,
