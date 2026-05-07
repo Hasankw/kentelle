@@ -63,12 +63,12 @@ export default async function HomePage() {
     <>
       <HeroCarousel />
       <FadeIn><TrustBadges /></FadeIn>
-      <FadeIn delay={0.05}><FeaturedProducts products={products as any} title="Bestsellers" subtitle="Loved by thousands of Australian skin types" /></FadeIn>
       {events.length > 0 && (
         <FadeIn delay={0.05}>
           <EventCollectionGrid events={events as any} sectionTitle={sectionTitle} />
         </FadeIn>
       )}
+      <FadeIn delay={0.05}><FeaturedProducts products={products as any} title="Bestsellers" subtitle="Loved by thousands of Australian skin types" /></FadeIn>
       <FadeIn delay={0.05}><SkinConcernNav /></FadeIn>
       <FadeIn delay={0.05}><ReviewsBanner /></FadeIn>
     </>
