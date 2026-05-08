@@ -315,6 +315,61 @@ async function blogCount(args: any = {}) {
   return count ?? 0;
 }
 
+// ─── routine ───────────────────────────────────────────────────────────────
+
+async function routineFindMany(args: any = {}) {
+  let q: any = supabase.from("Routine").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy);
+  if (args.take) q = q.limit(args.take);
+  const { data, error } = await q;
+  throwIfError(data, error, "routine.findMany");
+  return data ?? [];
+}
+
+async function routineFindUnique(args: any) {
+  let q: any = supabase.from("Routine").select("*");
+  q = applyWhere(q, args.where);
+  const { data, error } = await q.maybeSingle();
+  throwIfError(data, error, "routine.findUnique");
+  return data ?? null;
+}
+
+async function routineCreate(args: any) {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("Routine")
+    .insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data })
+    .select()
+    .single();
+  throwIfError(data, error, "routine.create");
+  return data;
+}
+
+async function routineUpdate(args: any) {
+  let q: any = supabase.from("Routine").update({ ...args.data, updatedAt: new Date().toISOString() });
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "routine.update");
+  return data;
+}
+
+async function routineDelete(args: any) {
+  let q: any = supabase.from("Routine").delete();
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { error } = await q;
+  throwIfError(true, error, "routine.delete");
+  return { id: args.where.id };
+}
+
+async function routineCount(args: any = {}) {
+  let q: any = supabase.from("Routine").select("id", { count: "exact", head: true });
+  q = applyWhere(q, args.where);
+  const { count, error } = await q;
+  throwIfError(count, error, "routine.count");
+  return count ?? 0;
+}
+
 // ─── order ─────────────────────────────────────────────────────────────────
 
 function buildOrderSelect(include: any) {
@@ -854,6 +909,14 @@ export const db = {
     update: blogUpdate,
     delete: blogDelete,
     count: blogCount,
+  },
+  routine: {
+    findMany: routineFindMany,
+    findUnique: routineFindUnique,
+    create: routineCreate,
+    update: routineUpdate,
+    delete: routineDelete,
+    count: routineCount,
   },
   order: {
     findMany: orderFindMany,

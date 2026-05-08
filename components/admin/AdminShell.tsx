@@ -19,6 +19,8 @@ import {
   CreditCard,
   MessageCircle,
   CalendarDays,
+  Sparkles,
+  Layout,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +36,8 @@ const navItems = [
   { icon: Ticket, label: "Coupons", href: "/admin/coupons" },
   { icon: Star, label: "Reviews", href: "/admin/reviews" },
   { icon: FileText, label: "Blog", href: "/admin/blog" },
+  { icon: Sparkles, label: "Routines", href: "/admin/routines" },
+  { icon: Layout, label: "Pages", href: "/admin/pages" },
   { icon: CreditCard, label: "Payments", href: "/admin/payments" },
   { icon: Mail, label: "Leads", href: "/admin/leads" },
   { icon: CalendarDays, label: "Events", href: "/admin/events" },

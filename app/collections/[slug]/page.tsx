@@ -23,6 +23,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+const COLLECTION_ROUTINE: Record<string, string> = {
+  "everyday-essentials": "/routines/everyday-essential",
+  "peel-and-glow":       "/routines/peel-and-glow",
+  "skin-nutrients":      "/routines/skin-nutrients",
+};
+
 const CATEGORY_BANNERS: Record<string, { bg: string; position: string }> = {
   "everyday-essentials": { bg: "/images/hero/hero-slide2.jpg", position: "object-center" },
   "peel-and-glow":       { bg: "/images/hero/hero-slide3.jpg", position: "object-center" },
@@ -49,6 +55,7 @@ export default async function CollectionPage({ params }: PageProps) {
   if (!category) notFound();
 
   const banner = CATEGORY_BANNERS[slug] ?? { bg: "/images/collections/col-1.jpg", position: "object-center" };
+  const routineHref = COLLECTION_ROUTINE[slug] ?? null;
 
   return (
     <div>
@@ -73,25 +80,39 @@ export default async function CollectionPage({ params }: PageProps) {
               "linear-gradient(to top, rgba(58,50,64,0.82) 0%, rgba(58,50,64,0.3) 50%, transparent 100%)",
           }}
         />
-        <div className="relative z-10 h-full flex flex-col justify-end px-6 md:px-16 pb-10">
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 mb-4 text-[11px] font-heading font-bold uppercase tracking-widest text-white/50">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <ChevronRight size={10} />
-            <Link href="/shop" className="hover:text-white transition-colors">Shop</Link>
-            <ChevronRight size={10} />
-            <span className="text-white/80">{(category as any).name}</span>
-          </nav>
-          <p className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent mb-2">
-            {(category as any).tagline}
-          </p>
-          <h1 className="font-heading font-bold text-3xl md:text-5xl text-white mb-2">
-            {(category as any).name}
-          </h1>
-          {(category as any).description && (
-            <p className="font-body text-sm text-white/70 max-w-lg leading-relaxed">
-              {(category as any).description}
+        <div className="relative z-10 h-full flex items-end justify-between px-6 md:px-16 pb-10 gap-6">
+          {/* Left: category info */}
+          <div>
+            <nav className="flex items-center gap-1.5 mb-4 text-[11px] font-heading font-bold uppercase tracking-widest text-white/50">
+              <Link href="/" className="hover:text-white transition-colors">Home</Link>
+              <ChevronRight size={10} />
+              <Link href="/shop" className="hover:text-white transition-colors">Shop</Link>
+              <ChevronRight size={10} />
+              <span className="text-white/80">{(category as any).name}</span>
+            </nav>
+            <p className="text-[10px] font-heading font-bold tracking-widest uppercase text-brand-accent mb-2">
+              {(category as any).tagline}
             </p>
+            <h1 className="font-heading font-bold text-3xl md:text-5xl text-white mb-2">
+              {(category as any).name}
+            </h1>
+            {(category as any).description && (
+              <p className="font-body text-sm text-white/70 max-w-lg leading-relaxed">
+                {(category as any).description}
+              </p>
+            )}
+          </div>
+
+          {/* Right: View Routine button */}
+          {routineHref && (
+            <div className="shrink-0">
+              <Link
+                href={routineHref}
+                className="inline-flex items-center gap-2 bg-brand-accent text-brand-navy px-5 py-3 text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors whitespace-nowrap"
+              >
+                View Routine →
+              </Link>
+            </div>
           )}
         </div>
       </div>

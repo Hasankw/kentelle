@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,8 +18,26 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+interface ContactInfo { email: string; phone: string; address: string; hours: string; mapLink: string; }
+
+const DEFAULT_INFO: ContactInfo = {
+  email: "hello@kentelle.com.au",
+  phone: "(08) 9228 0191",
+  address: "Perth, WA, Australia",
+  hours: "Monday – Friday: 9:00am – 5:00pm AWST\nSaturday: 10:00am – 2:00pm AWST\nSunday: Closed",
+  mapLink: "",
+};
+
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
+  const [info, setInfo] = useState<ContactInfo>(DEFAULT_INFO);
+
+  useEffect(() => {
+    fetch("/api/admin/pages/content?key=page_contact")
+      .then((r) => r.json())
+      .then((d) => { if (d.value) setInfo({ ...DEFAULT_INFO, ...JSON.parse(d.value) }); })
+      .catch(() => {});
+  }, []);
   const {
     register,
     handleSubmit,
@@ -164,46 +182,33 @@ export default function ContactPage() {
                 Our Details
               </h2>
               <ul className="space-y-5">
-                <li className="flex items-start gap-3">
-                  <Mail size={18} className="text-brand-blue shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-heading font-bold uppercase tracking-wider text-brand-navy">
-                      Email
-                    </p>
-                    <a
-                      href="mailto:info@kentelle.com"
-                      className="text-sm font-body text-brand-contrast hover:text-brand-navy transition-colors"
-                    >
-                      info@kentelle.com
-                    </a>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Phone size={18} className="text-brand-blue shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-heading font-bold uppercase tracking-wider text-brand-navy">
-                      Phone
-                    </p>
-                    <a
-                      href="tel:0892280191"
-                      className="text-sm font-body text-brand-contrast hover:text-brand-navy transition-colors"
-                    >
-                      (08) 9228 0191
-                    </a>
-                    <p className="text-[11px] font-body text-brand-contrast/60 mt-0.5">Beaubelle Beauty Clinic line</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <MapPin size={18} className="text-brand-blue shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-heading font-bold uppercase tracking-wider text-brand-navy">
-                      Location
-                    </p>
-                    <p className="text-sm font-body text-brand-contrast">
-                      Perth, WA, Australia
-                    </p>
-                  </div>
-                </li>
+                {info.email && (
+                  <li className="flex items-start gap-3">
+                    <Mail size={18} className="text-brand-blue shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-heading font-bold uppercase tracking-wider text-brand-navy">Email</p>
+                      <a href={`mailto:${info.email}`} className="text-sm font-body text-brand-contrast hover:text-brand-navy transition-colors">{info.email}</a>
+                    </div>
+                  </li>
+                )}
+                {info.phone && (
+                  <li className="flex items-start gap-3">
+                    <Phone size={18} className="text-brand-blue shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-heading font-bold uppercase tracking-wider text-brand-navy">Phone</p>
+                      <a href={`tel:${info.phone.replace(/\D/g, "")}`} className="text-sm font-body text-brand-contrast hover:text-brand-navy transition-colors">{info.phone}</a>
+                    </div>
+                  </li>
+                )}
+                {info.address && (
+                  <li className="flex items-start gap-3">
+                    <MapPin size={18} className="text-brand-blue shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-heading font-bold uppercase tracking-wider text-brand-navy">Location</p>
+                      <p className="text-sm font-body text-brand-contrast whitespace-pre-line">{info.address}</p>
+                    </div>
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -236,25 +241,14 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <div className="border-t border-brand-contrast/20 pt-6">
-              <h3 className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy mb-3">
-                Business Hours
-              </h3>
-              <ul className="space-y-1.5 font-body text-sm text-brand-contrast">
-                <li className="flex justify-between">
-                  <span>Monday – Friday</span>
-                  <span>9:00am – 5:00pm AWST</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Saturday</span>
-                  <span>10:00am – 2:00pm AWST</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Sunday</span>
-                  <span>Closed</span>
-                </li>
-              </ul>
-            </div>
+            {info.hours && (
+              <div className="border-t border-brand-contrast/20 pt-6">
+                <h3 className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy mb-3">
+                  Business Hours
+                </h3>
+                <p className="font-body text-sm text-brand-contrast whitespace-pre-line">{info.hours}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -272,7 +266,7 @@ export default function ContactPage() {
         <div className="w-full h-80 md:h-[420px]">
           <iframe
             title="Beaubelle Beauty Clinic Perth"
-            src="https://maps.google.com/maps?q=Beaubelle+Beauty+Clinic+Perth+WA+Australia&t=&z=15&ie=UTF8&iwloc=&output=embed"
+            src={info.mapLink || "https://maps.google.com/maps?q=Beaubelle+Beauty+Clinic+Perth+WA+Australia&t=&z=15&ie=UTF8&iwloc=&output=embed"}
             width="100%"
             height="100%"
             style={{ border: 0, display: "block" }}

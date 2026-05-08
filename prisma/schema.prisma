@@ -144,6 +144,23 @@ model Blog {
   @@index([published])
 }
 
+model Routine {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  tagline   String?
+  category  String   // "routine" | "clinical"
+  steps     Json
+  tips      Json?
+  sortOrder Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([slug])
+}
+
 model Content {
   id        String   @id @default(cuid())
   key       String   @unique

@@ -9,6 +9,7 @@ import FeaturedProducts from "@/components/home/FeaturedProducts";
 import EventCollectionGrid from "@/components/home/EventCollectionGrid";
 import ReviewsBanner from "@/components/home/ReviewsBanner";
 import FadeIn from "@/components/ui/FadeIn";
+import RoutinesSection from "@/components/home/RoutinesSection";
 
 const PRODUCT_FIELDS = { id: true, name: true, slug: true, price: true, salePrice: true, images: true, stock: true, description: true };
 
@@ -53,22 +54,59 @@ async function getActiveEvents() {
   }
 }
 
+async function getCarouselSlides() {
+  try {
+    const rows = await db.content.findMany({ where: { key: "carousel_slides" } });
+    if (rows[0]?.value) return JSON.parse(rows[0].value);
+  } catch {}
+  return undefined;
+}
+
+async function getTrustBadges() {
+  try {
+    const rows = await db.content.findMany({ where: { key: "trust_strip" } });
+    if (rows[0]?.value) return JSON.parse(rows[0].value);
+  } catch {}
+  return undefined;
+}
+
+async function getRoutines() {
+  try {
+    const all = (await db.routine.findMany({
+      where: { published: true },
+      orderBy: { sortOrder: "asc" },
+    })) as any[];
+    return {
+      routines: all.filter((r: any) => r.category === "routine"),
+      clinical: all.filter((r: any) => r.category === "clinical"),
+    };
+  } catch {
+    return { routines: [], clinical: [] };
+  }
+}
+
 export default async function HomePage() {
-  const [products, { events, sectionTitle }] = await Promise.all([
+  const [products, { events, sectionTitle }, { routines, clinical }, carouselSlides, trustBadges] = await Promise.all([
     getFeaturedProducts(),
     getActiveEvents(),
+    getRoutines(),
+    getCarouselSlides(),
+    getTrustBadges(),
   ]);
 
   return (
     <>
-      <HeroCarousel />
-      <FadeIn><TrustBadges /></FadeIn>
+      <HeroCarousel initialSlides={carouselSlides} />
+      <FadeIn><TrustBadges initialBadges={trustBadges} /></FadeIn>
       {events.length > 0 && (
         <FadeIn delay={0.05}>
           <EventCollectionGrid events={events as any} sectionTitle={sectionTitle} />
         </FadeIn>
       )}
       <FadeIn delay={0.05}><FeaturedProducts products={products as any} title="Bestsellers" subtitle="Loved by thousands of Australian skin types" /></FadeIn>
+      {(routines.length > 0 || clinical.length > 0) && (
+        <FadeIn delay={0.05}><RoutinesSection routines={routines} clinical={clinical} /></FadeIn>
+      )}
       <FadeIn delay={0.05}><SkinConcernNav /></FadeIn>
       <FadeIn delay={0.05}><ReviewsBanner /></FadeIn>
     </>
