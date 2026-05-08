@@ -21,6 +21,7 @@ import {
   CalendarDays,
   Sparkles,
   Layout,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ const navItems = [
   { icon: FileText, label: "Blog", href: "/admin/blog" },
   { icon: Sparkles, label: "Routines", href: "/admin/routines" },
   { icon: Layout, label: "Pages", href: "/admin/pages" },
+  { icon: Palette, label: "Appearance", href: "/admin/appearance" },
   { icon: CreditCard, label: "Payments", href: "/admin/payments" },
   { icon: Mail, label: "Leads", href: "/admin/leads" },
   { icon: CalendarDays, label: "Events", href: "/admin/events" },

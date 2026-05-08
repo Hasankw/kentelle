@@ -7,11 +7,14 @@ import { createBrowserClient } from "@supabase/ssr";
 import { useCartStore } from "@/store/cart";
 import { cn } from "@/lib/utils";
 
-const navLinks = [
-  { label: "Shop", href: "/shop" },
-  { label: "Collections", href: "/collections" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+interface NavChild { id: string; label: string; href: string; enabled: boolean; }
+interface NavLink { id: string; label: string; href: string; enabled: boolean; children: NavChild[]; }
+
+const DEFAULT_NAV: NavLink[] = [
+  { id: "1", label: "Shop", href: "/shop", enabled: true, children: [] },
+  { id: "2", label: "Collections", href: "/collections", enabled: true, children: [] },
+  { id: "3", label: "About", href: "/about", enabled: true, children: [] },
+  { id: "4", label: "Contact", href: "/contact", enabled: true, children: [] },
 ];
 
 interface NavbarProps {
@@ -23,6 +26,14 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [greeting, setGreeting] = useState("");
+  const [navLinks, setNavLinks] = useState<NavLink[]>(DEFAULT_NAV);
+
+  useEffect(() => {
+    fetch("/api/admin/pages/content?key=nav_header")
+      .then((r) => r.json())
+      .then((d) => { if (d.value) setNavLinks(JSON.parse(d.value)); })
+      .catch(() => {});
+  }, []);
   const itemCount = useCartStore((s) => s.itemCount());
 
   useEffect(() => {
@@ -76,16 +87,30 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
 
           {/* Desktop nav */}
           <ul className="hidden md:flex items-center gap-7">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="text-[11px] font-heading font-bold uppercase tracking-widest text-brand-navy hover:text-brand-blue transition-colors"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+            {navLinks.filter((l) => l.enabled).map((link) => {
+              const activeChildren = link.children?.filter((c) => c.enabled) ?? [];
+              return (
+                <li key={link.id} className="relative group">
+                  <Link
+                    href={link.href}
+                    className="text-[11px] font-heading font-bold uppercase tracking-widest text-brand-navy hover:text-brand-blue transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                  {activeChildren.length > 0 && (
+                    <ul className="absolute top-full left-0 mt-2 bg-white border border-brand-contrast/10 shadow-lg min-w-[160px] hidden group-hover:block z-50">
+                      {activeChildren.map((child) => (
+                        <li key={child.id}>
+                          <Link href={child.href} className="block px-4 py-2.5 text-[11px] font-heading font-bold uppercase tracking-widest text-brand-navy hover:bg-brand-bg hover:text-brand-blue transition-colors">
+                            {child.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
           </ul>
 
           {/* Logo */}
@@ -137,16 +162,29 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
       {mobileOpen && (
         <div className="md:hidden border-t border-brand-contrast/20 bg-white">
           <ul className="flex flex-col py-4">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-6 py-3 text-[11px] font-heading font-bold uppercase tracking-widest text-brand-navy hover:text-brand-blue transition-colors"
-                >
-                  {link.label}
-                </Link>
-              </li>
+            {navLinks.filter((l) => l.enabled).map((link) => (
+              <>
+                <li key={link.id}>
+                  <Link
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-6 py-3 text-[11px] font-heading font-bold uppercase tracking-widest text-brand-navy hover:text-brand-blue transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+                {link.children?.filter((c) => c.enabled).map((child) => (
+                  <li key={child.id}>
+                    <Link
+                      href={child.href}
+                      onClick={() => setMobileOpen(false)}
+                      className="block pl-10 pr-6 py-2.5 text-[11px] font-heading font-bold uppercase tracking-widest text-brand-contrast hover:text-brand-blue transition-colors"
+                    >
+                      — {child.label}
+                    </Link>
+                  </li>
+                ))}
+              </>
             ))}
           </ul>
         </div>

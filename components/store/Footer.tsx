@@ -1,30 +1,42 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ExternalLink, Globe } from "lucide-react";
 
-const shopLinks = [
-  { label: "All Products", href: "/shop" },
-  { label: "Skincare", href: "/shop" },
-  { label: "Face Wash", href: "/shop" },
-  { label: "Moisturisers", href: "/shop" },
-  { label: "Serums", href: "/shop" },
-  { label: "Eye Care", href: "/shop" },
-];
+interface FooterLink { id: string; label: string; href: string; enabled: boolean; }
+interface FooterColumn { id: string; title: string; links: FooterLink[]; }
 
-const helpLinks = [
-  { label: "Find Your Routine", href: "/find-your-routine" },
-  { label: "Skin Regimen", href: "/skin-regimen" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Contact Us", href: "/contact" },
-  { label: "About Kentelle", href: "/about" },
-  { label: "Blog", href: "/blog" },
-  { label: "Reviews", href: "/reviews" },
-];
-
-const accountLinks = [
-  { label: "My Account", href: "/account" },
-  { label: "Track Order", href: "/account/orders" },
-  { label: "Gift Cards", href: "/gift-cards" },
-  { label: "Returns & Refunds", href: "/faq#returns" },
+const DEFAULT_COLUMNS: FooterColumn[] = [
+  {
+    id: "col1", title: "Shop", links: [
+      { id: "l1", label: "All Products", href: "/shop", enabled: true },
+      { id: "l2", label: "Collections", href: "/collections", enabled: true },
+      { id: "l3", label: "Face Wash", href: "/shop", enabled: true },
+      { id: "l4", label: "Moisturisers", href: "/shop", enabled: true },
+      { id: "l5", label: "Serums", href: "/shop", enabled: true },
+      { id: "l6", label: "Eye Care", href: "/shop", enabled: true },
+    ],
+  },
+  {
+    id: "col2", title: "Help", links: [
+      { id: "l7", label: "Find Your Routine", href: "/find-your-routine", enabled: true },
+      { id: "l8", label: "Skin Regimen", href: "/skin-regimen", enabled: true },
+      { id: "l9", label: "FAQ", href: "/faq", enabled: true },
+      { id: "l10", label: "Contact Us", href: "/contact", enabled: true },
+      { id: "l11", label: "About Kentelle", href: "/about", enabled: true },
+      { id: "l12", label: "Blog", href: "/blog", enabled: true },
+      { id: "l13", label: "Reviews", href: "/reviews", enabled: true },
+    ],
+  },
+  {
+    id: "col3", title: "Account", links: [
+      { id: "l14", label: "My Account", href: "/account", enabled: true },
+      { id: "l15", label: "Track Order", href: "/account/orders", enabled: true },
+      { id: "l16", label: "Gift Cards", href: "/gift-cards", enabled: true },
+      { id: "l17", label: "Returns & Refunds", href: "/faq#returns", enabled: true },
+    ],
+  },
 ];
 
 function PaymentIcons() {
@@ -80,6 +92,15 @@ function PaymentIcons() {
 }
 
 export default function Footer() {
+  const [columns, setColumns] = useState<FooterColumn[]>(DEFAULT_COLUMNS);
+
+  useEffect(() => {
+    fetch("/api/admin/pages/content?key=nav_footer")
+      .then((r) => r.json())
+      .then((d) => { if (d.value) setColumns(JSON.parse(d.value)); })
+      .catch(() => {});
+  }, []);
+
   return (
     <footer className="bg-brand-navy text-brand-white">
       {/* Main footer */}
@@ -115,62 +136,26 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Shop */}
-        <div>
-          <h4 className="font-heading font-bold text-xs tracking-widest uppercase mb-4 text-brand-contrast">
-            Shop
-          </h4>
-          <ul className="space-y-2">
-            {shopLinks.map((l) => (
-              <li key={l.label}>
-                <Link
-                  href={l.href}
-                  className="font-body text-sm text-brand-contrast hover:text-brand-white transition-colors"
-                >
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Help */}
-        <div>
-          <h4 className="font-heading font-bold text-xs tracking-widest uppercase mb-4 text-brand-contrast">
-            Help
-          </h4>
-          <ul className="space-y-2">
-            {helpLinks.map((l) => (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className="font-body text-sm text-brand-contrast hover:text-brand-white transition-colors"
-                >
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Account */}
-        <div>
-          <h4 className="font-heading font-bold text-xs tracking-widest uppercase mb-4 text-brand-contrast">
-            Account
-          </h4>
-          <ul className="space-y-2">
-            {accountLinks.map((l) => (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className="font-body text-sm text-brand-contrast hover:text-brand-white transition-colors"
-                >
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Dynamic columns */}
+        {columns.map((col) => (
+          <div key={col.id}>
+            <h4 className="font-heading font-bold text-xs tracking-widest uppercase mb-4 text-brand-contrast">
+              {col.title}
+            </h4>
+            <ul className="space-y-2">
+              {col.links.filter((l) => l.enabled).map((l) => (
+                <li key={l.id}>
+                  <Link
+                    href={l.href}
+                    className="font-body text-sm text-brand-contrast hover:text-brand-white transition-colors"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
 
       {/* Newsletter */}
