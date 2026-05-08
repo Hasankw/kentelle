@@ -1,40 +1,67 @@
 import Link from "next/link";
 
+interface SectionContent {
+  tagline: string;
+  title: string;
+  subtitle: string;
+  routinesTitle: string;
+  routinesDesc: string;
+  routinesLink: string;
+  clinicalTitle: string;
+  clinicalDesc: string;
+  clinicalLink: string;
+}
+
 interface Props {
   routines: any[];
   clinical: any[];
+  content?: SectionContent;
 }
 
-export default function RoutinesSection({ routines, clinical }: Props) {
+const DEFAULTS: SectionContent = {
+  tagline: "Expert Guidance",
+  title: "Your Skincare Routine Guide",
+  subtitle: "Curated step-by-step regimes for every skin type — from daily essentials to clinical-grade treatments.",
+  routinesTitle: "Skincare Routines",
+  routinesDesc: "Daily rituals for healthy, radiant skin. Choose from foundational essentials to advanced resurfacing.",
+  routinesLink: "Explore Skincare Routines",
+  clinicalTitle: "Clinical Treatments",
+  clinicalDesc: "Targeted protocols for specific concerns — acne, rosacea, pigmentation and more.",
+  clinicalLink: "Explore Clinical Treatments",
+};
+
+export default function RoutinesSection({ routines, clinical, content }: Props) {
+  const c = { ...DEFAULTS, ...content };
+
   return (
     <section className="py-16 px-6 bg-brand-bg">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <p className="text-xs font-heading font-bold uppercase tracking-widest text-brand-accent mb-2">
-            Expert Guidance
+            {c.tagline}
           </p>
           <h2 className="font-heading font-bold text-2xl md:text-3xl text-brand-navy">
-            Your Skincare Routine Guide
+            {c.title}
           </h2>
           <p className="font-body text-brand-contrast mt-3 max-w-xl mx-auto">
-            Curated step-by-step regimes for every skin type — from daily essentials to clinical-grade treatments.
+            {c.subtitle}
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
           <CategoryCard
-            label="Skincare Routines"
-            description="Daily rituals for healthy, radiant skin. Choose from foundational essentials to advanced resurfacing."
+            label={c.routinesTitle}
+            description={c.routinesDesc}
             accent="bg-brand-accent"
             href="/routines?category=routine"
-            exploreLabel="Explore Skincare Routines"
+            exploreLabel={c.routinesLink}
           />
           <CategoryCard
-            label="Clinical Treatments"
-            description="Targeted protocols for specific concerns — acne, rosacea, pigmentation and more."
+            label={c.clinicalTitle}
+            description={c.clinicalDesc}
             accent="bg-brand-navy"
             href="/routines?category=clinical"
-            exploreLabel="Explore Clinical Treatments"
+            exploreLabel={c.clinicalLink}
           />
         </div>
       </div>

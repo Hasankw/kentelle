@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Images, Star, HelpCircle, User, Phone, Shield, FileText, Sparkles } from "lucide-react";
+import { Images, Star, HelpCircle, User, Phone, Shield, FileText, Sparkles, MessageSquare } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 
 export const metadata: Metadata = { title: "Pages" };
@@ -18,6 +18,20 @@ const sections = [
     label: "Trust Strip",
     description: "Edit the vegan / cruelty-free / dermatologist badges shown below the hero.",
     href: "/admin/pages/trust-strip",
+    badge: "Homepage",
+  },
+  {
+    icon: Sparkles,
+    label: "Routines Section",
+    description: "Edit the section header and both category card titles, descriptions and link labels.",
+    href: "/admin/pages/routines-section",
+    badge: "Homepage",
+  },
+  {
+    icon: MessageSquare,
+    label: "Reviews Banner",
+    description: "Edit the section header, rating text and all customer review quotes shown on the homepage.",
+    href: "/admin/pages/reviews",
     badge: "Homepage",
   },
   {

@@ -54,6 +54,22 @@ async function getActiveEvents() {
   }
 }
 
+async function getRoutinesSectionContent() {
+  try {
+    const rows = await db.content.findMany({ where: { key: "home_routines_section" } });
+    if (rows[0]?.value) return JSON.parse(rows[0].value);
+  } catch {}
+  return undefined;
+}
+
+async function getReviewsContent() {
+  try {
+    const rows = await db.content.findMany({ where: { key: "home_reviews" } });
+    if (rows[0]?.value) return JSON.parse(rows[0].value);
+  } catch {}
+  return undefined;
+}
+
 async function getCarouselSlides() {
   try {
     const rows = await db.content.findMany({ where: { key: "carousel_slides" } });
@@ -86,12 +102,14 @@ async function getRoutines() {
 }
 
 export default async function HomePage() {
-  const [products, { events, sectionTitle }, { routines, clinical }, carouselSlides, trustBadges] = await Promise.all([
+  const [products, { events, sectionTitle }, { routines, clinical }, carouselSlides, trustBadges, routinesSectionContent, reviewsContent] = await Promise.all([
     getFeaturedProducts(),
     getActiveEvents(),
     getRoutines(),
     getCarouselSlides(),
     getTrustBadges(),
+    getRoutinesSectionContent(),
+    getReviewsContent(),
   ]);
 
   return (
@@ -105,10 +123,10 @@ export default async function HomePage() {
       )}
       <FadeIn delay={0.05}><FeaturedProducts products={products as any} title="Bestsellers" subtitle="Loved by thousands of Australian skin types" /></FadeIn>
       {(routines.length > 0 || clinical.length > 0) && (
-        <FadeIn delay={0.05}><RoutinesSection routines={routines} clinical={clinical} /></FadeIn>
+        <FadeIn delay={0.05}><RoutinesSection routines={routines} clinical={clinical} content={routinesSectionContent} /></FadeIn>
       )}
       <FadeIn delay={0.05}><SkinConcernNav /></FadeIn>
-      <FadeIn delay={0.05}><ReviewsBanner /></FadeIn>
+      <FadeIn delay={0.05}><ReviewsBanner content={reviewsContent} /></FadeIn>
     </>
   );
 }
