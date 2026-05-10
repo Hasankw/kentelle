@@ -263,6 +263,22 @@ async function reviewCreate(args: any) {
   return data;
 }
 
+async function reviewUpdate(args: any) {
+  let q: any = getSupabase().from("Review").update(args.data);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "review.update");
+  return data;
+}
+
+async function reviewDelete(args: any) {
+  let q: any = getSupabase().from("Review").delete();
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { error } = await q;
+  throwIfError(true, error, "review.delete");
+  return { id: args.where.id };
+}
+
 async function reviewCount(args: any = {}) {
   let q: any = getSupabase().from("Review").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
@@ -907,6 +923,8 @@ export const db = {
   review: {
     findMany: reviewFindMany,
     create: reviewCreate,
+    update: reviewUpdate,
+    delete: reviewDelete,
     count: reviewCount,
   },
   blog: {

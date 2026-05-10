@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import { db } from "@/lib/db";
 import AdminShell from "@/components/admin/AdminShell";
 import StarRating from "@/components/ui/StarRating";
+import ReviewActions from "@/components/admin/ReviewActions";
 
 export const metadata: Metadata = { title: "Reviews" };
 
@@ -23,7 +24,7 @@ export default async function AdminReviewsPage() {
           <table className="w-full text-sm font-body">
             <thead>
               <tr className="border-b border-brand-contrast/10 bg-[#F8F9FC]">
-                {["Customer", "Rating", "Review", "Product", "Status", "Date"].map((h) => (
+                {["Customer", "Rating", "Review", "Product", "Status", "Date", "Actions"].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-heading font-bold uppercase tracking-wider text-brand-contrast">
                     {h}
                   </th>
@@ -49,11 +50,14 @@ export default async function AdminReviewsPage() {
                   <td className="px-5 py-3 text-brand-contrast whitespace-nowrap">
                     {new Date(r.createdAt).toLocaleDateString("en-AU")}
                   </td>
+                  <td className="px-5 py-3">
+                    <ReviewActions id={r.id} approved={r.approved} />
+                  </td>
                 </tr>
               ))}
               {reviews.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-brand-contrast">
+                  <td colSpan={7} className="px-6 py-10 text-center text-brand-contrast">
                     No reviews yet.
                   </td>
                 </tr>
