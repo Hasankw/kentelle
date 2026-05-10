@@ -18,15 +18,19 @@ interface ProductCardProps {
   > & { description?: string | null };
 }
 
+const PLACEHOLDER = "/images/placeholder.svg";
+
 export default function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
+  const [img1Src, setImg1Src] = useState(product.images[0] || PLACEHOLDER);
+  const [img2Src, setImg2Src] = useState(product.images[1] || product.images[0] || PLACEHOLDER);
   const addItem = useCartStore((s) => s.addItem);
   const router = useRouter();
 
-  const image1 = product.images[0] ?? "/images/placeholder.svg";
+  const image1 = img1Src;
   const sizeMatch = product.description?.match(/\b(\d+(?:\.\d+)?(?:\s*x\s*\d+(?:\.\d+)?)?\s*(?:ml|g|L))\b/i);
   const sizeLabel = sizeMatch?.[1]?.trim().replace(/\s+/g, "");
-  const image2 = product.images[1] ?? image1;
+  const image2 = img2Src;
   const isPlaceholder = !product.images[0];
   const isBundle = isBundleProduct(product.id);
   const discount = product.salePrice
@@ -41,7 +45,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       id: product.id,
       name: product.name,
       slug: product.slug,
-      image: image1,
+      image: img1Src,
       price: product.salePrice ?? product.price,
     });
     router.push("/cart");
@@ -62,6 +66,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             unoptimized={image1.startsWith("http")}
+            onError={() => setImg1Src(PLACEHOLDER)}
             className={`transition-opacity duration-500 ${isPlaceholder ? "object-contain p-8" : "object-cover"} ${
               hovered ? "opacity-0" : "opacity-100"
             }`}
@@ -73,6 +78,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             unoptimized={image2.startsWith("http")}
+            onError={() => setImg2Src(PLACEHOLDER)}
             className={`transition-opacity duration-500 ${isPlaceholder ? "object-contain p-8" : "object-cover"} ${
               hovered ? "opacity-100" : "opacity-0"
             }`}
