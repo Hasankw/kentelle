@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _supabase: SupabaseClient<any> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSupabase(): SupabaseClient<any> {
+  if (!_supabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error(`Supabase env vars missing at runtime (URL=${url ? "set" : "UNSET"}, KEY=${key ? "set" : "UNSET"})`);
+    _supabase = createClient(url, key, { auth: { persistSession: false } });
+  }
+  return _supabase!;
+}
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 
@@ -66,12 +73,12 @@ async function productFindMany(args: any = {}) {
   const catSlug = args.where?.categories?.some?.slug;
   const { categories: _cat, ...restWhere } = args.where ?? {};
 
-  let q = supabase.from("Product").select(PRODUCT_SELECT);
+  let q = getSupabase().from("Product").select(PRODUCT_SELECT);
 
   if (catSlug) {
-    const { data: cat } = await supabase.from("Category").select("id").eq("slug", catSlug).maybeSingle();
+    const { data: cat } = await getSupabase().from("Category").select("id").eq("slug", catSlug).maybeSingle();
     if (!cat) return [];
-    const { data: links } = await supabase.from("_ProductCategories").select("B").eq("A", (cat as any).id);
+    const { data: links } = await getSupabase().from("_ProductCategories").select("B").eq("A", (cat as any).id);
     const ids = (links ?? []).map((l: any) => l.B);
     if (!ids.length) return [];
     q = (q as any).in("id", ids);
@@ -87,7 +94,7 @@ async function productFindMany(args: any = {}) {
 }
 
 async function productFindUnique(args: any) {
-  let q = supabase.from("Product").select(PRODUCT_SELECT);
+  let q = getSupabase().from("Product").select(PRODUCT_SELECT);
   q = applyWhere(q, args.where);
   const { data, error } = await (q as any).maybeSingle();
   throwIfError(data, error, "product.findUnique");
@@ -95,12 +102,12 @@ async function productFindUnique(args: any) {
 }
 
 async function productFindManyByCategory(slug: string, args: any = {}) {
-  const { data: cat } = await supabase.from("Category").select("id").eq("slug", slug).maybeSingle();
+  const { data: cat } = await getSupabase().from("Category").select("id").eq("slug", slug).maybeSingle();
   if (!cat) return [];
-  const { data: links } = await supabase.from("_ProductCategories").select("B").eq("A", (cat as any).id);
+  const { data: links } = await getSupabase().from("_ProductCategories").select("B").eq("A", (cat as any).id);
   const ids = (links ?? []).map((l: any) => l.B);
   if (!ids.length) return [];
-  let q = supabase.from("Product").select(PRODUCT_SELECT).in("id", ids).eq("isActive", true);
+  let q = getSupabase().from("Product").select(PRODUCT_SELECT).in("id", ids).eq("isActive", true);
   q = applyOrder(q, args.orderBy ?? { name: "asc" });
   const { data, error } = await q;
   throwIfError(data, error, "product.findManyByCategory");
@@ -111,12 +118,12 @@ async function productCount(args: any = {}) {
   const catSlug = args.where?.categories?.some?.slug;
   const { categories: _cat, ...restWhere } = args.where ?? {};
 
-  let q: any = supabase.from("Product").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Product").select("id", { count: "exact", head: true });
 
   if (catSlug) {
-    const { data: cat } = await supabase.from("Category").select("id").eq("slug", catSlug).maybeSingle();
+    const { data: cat } = await getSupabase().from("Category").select("id").eq("slug", catSlug).maybeSingle();
     if (!cat) return 0;
-    const { data: links } = await supabase.from("_ProductCategories").select("B").eq("A", (cat as any).id);
+    const { data: links } = await getSupabase().from("_ProductCategories").select("B").eq("A", (cat as any).id);
     const ids = (links ?? []).map((l: any) => l.B);
     if (!ids.length) return 0;
     q = q.in("id", ids);
@@ -133,10 +140,10 @@ async function productCount(args: any = {}) {
 async function productCreate(args: any) {
   const { categories, ...data } = args.data;
   const now = new Date().toISOString();
-  const { data: row, error } = await supabase.from("Product").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...data }).select().single();
+  const { data: row, error } = await getSupabase().from("Product").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...data }).select().single();
   throwIfError(row, error, "product.create");
   if (categories?.connect?.length) {
-    await supabase.from("_ProductCategories").insert(
+    await getSupabase().from("_ProductCategories").insert(
       categories.connect.map((c: any) => ({ A: c.id, B: (row as any).id }))
     );
   }
@@ -145,16 +152,16 @@ async function productCreate(args: any) {
 
 async function productUpdate(args: any) {
   const { categories, ...data } = args.data;
-  let uq: any = supabase.from("Product").update({ ...data, updatedAt: new Date().toISOString() });
+  let uq: any = getSupabase().from("Product").update({ ...data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) uq = uq.eq(k, v);
   const { data: row, error } = await uq.select().single();
   throwIfError(row, error, "product.update");
   if (categories) {
     const id = (row as any).id;
-    await supabase.from("_ProductCategories").delete().eq("B", id);
+    await getSupabase().from("_ProductCategories").delete().eq("B", id);
     const toInsert = (categories.set ?? categories.connect ?? []) as any[];
     if (toInsert.length) {
-      await supabase.from("_ProductCategories").insert(
+      await getSupabase().from("_ProductCategories").insert(
         toInsert.map((c: any) => ({ A: c.id, B: id }))
       );
     }
@@ -163,7 +170,7 @@ async function productUpdate(args: any) {
 }
 
 async function productDelete(args: any) {
-  let q: any = supabase.from("Product").delete();
+  let q: any = getSupabase().from("Product").delete();
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { error } = await q;
   throwIfError(true, error, "product.delete");
@@ -173,7 +180,7 @@ async function productDelete(args: any) {
 // ─── category ──────────────────────────────────────────────────────────────
 
 async function categoryFindMany(args: any = {}) {
-  let q: any = supabase.from("Category").select("*");
+  let q: any = getSupabase().from("Category").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   const { data, error } = await q;
@@ -183,7 +190,7 @@ async function categoryFindMany(args: any = {}) {
   if (args.include?._count) {
     return await Promise.all(
       rows.map(async (cat: any) => {
-        const { count } = await supabase
+        const { count } = await getSupabase()
           .from("_ProductCategories")
           .select("A", { count: "exact", head: true })
           .eq("A", cat.id);
@@ -195,7 +202,7 @@ async function categoryFindMany(args: any = {}) {
 }
 
 async function categoryFindUnique(args: any) {
-  let q: any = supabase.from("Category").select("*");
+  let q: any = getSupabase().from("Category").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "category.findUnique");
@@ -203,7 +210,7 @@ async function categoryFindUnique(args: any) {
 }
 
 async function categoryCount(args: any = {}) {
-  let q: any = supabase.from("Category").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Category").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "category.count");
@@ -211,7 +218,7 @@ async function categoryCount(args: any = {}) {
 }
 
 async function categoryCreate(args: any) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("Category")
     .insert({ id: crypto.randomUUID(), ...args.data })
     .select()
@@ -221,7 +228,7 @@ async function categoryCreate(args: any) {
 }
 
 async function categoryUpdate(args: any) {
-  let q: any = supabase.from("Category").update(args.data);
+  let q: any = getSupabase().from("Category").update(args.data);
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "category.update");
@@ -229,7 +236,7 @@ async function categoryUpdate(args: any) {
 }
 
 async function categoryDelete(args: any) {
-  let q: any = supabase.from("Category").delete();
+  let q: any = getSupabase().from("Category").delete();
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { error } = await q;
   throwIfError(true, error, "category.delete");
@@ -241,7 +248,7 @@ async function categoryDelete(args: any) {
 async function reviewFindMany(args: any = {}) {
   const incProduct = args.include?.product;
   const select = incProduct ? "*, product:Product(id,name,slug,images)" : "*";
-  let q: any = supabase.from("Review").select(select);
+  let q: any = getSupabase().from("Review").select(select);
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = q.limit(args.take);
@@ -251,13 +258,13 @@ async function reviewFindMany(args: any = {}) {
 }
 
 async function reviewCreate(args: any) {
-  const { data, error } = await supabase.from("Review").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("Review").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data }).select().single();
   throwIfError(data, error, "review.create");
   return data;
 }
 
 async function reviewCount(args: any = {}) {
-  let q: any = supabase.from("Review").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Review").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "review.count");
@@ -267,7 +274,7 @@ async function reviewCount(args: any = {}) {
 // ─── blog ──────────────────────────────────────────────────────────────────
 
 async function blogFindMany(args: any = {}) {
-  let q: any = supabase.from("Blog").select("*");
+  let q: any = getSupabase().from("Blog").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = q.limit(args.take);
@@ -277,7 +284,7 @@ async function blogFindMany(args: any = {}) {
 }
 
 async function blogFindUnique(args: any) {
-  let q: any = supabase.from("Blog").select("*");
+  let q: any = getSupabase().from("Blog").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "blog.findUnique");
@@ -286,13 +293,13 @@ async function blogFindUnique(args: any) {
 
 async function blogCreate(args: any) {
   const now = new Date().toISOString();
-  const { data, error } = await supabase.from("Blog").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("Blog").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
   throwIfError(data, error, "blog.create");
   return data;
 }
 
 async function blogUpdate(args: any) {
-  let q: any = supabase.from("Blog").update({ ...args.data, updatedAt: new Date().toISOString() });
+  let q: any = getSupabase().from("Blog").update({ ...args.data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "blog.update");
@@ -300,7 +307,7 @@ async function blogUpdate(args: any) {
 }
 
 async function blogDelete(args: any) {
-  let q: any = supabase.from("Blog").delete();
+  let q: any = getSupabase().from("Blog").delete();
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { error } = await q;
   throwIfError(true, error, "blog.delete");
@@ -308,7 +315,7 @@ async function blogDelete(args: any) {
 }
 
 async function blogCount(args: any = {}) {
-  let q: any = supabase.from("Blog").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Blog").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "blog.count");
@@ -318,7 +325,7 @@ async function blogCount(args: any = {}) {
 // ─── routine ───────────────────────────────────────────────────────────────
 
 async function routineFindMany(args: any = {}) {
-  let q: any = supabase.from("Routine").select("*");
+  let q: any = getSupabase().from("Routine").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = q.limit(args.take);
@@ -328,7 +335,7 @@ async function routineFindMany(args: any = {}) {
 }
 
 async function routineFindUnique(args: any) {
-  let q: any = supabase.from("Routine").select("*");
+  let q: any = getSupabase().from("Routine").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "routine.findUnique");
@@ -337,7 +344,7 @@ async function routineFindUnique(args: any) {
 
 async function routineCreate(args: any) {
   const now = new Date().toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("Routine")
     .insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data })
     .select()
@@ -347,7 +354,7 @@ async function routineCreate(args: any) {
 }
 
 async function routineUpdate(args: any) {
-  let q: any = supabase.from("Routine").update({ ...args.data, updatedAt: new Date().toISOString() });
+  let q: any = getSupabase().from("Routine").update({ ...args.data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "routine.update");
@@ -355,7 +362,7 @@ async function routineUpdate(args: any) {
 }
 
 async function routineDelete(args: any) {
-  let q: any = supabase.from("Routine").delete();
+  let q: any = getSupabase().from("Routine").delete();
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { error } = await q;
   throwIfError(true, error, "routine.delete");
@@ -363,7 +370,7 @@ async function routineDelete(args: any) {
 }
 
 async function routineCount(args: any = {}) {
-  let q: any = supabase.from("Routine").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Routine").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "routine.count");
@@ -387,7 +394,7 @@ function buildOrderSelect(include: any) {
 }
 
 async function orderFindMany(args: any = {}) {
-  let q: any = supabase.from("Order").select(buildOrderSelect(args.include));
+  let q: any = getSupabase().from("Order").select(buildOrderSelect(args.include));
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = q.limit(args.take);
@@ -398,7 +405,7 @@ async function orderFindMany(args: any = {}) {
 }
 
 async function orderFindUnique(args: any) {
-  let q: any = supabase.from("Order").select(buildOrderSelect(args.include));
+  let q: any = getSupabase().from("Order").select(buildOrderSelect(args.include));
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "order.findUnique");
@@ -409,14 +416,14 @@ async function orderCreate(args: any) {
   const { items, ...orderData } = args.data;
   const orderId = crypto.randomUUID();
   const now = new Date().toISOString();
-  const { data: order, error } = await supabase
+  const { data: order, error } = await getSupabase()
     .from("Order")
     .insert({ id: orderId, createdAt: now, updatedAt: now, ...orderData })
     .select()
     .single();
   throwIfError(order, error, "order.create");
   if (items?.create?.length) {
-    await supabase.from("OrderItem").insert(
+    await getSupabase().from("OrderItem").insert(
       items.create.map((item: any) => ({ id: crypto.randomUUID(), ...item, orderId }))
     );
   }
@@ -424,7 +431,7 @@ async function orderCreate(args: any) {
 }
 
 async function orderUpdate(args: any) {
-  let q: any = supabase.from("Order").update({ ...args.data, updatedAt: new Date().toISOString() });
+  let q: any = getSupabase().from("Order").update({ ...args.data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "order.update");
@@ -432,7 +439,7 @@ async function orderUpdate(args: any) {
 }
 
 async function orderCount(args: any = {}) {
-  let q: any = supabase.from("Order").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Order").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "order.count");
@@ -442,7 +449,7 @@ async function orderCount(args: any = {}) {
 // ─── customer ──────────────────────────────────────────────────────────────
 
 async function customerFindMany(args: any = {}) {
-  let q: any = supabase.from("Customer").select("*");
+  let q: any = getSupabase().from("Customer").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = q.limit(args.take);
@@ -453,7 +460,7 @@ async function customerFindMany(args: any = {}) {
   if (args.include?._count) {
     return await Promise.all(
       rows.map(async (c: any) => {
-        const { count } = await supabase
+        const { count } = await getSupabase()
           .from("Order")
           .select("id", { count: "exact", head: true })
           .eq("customerId", c.id);
@@ -465,7 +472,7 @@ async function customerFindMany(args: any = {}) {
 }
 
 async function customerFindUnique(args: any) {
-  let q: any = supabase.from("Customer").select("*");
+  let q: any = getSupabase().from("Customer").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "customer.findUnique");
@@ -475,7 +482,7 @@ async function customerFindUnique(args: any) {
   if (incOrders) {
     const incItems = typeof incOrders === "object" && incOrders?.include?.items;
     const select = incItems ? "*, items:OrderItem(*)" : "*";
-    const { data: orders } = await supabase
+    const { data: orders } = await getSupabase()
       .from("Order")
       .select(select)
       .eq("customerId", data.id)
@@ -486,14 +493,14 @@ async function customerFindUnique(args: any) {
 }
 
 async function customerUpsert(args: any) {
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabase()
     .from("Customer")
     .select("id")
     .eq("email", args.where.email)
     .maybeSingle();
 
   if (existing) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("Customer")
       .update(args.update)
       .eq("id", (existing as any).id)
@@ -503,7 +510,7 @@ async function customerUpsert(args: any) {
     return data;
   } else {
     const now = new Date().toISOString();
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("Customer")
       .insert({ id: crypto.randomUUID(), createdAt: now, addresses: [], ...args.create })
       .select()
@@ -514,7 +521,7 @@ async function customerUpsert(args: any) {
 }
 
 async function customerUpdate(args: any) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("Customer")
     .update(args.data)
     .eq("id", args.where.id)
@@ -525,7 +532,7 @@ async function customerUpdate(args: any) {
 }
 
 async function customerCount(args: any = {}) {
-  let q: any = supabase.from("Customer").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Customer").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "customer.count");
@@ -535,7 +542,7 @@ async function customerCount(args: any = {}) {
 // ─── featured events ───────────────────────────────────────────────────────
 
 async function featuredEventFindMany(args: any = {}) {
-  let q: any = supabase.from("FeaturedEvent").select("*");
+  let q: any = getSupabase().from("FeaturedEvent").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy ?? { sortOrder: "asc" });
   const { data, error } = await q;
@@ -544,7 +551,7 @@ async function featuredEventFindMany(args: any = {}) {
 }
 
 async function featuredEventFindUnique(args: any) {
-  let q: any = supabase.from("FeaturedEvent").select("*");
+  let q: any = getSupabase().from("FeaturedEvent").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "featuredEvent.findUnique");
@@ -553,14 +560,14 @@ async function featuredEventFindUnique(args: any) {
 
 async function featuredEventCreate(args: any) {
   const now = new Date().toISOString();
-  const { data, error } = await supabase.from("FeaturedEvent").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, enabled: false, sortOrder: 0, ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("FeaturedEvent").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, enabled: false, sortOrder: 0, ...args.data }).select().single();
   throwIfError(data, error, "featuredEvent.create");
   return data;
 }
 
 async function featuredEventUpdate(args: any) {
   const now = new Date().toISOString();
-  let q: any = supabase.from("FeaturedEvent").update({ ...args.data, updatedAt: now });
+  let q: any = getSupabase().from("FeaturedEvent").update({ ...args.data, updatedAt: now });
   q = applyWhere(q, args.where);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "featuredEvent.update");
@@ -568,14 +575,14 @@ async function featuredEventUpdate(args: any) {
 }
 
 async function featuredEventDelete(args: any) {
-  let q: any = supabase.from("FeaturedEvent").delete();
+  let q: any = getSupabase().from("FeaturedEvent").delete();
   q = applyWhere(q, args.where);
   const { error } = await q;
   throwIfError(true, error, "featuredEvent.delete");
 }
 
 async function featuredEventProductFindMany(args: any = {}) {
-  let q: any = supabase.from("FeaturedEventProduct").select("*");
+  let q: any = getSupabase().from("FeaturedEventProduct").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy ?? { sortOrder: "asc" });
   const { data, error } = await q;
@@ -584,20 +591,20 @@ async function featuredEventProductFindMany(args: any = {}) {
 }
 
 async function featuredEventProductCreate(args: any) {
-  const { data, error } = await supabase.from("FeaturedEventProduct").insert({ id: crypto.randomUUID(), sortOrder: 0, ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("FeaturedEventProduct").insert({ id: crypto.randomUUID(), sortOrder: 0, ...args.data }).select().single();
   throwIfError(data, error, "featuredEventProduct.create");
   return data;
 }
 
 async function featuredEventProductDelete(args: any) {
-  let q: any = supabase.from("FeaturedEventProduct").delete();
+  let q: any = getSupabase().from("FeaturedEventProduct").delete();
   q = applyWhere(q, args.where);
   const { error } = await q;
   throwIfError(true, error, "featuredEventProduct.delete");
 }
 
 async function featuredEventProductDeleteMany(args: any) {
-  let q: any = supabase.from("FeaturedEventProduct").delete();
+  let q: any = getSupabase().from("FeaturedEventProduct").delete();
   q = applyWhere(q, args.where);
   const { error } = await q;
   throwIfError(true, error, "featuredEventProduct.deleteMany");
@@ -606,18 +613,18 @@ async function featuredEventProductDeleteMany(args: any) {
 // ─── chat ──────────────────────────────────────────────────────────────────
 
 async function chatSessionUpsert(sessionId: string, email?: string) {
-  const { data: existing } = await supabase.from("ChatSession").select("id").eq("sessionId", sessionId).maybeSingle();
+  const { data: existing } = await getSupabase().from("ChatSession").select("id").eq("sessionId", sessionId).maybeSingle();
   if (existing) {
-    if (email) await supabase.from("ChatSession").update({ userEmail: email }).eq("sessionId", sessionId);
+    if (email) await getSupabase().from("ChatSession").update({ userEmail: email }).eq("sessionId", sessionId);
     return existing;
   }
-  const { data, error } = await supabase.from("ChatSession").insert({ id: crypto.randomUUID(), sessionId, userEmail: email ?? null, createdAt: new Date().toISOString() }).select().single();
+  const { data, error } = await getSupabase().from("ChatSession").insert({ id: crypto.randomUUID(), sessionId, userEmail: email ?? null, createdAt: new Date().toISOString() }).select().single();
   throwIfError(data, error, "chatSession.upsert");
   return data;
 }
 
 async function chatSessionFindMany(args: any = {}) {
-  let q: any = supabase.from("ChatSession").select("*");
+  let q: any = getSupabase().from("ChatSession").select("*");
   q = applyOrder(q, args.orderBy ?? { createdAt: "desc" });
   if (args.take) q = q.limit(args.take);
   const { data, error } = await q;
@@ -626,13 +633,13 @@ async function chatSessionFindMany(args: any = {}) {
 }
 
 async function chatMessageCreate(args: any) {
-  const { data, error } = await supabase.from("ChatMessage").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("ChatMessage").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data }).select().single();
   throwIfError(data, error, "chatMessage.create");
   return data;
 }
 
 async function chatMessageFindMany(args: any = {}) {
-  let q: any = supabase.from("ChatMessage").select("*");
+  let q: any = getSupabase().from("ChatMessage").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy ?? { createdAt: "asc" });
   if (args.take) q = q.limit(args.take);
@@ -644,7 +651,7 @@ async function chatMessageFindMany(args: any = {}) {
 // ─── lead ──────────────────────────────────────────────────────────────────
 
 async function leadFindMany(args: any = {}) {
-  let q: any = supabase.from("Lead").select("*");
+  let q: any = getSupabase().from("Lead").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = q.limit(args.take);
@@ -654,13 +661,13 @@ async function leadFindMany(args: any = {}) {
 }
 
 async function leadCreate(args: any) {
-  const { data, error } = await supabase.from("Lead").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), reviewed: false, ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("Lead").insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), reviewed: false, ...args.data }).select().single();
   throwIfError(data, error, "lead.create");
   return data;
 }
 
 async function leadCount(args: any = {}) {
-  let q: any = supabase.from("Lead").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Lead").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "lead.count");
@@ -670,7 +677,7 @@ async function leadCount(args: any = {}) {
 // ─── admin ─────────────────────────────────────────────────────────────────
 
 async function adminFindUnique(args: any) {
-  let q: any = supabase.from("Admin").select("*");
+  let q: any = getSupabase().from("Admin").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "admin.findUnique");
@@ -678,7 +685,7 @@ async function adminFindUnique(args: any) {
 }
 
 async function adminCreate(args: any) {
-  const { data, error } = await supabase.from("Admin").insert(args.data).select().single();
+  const { data, error } = await getSupabase().from("Admin").insert(args.data).select().single();
   throwIfError(data, error, "admin.create");
   return data;
 }
@@ -686,7 +693,7 @@ async function adminCreate(args: any) {
 // ─── content ───────────────────────────────────────────────────────────────
 
 async function contentFindMany(args: any = {}) {
-  let q: any = supabase.from("Content").select("*");
+  let q: any = getSupabase().from("Content").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q;
   throwIfError(data, error, "content.findMany");
@@ -694,7 +701,7 @@ async function contentFindMany(args: any = {}) {
 }
 
 async function contentUpsert(args: any) {
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabase()
     .from("Content")
     .select("id")
     .eq("key", args.where.key)
@@ -702,7 +709,7 @@ async function contentUpsert(args: any) {
 
   const now = new Date().toISOString();
   if (existing) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("Content")
       .update({ ...args.update, updatedAt: now })
       .eq("id", (existing as any).id)
@@ -711,7 +718,7 @@ async function contentUpsert(args: any) {
     throwIfError(data, error, "content.upsert(update)");
     return data;
   } else {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("Content")
       .insert({ id: crypto.randomUUID(), updatedAt: now, ...args.create })
       .select()
@@ -724,14 +731,14 @@ async function contentUpsert(args: any) {
 // ─── subscriber ────────────────────────────────────────────────────────────
 
 async function subscriberUpsert(args: any) {
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabase()
     .from("Subscriber")
     .select("id")
     .eq("email", args.where.email)
     .maybeSingle();
 
   if (existing) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("Subscriber")
       .update(args.update)
       .eq("id", (existing as any).id)
@@ -740,7 +747,7 @@ async function subscriberUpsert(args: any) {
     throwIfError(data, error, "subscriber.upsert(update)");
     return data;
   } else {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("Subscriber")
       .insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.create })
       .select()
@@ -753,7 +760,7 @@ async function subscriberUpsert(args: any) {
 // ─── skin profile ──────────────────────────────────────────────────────────
 
 async function skinProfileFindUnique(args: any) {
-  let q: any = supabase.from("SkinProfile").select("*");
+  let q: any = getSupabase().from("SkinProfile").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "skinProfile.findUnique");
@@ -761,14 +768,14 @@ async function skinProfileFindUnique(args: any) {
 }
 
 async function skinProfileUpsert(args: any) {
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabase()
     .from("SkinProfile")
     .select("id")
     .eq("userEmail", args.where.userEmail)
     .maybeSingle();
 
   if (existing) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("SkinProfile")
       .update({ ...args.update, updatedAt: new Date().toISOString() })
       .eq("id", (existing as any).id)
@@ -777,7 +784,7 @@ async function skinProfileUpsert(args: any) {
     throwIfError(data, error, "skinProfile.upsert(update)");
     return data;
   } else {
-    const { data, error } = await supabase.from("SkinProfile").insert(args.create).select().single();
+    const { data, error } = await getSupabase().from("SkinProfile").insert(args.create).select().single();
     throwIfError(data, error, "skinProfile.upsert(create)");
     return data;
   }
@@ -787,13 +794,13 @@ async function skinProfileUpsert(args: any) {
 
 async function giftCardCreate(args: any) {
   const now = new Date().toISOString();
-  const { data, error } = await supabase.from("GiftCard").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("GiftCard").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
   throwIfError(data, error, "giftCard.create");
   return data;
 }
 
 async function giftCardFindMany(args: any = {}) {
-  let q: any = supabase.from("GiftCard").select("*");
+  let q: any = getSupabase().from("GiftCard").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = q.limit(args.take);
@@ -803,7 +810,7 @@ async function giftCardFindMany(args: any = {}) {
 }
 
 async function giftCardFindUnique(args: any) {
-  let q: any = supabase.from("GiftCard").select("*");
+  let q: any = getSupabase().from("GiftCard").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "giftCard.findUnique");
@@ -811,7 +818,7 @@ async function giftCardFindUnique(args: any) {
 }
 
 async function giftCardUpdate(args: any) {
-  let q: any = supabase.from("GiftCard").update(args.data);
+  let q: any = getSupabase().from("GiftCard").update(args.data);
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "giftCard.update");
@@ -819,7 +826,7 @@ async function giftCardUpdate(args: any) {
 }
 
 async function giftCardCount(args: any = {}) {
-  let q: any = supabase.from("GiftCard").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("GiftCard").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "giftCard.count");
@@ -829,7 +836,7 @@ async function giftCardCount(args: any = {}) {
 // ─── coupon ────────────────────────────────────────────────────────────────
 
 async function couponFindMany(args: any = {}) {
-  let q: any = supabase.from("Coupon").select("*");
+  let q: any = getSupabase().from("Coupon").select("*");
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
   if (args.take) q = q.limit(args.take);
@@ -839,7 +846,7 @@ async function couponFindMany(args: any = {}) {
 }
 
 async function couponFindUnique(args: any) {
-  let q: any = supabase.from("Coupon").select("*");
+  let q: any = getSupabase().from("Coupon").select("*");
   q = applyWhere(q, args.where);
   const { data, error } = await q.maybeSingle();
   throwIfError(data, error, "coupon.findUnique");
@@ -848,13 +855,13 @@ async function couponFindUnique(args: any) {
 
 async function couponCreate(args: any) {
   const now = new Date().toISOString();
-  const { data, error } = await supabase.from("Coupon").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("Coupon").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
   throwIfError(data, error, "coupon.create");
   return data;
 }
 
 async function couponUpdate(args: any) {
-  let q: any = supabase.from("Coupon").update({ ...args.data, updatedAt: new Date().toISOString() });
+  let q: any = getSupabase().from("Coupon").update({ ...args.data, updatedAt: new Date().toISOString() });
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "coupon.update");
@@ -862,7 +869,7 @@ async function couponUpdate(args: any) {
 }
 
 async function couponDelete(args: any) {
-  let q: any = supabase.from("Coupon").delete();
+  let q: any = getSupabase().from("Coupon").delete();
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { error } = await q;
   throwIfError(true, error, "coupon.delete");
@@ -870,7 +877,7 @@ async function couponDelete(args: any) {
 }
 
 async function couponCount(args: any = {}) {
-  let q: any = supabase.from("Coupon").select("id", { count: "exact", head: true });
+  let q: any = getSupabase().from("Coupon").select("id", { count: "exact", head: true });
   q = applyWhere(q, args.where);
   const { count, error } = await q;
   throwIfError(count, error, "coupon.count");

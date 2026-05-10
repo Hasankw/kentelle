@@ -10,7 +10,7 @@ CREATE TABLE "Product" (
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "description" TEXT,
-    "ingredients" TEXT,
+    "ingredients" TEXT,ht the butto
     "howToUse" TEXT,
     "routine" TEXT,
     "cautions" TEXT,

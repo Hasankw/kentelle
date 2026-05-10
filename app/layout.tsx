@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   keywords: ["kentelle", "skincare", "australian skincare", "professional skincare", "serum", "cleanser", "moisturiser", "perth skincare"],
   authors: [{ name: "Kentelle Skincare" }],
   creator: "Kentelle Skincare",
-  metadataBase: new URL("https://kentelle.vercel.app"),
+  metadataBase: new URL("https://kentelle.com"),
   icons: {
     icon: [
       { url: "/icon.png", type: "image/png" },
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_AU",
-    url: "https://kentelle.vercel.app",
+    url: "https://kentelle.com",
     siteName: "Kentelle Skincare",
     title: "Kentelle Skincare — Science-Backed Australian Skincare",
     description: "Professional-grade, cruelty-free skincare crafted for Australian skin. Shop cleansers, serums, moisturisers and more.",

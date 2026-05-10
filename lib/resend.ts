@@ -30,7 +30,7 @@ function emailWrapper(content: string) {
       <tr><td style="background:#3A3240;padding:24px 40px;text-align:center;border-radius:0 0 4px 4px;">
         <p style="margin:0 0 8px;color:#ffffff;font-size:13px;font-family:Arial,sans-serif;">Kentelle Skincare &mdash; Made for Australian Skin</p>
         <p style="margin:0;color:#B5C9C5;font-size:11px;font-family:Arial,sans-serif;">
-          <a href="https://kentelle.vercel.app" style="color:#B5C9C5;text-decoration:none;">kentelle.vercel.app</a>
+          <a href="https://kentelle.com" style="color:#B5C9C5;text-decoration:none;">kentelle.com</a>
           &nbsp;&bull;&nbsp;
           <a href="mailto:support@kentelle.com" style="color:#B5C9C5;text-decoration:none;">support@kentelle.com</a>
         </p>
@@ -108,7 +108,7 @@ export async function sendGiftCard(
       <p style="margin:0 0 24px;font-size:14px;color:#444;font-family:Arial,sans-serif;">
         Enter this code at checkout on your next Kentelle purchase to redeem your gift card.
       </p>
-      <a href="https://kentelle.vercel.app/shop" style="display:inline-block;background:#D4A5B5;color:#3A3240;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">Shop Now</a>
+      <a href="https://kentelle.com/shop" style="display:inline-block;background:#D4A5B5;color:#3A3240;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">Shop Now</a>
     </div>
   `);
 
@@ -244,8 +244,8 @@ export async function sendOrderConfirmation(
 
     <!-- CTA -->
     <div style="padding:0 40px 40px;text-align:center;">
-      <a href="https://kentelle.vercel.app/shop" style="display:inline-block;background:#D4A5B5;color:#3A3240;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;margin-right:12px;">Continue Shopping</a>
-      <a href="https://kentelle.vercel.app/account/orders" style="display:inline-block;background:transparent;color:#3A3240;padding:13px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;border:2px solid #3A3240;font-family:Arial,sans-serif;">View My Orders</a>
+      <a href="https://kentelle.com/shop" style="display:inline-block;background:#D4A5B5;color:#3A3240;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;margin-right:12px;">Continue Shopping</a>
+      <a href="https://kentelle.com/account/orders" style="display:inline-block;background:transparent;color:#3A3240;padding:13px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;border:2px solid #3A3240;font-family:Arial,sans-serif;">View My Orders</a>
     </div>
   `);
 
@@ -276,7 +276,7 @@ function adminWrapper(content: string) {
         ${content}
       </td></tr>
       <tr><td style="background:#F8F8F8;padding:14px 28px;border-top:1px solid #E8E8E8;">
-        <p style="margin:0;font-size:11px;color:#999;font-family:Arial,sans-serif;">Internal notification — kentelle.vercel.app</p>
+        <p style="margin:0;font-size:11px;color:#999;font-family:Arial,sans-serif;">Internal notification — kentelle.com</p>
       </td></tr>
     </table>
   </td></tr>
@@ -343,7 +343,7 @@ export async function sendAdminOrderAlert(
       </tr>
     </table>
 
-    <a href="https://kentelle.vercel.app/admin/orders" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View in Admin</a>
+    <a href="https://kentelle.com/admin/orders" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View in Admin</a>
   `);
 
   await getResend().emails.send({
@@ -376,7 +376,7 @@ export async function sendAdminGiftCardAlert(
       ${adminRow("To", `${recipientName || "—"} (${recipientEmail})`)}
     </table>
 
-    <a href="https://kentelle.vercel.app/admin/gift-cards" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Gift Cards</a>
+    <a href="https://kentelle.com/admin/gift-cards" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Gift Cards</a>
   `);
 
   await getResend().emails.send({
@@ -401,7 +401,7 @@ export async function sendAdminNewUserAlert(name: string, email: string) {
       ${adminRow("Registered", new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth", dateStyle: "long", timeStyle: "short" }))}
     </table>
 
-    <a href="https://kentelle.vercel.app/admin/customers" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Customers</a>
+    <a href="https://kentelle.com/admin/customers" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Customers</a>
   `);
 
   await getResend().emails.send({
@@ -435,7 +435,7 @@ export async function sendAdminFailedPaymentAlert(
       ${adminRow("Time", new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth", dateStyle: "long", timeStyle: "short" }))}
     </table>
 
-    <a href="https://kentelle.vercel.app/admin/orders" style="display:inline-block;background:#E53E3E;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Orders</a>
+    <a href="https://kentelle.com/admin/orders" style="display:inline-block;background:#E53E3E;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View Orders</a>
   `);
 
   await getResend().emails.send({
@@ -482,7 +482,7 @@ export async function sendOrderStatusUpdate(
         </p>
       </div>
 
-      <a href="https://kentelle.vercel.app/account/orders" style="display:inline-block;background:#3A3240;color:#ffffff;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View My Orders</a>
+      <a href="https://kentelle.com/account/orders" style="display:inline-block;background:#3A3240;color:#ffffff;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View My Orders</a>
     </div>
   `);
 
