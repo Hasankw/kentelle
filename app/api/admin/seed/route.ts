@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
-
 const CATEGORIES = [
   { slug: "everyday-essentials", name: "Everyday Essentials", tagline: "Your daily ritual, perfected", description: "Foundational skincare for morning and night — cleansers, toners, moisturisers and targeted treatments for all skin types.", image: "/images/collections/col-1.jpg", sortOrder: 1 },
   { slug: "peel-and-glow", name: "Peel & Glow", tagline: "Reveal radiant, renewed skin", description: "Exfoliating serums, peels, masks and glycolic solutions to resurface, brighten and transform your complexion.", image: "/images/collections/col-2.jpg", sortOrder: 2 },
@@ -448,6 +442,11 @@ const PRODUCTS = [
 ];
 
 export async function POST() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
   const log: string[] = [];
 
   try {
