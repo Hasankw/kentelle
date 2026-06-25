@@ -86,8 +86,8 @@ export default function HeroCarousel({ initialSlides }: { initialSlides?: Carous
             sizes="100vw"
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 35%, transparent 65%)" }} />
-          <div className="relative z-10 h-full flex items-center">
-            <div className="px-8 md:px-20 max-w-lg">
+          <div className="relative z-10 h-full flex items-center justify-between w-full px-8 md:px-20">
+            <div className="max-w-lg">
               <span className="text-[10px] font-heading font-bold tracking-[0.3em] uppercase text-white/60 block mb-4">{slide.tagline}</span>
               <h1 className="font-heading font-bold text-4xl md:text-6xl text-white leading-[1.1] whitespace-pre-line mb-6">{slide.headline}</h1>
               <p className="font-body text-sm text-white/75 max-w-[300px] mb-9 leading-relaxed">{slide.sub}</p>
@@ -102,6 +102,31 @@ export default function HeroCarousel({ initialSlides }: { initialSlides?: Carous
                 )}
               </div>
             </div>
+
+            {current === 0 && (
+              <div className="hidden md:block w-[420px] shrink-0 rounded-xl border border-white/30 bg-white/15 backdrop-blur-md p-8 shadow-xl">
+                <p className="text-[10px] font-heading font-bold tracking-[0.3em] uppercase text-brand-navy mb-3">
+                  Our Story
+                </p>
+                <h2 className="font-heading font-bold text-xl md:text-2xl text-brand-navy leading-snug mb-4">
+                  40 Years of Expertise.<br />Next-Gen Skin Care.
+                </h2>
+                <p className="font-body text-sm text-brand-navy leading-relaxed mb-4">
+                  For four decades, clients asked: &ldquo;Ken, tell me what to use.&rdquo; The answer is KENTELLE.
+                </p>
+                <p className="font-body text-sm text-brand-navy/80 leading-relaxed">
+                  Proudly Made in Australia, clinically tested, and 100% vegan. We don&apos;t just follow trends — we continuously source the world&apos;s most advanced, highly effective ingredients to target the deep dermal layer, protect your barrier against harsh environments, and visibly slow down the aging process.
+                </p>
+                <div className="mt-6 pt-5 border-t border-brand-navy/15">
+                  <p className="font-heading font-bold text-sm text-brand-navy tracking-widest uppercase">
+                    KENTELLE: KEN DO, KEN BE.
+                  </p>
+                  <p className="font-body text-sm text-brand-navy/75 mt-1">
+                    Treat yourself to the beauty you KENTELLE.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </AnimatePresence>

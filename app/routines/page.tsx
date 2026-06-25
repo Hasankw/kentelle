@@ -130,15 +130,15 @@ function RoutineCard({ routine, clinical }: { routine: any; clinical?: boolean }
       className="group block bg-white border border-brand-contrast/10 hover:border-brand-accent/40 hover:shadow-md transition-all duration-200"
     >
       <div className={`h-1.5 ${clinical ? "bg-brand-navy" : "bg-brand-accent"}`} />
-      <div className="p-6">
+      <div className="p-6 flex flex-col h-[200px]">
         <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-brand-contrast mb-2">
           {clinical ? "Clinical Treatment" : "Skincare Routine"} · {Array.isArray(routine.steps) ? routine.steps.length : 0} Steps
         </p>
-        <h3 className="font-heading font-bold text-lg text-brand-navy mb-2 leading-snug group-hover:text-brand-blue transition-colors">
+        <h3 className="font-heading font-bold text-lg text-brand-navy mb-2 leading-snug group-hover:text-brand-blue transition-colors line-clamp-2">
           {routine.title}
         </h3>
         {routine.tagline && (
-          <p className="font-body text-sm text-brand-contrast leading-relaxed">{routine.tagline}</p>
+          <p className="font-body text-sm text-brand-contrast leading-relaxed line-clamp-2 flex-1">{routine.tagline}</p>
         )}
         <div className="mt-4 text-xs font-heading font-bold uppercase tracking-widest text-brand-accent group-hover:text-brand-blue transition-colors">
           View Routine →
