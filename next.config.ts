@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 // Embed all server-side env vars at build time so the compiled bundles work
 // on hosts (like Hostinger) that don't populate process.env from .env files at runtime.
 const nextConfig: NextConfig = {
+  output: "standalone",
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
