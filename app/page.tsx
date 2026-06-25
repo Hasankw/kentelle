@@ -70,19 +70,6 @@ async function getReviewsContent() {
   return undefined;
 }
 
-async function getApprovedReviews() {
-  try {
-    return await db.review.findMany({
-      where: { approved: true },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: { id: true, customerName: true, rating: true, body: true, productName: true },
-    });
-  } catch {
-    return [];
-  }
-}
-
 async function getCarouselSlides() {
   try {
     const rows = await db.content.findMany({ where: { key: "carousel_slides" } });
@@ -115,7 +102,7 @@ async function getRoutines() {
 }
 
 export default async function HomePage() {
-  const [products, { events, sectionTitle }, { routines, clinical }, carouselSlides, trustBadges, routinesSectionContent, reviewsContent, approvedReviews] = await Promise.all([
+  const [products, { events, sectionTitle }, { routines, clinical }, carouselSlides, trustBadges, routinesSectionContent, reviewsContent] = await Promise.all([
     getFeaturedProducts(),
     getActiveEvents(),
     getRoutines(),
@@ -123,7 +110,6 @@ export default async function HomePage() {
     getTrustBadges(),
     getRoutinesSectionContent(),
     getReviewsContent(),
-    getApprovedReviews(),
   ]);
 
   return (
@@ -140,7 +126,7 @@ export default async function HomePage() {
         <FadeIn delay={0.05}><RoutinesSection routines={routines} clinical={clinical} content={routinesSectionContent} /></FadeIn>
       )}
       <FadeIn delay={0.05}><SkinConcernNav /></FadeIn>
-      <FadeIn delay={0.05}><ReviewsBanner content={reviewsContent} approvedReviews={approvedReviews as any} /></FadeIn>
+      <FadeIn delay={0.05}><ReviewsBanner content={reviewsContent} /></FadeIn>
     </>
   );
 }
