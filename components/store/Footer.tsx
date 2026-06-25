@@ -35,7 +35,6 @@ const DEFAULT: FooterData = {
     {
       id: "col2", title: "Help", links: [
         { id: "l7", label: "Find Your Routine", href: "/find-your-routine", enabled: true },
-        { id: "l8", label: "Skin Regimen", href: "/skin-regimen", enabled: true },
         { id: "l9", label: "FAQ", href: "/faq", enabled: true },
         { id: "l10", label: "Contact Us", href: "/contact", enabled: true },
         { id: "l11", label: "About Kentelle", href: "/about", enabled: true },
@@ -54,6 +53,17 @@ const DEFAULT: FooterData = {
   ],
 };
 
+function withoutSkinRegimenLinks(data: FooterData): FooterData {
+  return {
+    ...data,
+    columns: data.columns.map((column) => ({
+      ...column,
+      links: column.links.filter(
+        (link) => link.href !== "/skin-regimen" && link.label.trim().toLowerCase() !== "skin regimen"
+      ),
+    })),
+  };
+}
 function PaymentIcons() {
   return (
     <div className="flex flex-wrap gap-2 items-center">
@@ -110,9 +120,9 @@ export default function Footer() {
           const parsed = JSON.parse(d.value);
           // Handle legacy format (plain columns array)
           if (Array.isArray(parsed)) {
-            setData({ ...DEFAULT, columns: parsed });
+            setData(withoutSkinRegimenLinks({ ...DEFAULT, columns: parsed }));
           } else {
-            setData({ ...DEFAULT, ...parsed });
+            setData(withoutSkinRegimenLinks({ ...DEFAULT, ...parsed }));
           }
         }
       })

@@ -61,7 +61,7 @@ export default function HeroCarousel({ initialSlides }: { initialSlides?: Carous
   );
 
   return (
-    <section className="relative h-[540px] md:h-[700px] overflow-hidden">
+    <section className="relative h-[760px] sm:h-[700px] md:h-[700px] overflow-hidden">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={slide.id}
@@ -86,17 +86,17 @@ export default function HeroCarousel({ initialSlides }: { initialSlides?: Carous
             sizes="100vw"
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 35%, transparent 65%)" }} />
-          <div className="relative z-10 h-full flex items-center justify-between w-full px-8 md:px-20">
+          <div className="relative z-10 h-full flex flex-col items-start justify-center gap-6 w-full px-5 py-8 sm:px-8 md:flex-row md:items-center md:justify-between md:gap-10 md:px-20 md:py-0">
             <div className="max-w-lg">
               <span className="text-[10px] font-heading font-bold tracking-[0.3em] uppercase text-white/60 block mb-4">{slide.tagline}</span>
-              <h1 className="font-heading font-bold text-4xl md:text-6xl text-white leading-[1.1] whitespace-pre-line mb-6">{slide.headline}</h1>
-              <p className="font-body text-sm text-white/75 max-w-[300px] mb-9 leading-relaxed">{slide.sub}</p>
+              <h1 className="font-heading font-bold text-4xl sm:text-5xl md:text-6xl text-white leading-[1.1] whitespace-pre-line mb-6">{slide.headline}</h1>
+              <p className="font-body text-sm text-white/75 max-w-[300px] mb-6 md:mb-9 leading-relaxed">{slide.sub}</p>
               <div className="flex items-center gap-3 flex-wrap">
-                <Link href={slide.ctaHref} className="inline-flex items-center px-8 py-3.5 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-accent/85 transition-all duration-200">
+                <Link href={slide.ctaHref} className="inline-flex items-center px-6 py-3.5 sm:px-8 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-accent/85 transition-all duration-200">
                   {slide.ctaLabel}
                 </Link>
                 {slide.cta2Label && slide.cta2Href && (
-                  <Link href={slide.cta2Href} className="inline-flex items-center px-8 py-3.5 bg-transparent border border-white/60 text-white rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-white/10 transition-all duration-200">
+                  <Link href={slide.cta2Href} className="inline-flex items-center px-6 py-3.5 sm:px-8 bg-transparent border border-white/60 text-white rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-white/10 transition-all duration-200">
                     {slide.cta2Label}
                   </Link>
                 )}
@@ -104,24 +104,24 @@ export default function HeroCarousel({ initialSlides }: { initialSlides?: Carous
             </div>
 
             {current === 0 && (
-              <div className="hidden md:block w-[420px] shrink-0 rounded-xl border border-white/30 bg-white/15 backdrop-blur-md p-8 shadow-xl">
+              <div className="w-full max-w-[340px] rounded-lg border border-white/40 bg-white/75 p-5 shadow-xl backdrop-blur-md sm:max-w-[430px] sm:p-6 md:w-[420px] md:max-w-none md:shrink-0 md:rounded-xl md:border-white/30 md:bg-white/15 md:p-8">
                 <p className="text-[10px] font-heading font-bold tracking-[0.3em] uppercase text-brand-navy mb-3">
                   Our Story
                 </p>
-                <h2 className="font-heading font-bold text-xl md:text-2xl text-brand-navy leading-snug mb-4">
+                <h2 className="font-heading font-bold text-lg sm:text-xl md:text-2xl text-brand-navy leading-snug mb-3 md:mb-4">
                   40 Years of Expertise.<br />Next-Gen Skin Care.
                 </h2>
-                <p className="font-body text-sm text-brand-navy leading-relaxed mb-4">
+                <p className="font-body text-xs sm:text-sm text-brand-navy leading-relaxed mb-3 md:mb-4">
                   For four decades, clients asked: &ldquo;Ken, tell me what to use.&rdquo; The answer is KENTELLE.
                 </p>
-                <p className="font-body text-sm text-brand-navy/80 leading-relaxed">
+                <p className="font-body text-xs sm:text-sm text-brand-navy/80 leading-relaxed">
                   Proudly Made in Australia, clinically tested, and 100% vegan. We don&apos;t just follow trends — we continuously source the world&apos;s most advanced, highly effective ingredients to target the deep dermal layer, protect your barrier against harsh environments, and visibly slow down the aging process.
                 </p>
-                <div className="mt-6 pt-5 border-t border-brand-navy/15">
-                  <p className="font-heading font-bold text-sm text-brand-navy tracking-widest uppercase">
+                <div className="mt-4 pt-4 md:mt-6 md:pt-5 border-t border-brand-navy/15">
+                  <p className="font-heading font-bold text-xs sm:text-sm text-brand-navy tracking-widest uppercase">
                     KENTELLE: KEN DO, KEN BE.
                   </p>
-                  <p className="font-body text-sm text-brand-navy/75 mt-1">
+                  <p className="font-body text-xs sm:text-sm text-brand-navy/75 mt-1">
                     Treat yourself to the beauty you KENTELLE.
                   </p>
                 </div>
@@ -131,7 +131,7 @@ export default function HeroCarousel({ initialSlides }: { initialSlides?: Carous
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute right-5 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 z-20">
+      <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 flex-row gap-2.5 md:right-5 md:left-auto md:top-1/2 md:bottom-auto md:-translate-x-0 md:-translate-y-1/2 md:flex-col">
         {slides.map((_, i) => (
           <button key={i} onClick={() => go(i, i > current ? 1 : -1)} aria-label={`Go to slide ${i + 1}`}
             className={`rounded-full transition-all duration-300 ${i === current ? "w-2.5 h-2.5 bg-white shadow-md" : "w-1.5 h-1.5 bg-white/40 hover:bg-white/70"}`}

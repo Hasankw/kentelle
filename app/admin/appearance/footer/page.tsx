@@ -36,7 +36,6 @@ const DEFAULT_DATA: FooterData = {
     {
       id: "col2", title: "Help", links: [
         { id: "l7", label: "Find Your Routine", href: "/find-your-routine", enabled: true },
-        { id: "l8", label: "Skin Regimen", href: "/skin-regimen", enabled: true },
         { id: "l9", label: "FAQ", href: "/faq", enabled: true },
         { id: "l10", label: "Contact Us", href: "/contact", enabled: true },
         { id: "l11", label: "About Kentelle", href: "/about", enabled: true },
@@ -55,6 +54,18 @@ const DEFAULT_DATA: FooterData = {
   ],
 };
 
+function withoutSkinRegimenLinks(data: FooterData): FooterData {
+  return {
+    ...data,
+    columns: data.columns.map((column) => ({
+      ...column,
+      links: column.links.filter(
+        (link) => link.href !== "/skin-regimen" && link.label.trim().toLowerCase() !== "skin regimen"
+      ),
+    })),
+  };
+}
+
 export default function FooterAdminPage() {
   const [data, setData] = useState<FooterData>(DEFAULT_DATA);
   const [saving, setSaving] = useState(false);
@@ -70,21 +81,23 @@ export default function FooterAdminPage() {
           const parsed = JSON.parse(d.value);
           // Handle old format (plain array) gracefully
           if (Array.isArray(parsed)) {
-            setData({ ...DEFAULT_DATA, columns: parsed });
+            setData(withoutSkinRegimenLinks({ ...DEFAULT_DATA, columns: parsed }));
           } else {
-            setData({ ...DEFAULT_DATA, ...parsed });
+            setData(withoutSkinRegimenLinks({ ...DEFAULT_DATA, ...parsed }));
           }
         }
       });
   }, []);
 
   const save = async (next: FooterData = data) => {
+    const cleaned = withoutSkinRegimenLinks(next);
     setSaving(true);
     await fetch("/api/admin/pages/content", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: "nav_footer", value: JSON.stringify(next) }),
+      body: JSON.stringify({ key: "nav_footer", value: JSON.stringify(cleaned) }),
     });
+    setData(cleaned);
     setSaving(false);
     setStatus("Saved!");
     setTimeout(() => setStatus(null), 2000);
