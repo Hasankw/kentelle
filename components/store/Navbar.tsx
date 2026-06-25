@@ -10,12 +10,35 @@ import { cn } from "@/lib/utils";
 interface NavChild { id: string; label: string; href: string; enabled: boolean; }
 interface NavLink { id: string; label: string; href: string; enabled: boolean; children: NavChild[]; }
 
+const PRODUCT_LAYERING_NAV: NavLink = {
+  id: "product-layering",
+  label: "Layring",
+  href: "/product-layering",
+  enabled: true,
+  children: [],
+};
+
 const DEFAULT_NAV: NavLink[] = [
   { id: "1", label: "Shop", href: "/shop", enabled: true, children: [] },
   { id: "2", label: "Collections", href: "/collections", enabled: true, children: [] },
+  PRODUCT_LAYERING_NAV,
   { id: "3", label: "About", href: "/about", enabled: true, children: [] },
   { id: "4", label: "Contact", href: "/contact", enabled: true, children: [] },
 ];
+
+function withProductLayeringNav(links: NavLink[]) {
+  if (links.some((link) => link.id === PRODUCT_LAYERING_NAV.id || link.href === PRODUCT_LAYERING_NAV.href)) {
+    return links;
+  }
+
+  const collectionsIndex = links.findIndex((link) => link.href === "/collections");
+  const insertAt = collectionsIndex >= 0 ? collectionsIndex + 1 : Math.min(2, links.length);
+  return [
+    ...links.slice(0, insertAt),
+    PRODUCT_LAYERING_NAV,
+    ...links.slice(insertAt),
+  ];
+}
 
 interface NavbarProps {
   onSearchOpen: () => void;
@@ -26,12 +49,12 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [greeting, setGreeting] = useState("");
-  const [navLinks, setNavLinks] = useState<NavLink[]>(DEFAULT_NAV);
+  const [navLinks, setNavLinks] = useState<NavLink[]>(withProductLayeringNav(DEFAULT_NAV));
 
   useEffect(() => {
     fetch("/api/admin/pages/content?key=nav_header")
       .then((r) => r.json())
-      .then((d) => { if (d.value) setNavLinks(JSON.parse(d.value)); })
+      .then((d) => { if (d.value) setNavLinks(withProductLayeringNav(JSON.parse(d.value))); })
       .catch(() => {});
   }, []);
   const itemCount = useCartStore((s) => s.itemCount());

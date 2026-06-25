@@ -8,12 +8,35 @@ import AdminShell from "@/components/admin/AdminShell";
 interface SubItem { id: string; label: string; href: string; enabled: boolean; }
 interface NavItem { id: string; label: string; href: string; enabled: boolean; children: SubItem[]; }
 
+const PRODUCT_LAYERING_NAV: NavItem = {
+  id: "product-layering",
+  label: "Layring",
+  href: "/product-layering",
+  enabled: true,
+  children: [],
+};
+
 const DEFAULTS: NavItem[] = [
   { id: "1", label: "Shop", href: "/shop", enabled: true, children: [] },
   { id: "2", label: "Collections", href: "/collections", enabled: true, children: [] },
+  PRODUCT_LAYERING_NAV,
   { id: "3", label: "About", href: "/about", enabled: true, children: [] },
   { id: "4", label: "Contact", href: "/contact", enabled: true, children: [] },
 ];
+
+function withProductLayeringNav(items: NavItem[]) {
+  if (items.some((item) => item.id === PRODUCT_LAYERING_NAV.id || item.href === PRODUCT_LAYERING_NAV.href)) {
+    return items;
+  }
+
+  const collectionsIndex = items.findIndex((item) => item.href === "/collections");
+  const insertAt = collectionsIndex >= 0 ? collectionsIndex + 1 : Math.min(2, items.length);
+  return [
+    ...items.slice(0, insertAt),
+    PRODUCT_LAYERING_NAV,
+    ...items.slice(insertAt),
+  ];
+}
 
 export default function HeaderNavAdminPage() {
   const [items, setItems] = useState<NavItem[]>(DEFAULTS);
@@ -25,7 +48,7 @@ export default function HeaderNavAdminPage() {
   useEffect(() => {
     fetch("/api/admin/pages/content?key=nav_header")
       .then((r) => r.json())
-      .then((d) => { if (d.value) setItems(JSON.parse(d.value)); });
+      .then((d) => { if (d.value) setItems(withProductLayeringNav(JSON.parse(d.value))); });
   }, []);
 
   const save = async (list: NavItem[] = items) => {
