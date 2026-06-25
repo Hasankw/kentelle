@@ -27,7 +27,11 @@ export default async function RoutinePage({ params }: PageProps) {
 
   const isClinical = routine.category === "clinical";
   const steps: any[] = Array.isArray(routine.steps) ? routine.steps : [];
-  const tips = routine.tips as { suitability?: string; items?: { label: string; content: string }[] } | null;
+  const tips = routine.tips as {
+    suitability?: string;
+    education?: { label: string; content: string }[];
+    items?: { label: string; content: string }[];
+  } | null;
 
   return (
     <main className="min-h-screen bg-brand-bg">
@@ -86,11 +90,32 @@ export default async function RoutinePage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* Skin Education Block (optional — shown before tips) */}
+        {tips?.education && tips.education.length > 0 && (
+          <section className="bg-white border border-brand-contrast/10 p-8 mb-6">
+            <h2 className="font-heading font-bold text-center text-sm uppercase tracking-widest text-brand-navy mb-2">
+              Understanding Your Skin
+            </h2>
+            <p className="font-body text-center text-xs text-brand-contrast mb-8">Why peel at all?</p>
+            <ul className="space-y-6">
+              {tips.education.map((item: any, i: number) => (
+                <li key={i} className="flex gap-3">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-brand-accent mt-2" />
+                  <p className="font-body text-sm text-brand-navy leading-relaxed">
+                    <strong className="font-heading font-bold">{item.label}:</strong>{" "}
+                    {item.content}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* Tips & Suitability */}
         {tips && (tips.suitability || (tips.items && tips.items.length > 0)) && (
           <section className="bg-white border border-brand-contrast/10 p-8">
             <h2 className="font-heading font-bold text-center text-sm uppercase tracking-widest text-brand-navy mb-6">
-              {isClinical ? "Clinical Tips & Advice" : "Tips & Suitability"}
+              {isClinical ? "Clinical Tips & Advice" : "Pro Tips & Clinic Advice"}
             </h2>
             {tips.suitability && (
               <div className="text-center mb-6 pb-6 border-b border-brand-contrast/10">
@@ -98,14 +123,23 @@ export default async function RoutinePage({ params }: PageProps) {
               </div>
             )}
             {tips.items && tips.items.length > 0 && (
-              <ul className="space-y-4">
+              <ul className="space-y-5">
                 {tips.items.map((tip: any, i: number) => (
                   <li key={i} className="flex gap-3">
                     <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-brand-accent mt-2" />
-                    <p className="font-body text-sm text-brand-navy leading-relaxed">
-                      <strong className="font-heading font-bold">{tip.label}:</strong>{" "}
-                      {tip.content}
-                    </p>
+                    <div className="font-body text-sm text-brand-navy leading-relaxed">
+                      <p>
+                        <strong className="font-heading font-bold">{tip.label}:</strong>{" "}
+                        {tip.content}
+                      </p>
+                      {tip.subItems && tip.subItems.length > 0 && (
+                        <ul className="mt-2 space-y-1.5 pl-3 border-l-2 border-brand-accent/30">
+                          {tip.subItems.map((sub: string, j: number) => (
+                            <li key={j} className="text-sm text-brand-navy/85 leading-relaxed">{sub}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
