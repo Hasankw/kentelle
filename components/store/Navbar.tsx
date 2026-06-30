@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ShoppingBag, Search, User, Menu, X } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 import { useCartStore } from "@/store/cart";
@@ -50,6 +51,7 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [navLinks, setNavLinks] = useState<NavLink[]>(withProductLayeringNav(DEFAULT_NAV));
+  const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin/pages/content?key=nav_header")
@@ -154,7 +156,7 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
               <Search size={20} />
             </button>
             <Link
-              href="/account"
+              href={greeting ? "/account" : `/login?redirect=${encodeURIComponent(pathname)}`}
               aria-label="Account"
               className="flex items-center gap-1.5 text-brand-navy hover:text-brand-blue transition-colors"
             >

@@ -139,7 +139,7 @@ export default async function HomePage() {
       {(routines.length > 0 || clinical.length > 0) && (
         <FadeIn delay={0.05}><RoutinesSection routines={routines} clinical={clinical} content={routinesSectionContent} /></FadeIn>
       )}
-      <FadeIn delay={0.05}><SkinConcernNav /></FadeIn>
+      {/* <FadeIn delay={0.05}><SkinConcernNav /></FadeIn> */}
       <FadeIn delay={0.05}><ReviewsBanner content={reviewsContent} approvedReviews={approvedReviews as any} /></FadeIn>
     </>
   );

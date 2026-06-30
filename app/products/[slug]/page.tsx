@@ -10,6 +10,24 @@ import FeaturedProducts from "@/components/home/FeaturedProducts";
 import { formatPrice, calcDiscount } from "@/lib/utils";
 import { isBundleProduct, MOTHERS_DAY_BUNDLE } from "@/lib/bundles";
 import Link from "next/link";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const PRO_CATEGORY_SLUG = "professional-use";
+
+async function getProAccess(): Promise<boolean> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    const customer = await db.customer.findUnique({
+      where: { supabaseUid: user.id },
+      select: { proStatus: true },
+    });
+    return customer?.proStatus === "approved";
+  } catch {
+    return false;
+  }
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -59,8 +77,13 @@ export default async function ProductPage({ params }: PageProps) {
 
   if (!product) notFound();
 
+  const isPro = product.categories.some((c) => c.slug === PRO_CATEGORY_SLUG);
   const categoryIds = product.categories.map((c) => c.id);
-  const related = await getRelated(product.id, categoryIds);
+  const [related, isProApproved] = await Promise.all([
+    getRelated(product.id, categoryIds),
+    isPro ? getProAccess() : Promise.resolve(true),
+  ]);
+  const proBlocked = isPro && !isProApproved;
 
   const discount = product.salePrice
     ? calcDiscount(product.price, product.salePrice)
@@ -163,23 +186,31 @@ export default async function ProductPage({ params }: PageProps) {
           )}
 
           {/* Price */}
-          <div className="flex items-center gap-3 mb-6">
-            {product.salePrice ? (
-              <>
-                <span className="font-heading font-bold text-2xl text-brand-blue">
-                  {formatPrice(product.salePrice)}
-                </span>
-                <span className="font-body text-sm text-brand-contrast line-through">
+          {proBlocked ? (
+            <div className="flex items-center gap-3 mb-6">
+              <span className="font-body text-sm text-brand-contrast italic">
+                Price visible to approved professionals only
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 mb-6">
+              {product.salePrice ? (
+                <>
+                  <span className="font-heading font-bold text-2xl text-brand-blue">
+                    {formatPrice(product.salePrice)}
+                  </span>
+                  <span className="font-body text-sm text-brand-contrast line-through">
+                    {formatPrice(product.price)}
+                  </span>
+                  {discount > 0 && <Badge variant="sale">-{discount}%</Badge>}
+                </>
+              ) : (
+                <span className="font-heading font-bold text-2xl text-brand-navy">
                   {formatPrice(product.price)}
                 </span>
-                {discount > 0 && <Badge variant="sale">-{discount}%</Badge>}
-              </>
-            ) : (
-              <span className="font-heading font-bold text-2xl text-brand-navy">
-                {formatPrice(product.price)}
-              </span>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Short description */}
           {product.description && (
@@ -189,8 +220,33 @@ export default async function ProductPage({ params }: PageProps) {
             </p>
           )}
 
-          {/* Add to cart */}
-          <AddToCartSection product={product} />
+          {/* Add to cart / Pro access gate */}
+          {proBlocked ? (
+            <div className="border border-brand-navy/20 rounded p-5 bg-[#F8F9FC] space-y-3">
+              <p className="font-heading font-bold text-sm text-brand-navy uppercase tracking-wider">
+                Professional Access Required
+              </p>
+              <p className="font-body text-xs text-brand-contrast leading-relaxed">
+                This product is part of the KENTELLE Professional &amp; Clinical Range. Purchasing requires verified professional qualifications.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-1">
+                <Link
+                  href="/login?redirect=/products/[slug]"
+                  className="inline-flex items-center px-5 py-2.5 bg-brand-navy text-white rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-blue transition-colors"
+                >
+                  Log In Here
+                </Link>
+                <Link
+                  href="/pro-register"
+                  className="inline-flex items-center px-5 py-2.5 border border-brand-navy/30 text-brand-navy rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-navy/5 transition-colors"
+                >
+                  Apply for Pro Access
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <AddToCartSection product={product} />
+          )}
 
           {/* Trust mini badges */}
           <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-brand-contrast/20">

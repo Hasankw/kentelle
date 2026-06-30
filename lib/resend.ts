@@ -446,6 +446,37 @@ export async function sendAdminFailedPaymentAlert(
   });
 }
 
+// ─── Admin: Pro Application Alert ────────────────────────────────────────────
+
+export async function sendProApplicationAlert(name: string, email: string, qualificationType: string) {
+  const html = adminWrapper(`
+    <div style="background:#EEF3FF;border-left:4px solid #5B7FFF;padding:14px 18px;border-radius:2px;margin-bottom:24px;">
+      <p style="margin:0;font-size:15px;font-weight:bold;color:#1a2e6c;font-family:Arial,sans-serif;">New Pro Access Application</p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      ${adminRow("Name", name)}
+      ${adminRow("Email", email)}
+      ${adminRow("Qualification", qualificationType)}
+      ${adminRow("Status", "Pending Approval")}
+      ${adminRow("Submitted", new Date().toLocaleString("en-AU", { timeZone: "Australia/Perth", dateStyle: "long", timeStyle: "short" }))}
+    </table>
+
+    <p style="margin:0 0 20px;font-size:14px;color:#555;font-family:Arial,sans-serif;">
+      Please review their qualification certificate and approve or reject their professional access.
+    </p>
+
+    <a href="https://kentelle.com/admin/customers" style="display:inline-block;background:#3A3240;color:#ffffff;padding:11px 24px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">Review Application</a>
+  `);
+
+  await getResend().emails.send({
+    from: "Kentelle Skincare <noreply@kentelle.com>",
+    to: ADMIN_EMAILS,
+    subject: `Pro Access Application — ${name} (${qualificationType})`,
+    html,
+  });
+}
+
 // ─── Order Status Update Email ────────────────────────────────────────────────
 
 const STATUS_COPY: Record<string, { label: string; color: string; message: string }> = {

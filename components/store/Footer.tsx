@@ -230,20 +230,18 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Legal disclaimer */}
-      <div className="border-t border-brand-white/10 bg-brand-navy/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <p className="text-[11px] text-brand-contrast/60 font-body leading-relaxed">
-            All Kentelle Skincare products are intended for cosmetic use only and are not registered as therapeutic goods with the TGA.
-            Product information is provided for general educational purposes and does not constitute medical advice.
-            Consult your dermatologist, general practitioner, or qualified healthcare professional before purchasing or using any skincare product.
-            Carefully read and follow all instructions and warnings provided on product packaging.
-            If adverse reactions occur, discontinue use immediately and seek medical attention promptly.
-            These products are not intended to diagnose, treat, cure or prevent any disease or health condition.
-            Kentelle Skincare disclaims liability for any injury, adverse effect, or outcome resulting from product use.
+      {/* Kentelle Promise */}
+      <div className="border-t border-brand-white/10 bg-brand-navy/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <p className="text-xs font-heading font-bold uppercase tracking-widest text-brand-accent mb-2">
+            The Kentelle Promise: Uncompromised Compliance
+          </p>
+          <p className="text-[11px] text-brand-contrast/70 font-body leading-relaxed max-w-4xl">
+            At Kentelle, your skin&apos;s safety is our highest priority. Our entire range is developed in strict alignment with TGA regulations. This means every ingredient is explicitly approved for skincare, our packaging materials are structurally safe, and our application instructions and cautions are clearly detailed for optimal results.
           </p>
         </div>
       </div>
+
     </footer>
   );
 }

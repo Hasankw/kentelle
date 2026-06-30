@@ -91,17 +91,21 @@ model OrderItem {
 }
 
 model Customer {
-  id           String   @id @default(cuid())
-  supabaseUid  String?  @unique
-  name         String
-  email        String   @unique
-  phone        String?
-  addresses    Json[]
-  orders       Order[]
-  createdAt    DateTime @default(now())
+  id               String   @id @default(cuid())
+  supabaseUid      String?  @unique
+  name             String
+  email            String   @unique
+  phone            String?
+  addresses        Json[]
+  orders           Order[]
+  proStatus        String?  // "retail" | "pending" | "approved"
+  proDocUrl        String?
+  proTrainingAck   Boolean  @default(false)
+  createdAt        DateTime @default(now())
 
   @@index([email])
   @@index([supabaseUid])
+  @@index([proStatus])
 }
 
 model Lead {

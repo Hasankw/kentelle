@@ -16,11 +16,12 @@ interface ProductCardProps {
     Product,
     "id" | "name" | "slug" | "price" | "salePrice" | "images" | "stock"
   > & { description?: string | null };
+  proBlocked?: boolean;
 }
 
 const PLACEHOLDER = "/images/placeholder.svg";
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, proBlocked = false }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [img1Src, setImg1Src] = useState(product.images[0] || PLACEHOLDER);
   const [img2Src, setImg2Src] = useState(product.images[1] || product.images[0] || PLACEHOLDER);
@@ -101,7 +102,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
 
           {/* Quick-add button */}
-          {!outOfStock && (
+          {!outOfStock && !proBlocked && (
             <button
               onClick={handleAddToCart}
               className="absolute bottom-0 left-0 right-0 bg-brand-accent text-brand-navy rounded py-3 text-xs font-heading font-bold tracking-widest uppercase flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hover:bg-brand-accent/85"
@@ -109,6 +110,14 @@ export default function ProductCard({ product }: ProductCardProps) {
               <ShoppingBag size={14} />
               Add to Cart
             </button>
+          )}
+          {proBlocked && (
+            <a
+              href="/pro-register"
+              className="absolute bottom-0 left-0 right-0 bg-brand-navy text-white rounded py-3 text-xs font-heading font-bold tracking-widest uppercase flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hover:bg-brand-blue"
+            >
+              Pro Access Required
+            </a>
           )}
         </div>
 
@@ -123,7 +132,11 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
           )}
           <div className="flex items-center gap-2 mt-1">
-            {product.salePrice ? (
+            {proBlocked ? (
+              <a href="/login?redirect=/shop?category=professional-use" className="font-body text-xs text-brand-blue hover:underline">
+                Log in to view price
+              </a>
+            ) : product.salePrice ? (
               <>
                 <span className="font-body text-sm text-brand-blue font-bold">
                   {formatPrice(product.salePrice)}
