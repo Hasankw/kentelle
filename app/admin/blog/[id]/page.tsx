@@ -1,17 +1,19 @@
 export const dynamic = "force-dynamic";
 
-import { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import AdminShell from "@/components/admin/AdminShell";
-import BlogForm from "@/components/admin/BlogForm";
-
-export const metadata: Metadata = { title: "Edit Blog Post" };
+import BlogEditorClient from "@/components/admin/BlogEditorClient";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+function toISOStringOrNull(value: unknown) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+
+  const date = new Date(value as string | number);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 export default async function AdminBlogEditPage({ params }: PageProps) {
@@ -19,31 +21,28 @@ export default async function AdminBlogEditPage({ params }: PageProps) {
   const post = await db.blog.findUnique({ where: { id } });
   if (!post) notFound();
 
-  return (
-    <AdminShell>
-      <div className="p-8">
-        <div className="flex items-center gap-4 mb-6">
-          <Link href="/admin/blog" className="text-brand-contrast hover:text-brand-navy transition-colors">
-            <ArrowLeft size={18} />
-          </Link>
-          <h1 className="font-heading font-bold text-2xl text-brand-navy">
-            Edit Post
-          </h1>
-        </div>
-        <div className="bg-white border border-brand-contrast/10 shadow-sm p-6">
-          <BlogForm
-            post={{
-              id: post.id,
-              title: post.title,
-              slug: post.slug,
-              excerpt: post.excerpt ?? "",
-              body: post.body,
-              coverImage: post.coverImage ?? "",
-              published: post.published,
-            }}
-          />
-        </div>
-      </div>
-    </AdminShell>
-  );
+  const initialPost = {
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt ?? "",
+    body: post.body ?? "",
+    coverImage: post.coverImage ?? "",
+    status: (post as unknown as Record<string, string>).status ?? "draft",
+    postType: (post as unknown as Record<string, string>).postType ?? "blog",
+    seoTitle: (post as unknown as Record<string, string>).seoTitle ?? "",
+    seoDescription: (post as unknown as Record<string, string>).seoDescription ?? "",
+    focusKeyword: (post as unknown as Record<string, string>).focusKeyword ?? "",
+    tags: (post as unknown as Record<string, string[]>).tags ?? [],
+    categories: (post as unknown as Record<string, string[]>).categories ?? [],
+    authorName: (post as unknown as Record<string, string>).authorName ?? "",
+    authorAvatarUrl: (post as unknown as Record<string, string>).authorAvatarUrl ?? "",
+    authorBio: (post as unknown as Record<string, string>).authorBio ?? "",
+    readingTime: (post as unknown as Record<string, number | null>).readingTime ?? null,
+    isFeatured: (post as unknown as Record<string, boolean>).isFeatured ?? false,
+    publishedAt: toISOStringOrNull(post.publishedAt),
+    revisions: (post as unknown as Record<string, unknown[]>).revisions ?? [],
+  };
+
+  return <BlogEditorClient initialPost={initialPost as Parameters<typeof BlogEditorClient>[0]["initialPost"]} />;
 }

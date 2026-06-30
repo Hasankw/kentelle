@@ -290,10 +290,12 @@ async function reviewCount(args: any = {}) {
 // ─── blog ──────────────────────────────────────────────────────────────────
 
 async function blogFindMany(args: any = {}) {
-  let q: any = getSupabase().from("Blog").select("*");
+  const cols = args.select ? Object.keys(args.select).join(",") : "*";
+  let q: any = getSupabase().from("Blog").select(cols);
   q = applyWhere(q, args.where);
   q = applyOrder(q, args.orderBy);
-  if (args.take) q = q.limit(args.take);
+  if (args.skip && args.take) q = q.range(args.skip, args.skip + args.take - 1);
+  else if (args.take) q = q.limit(args.take);
   const { data, error } = await q;
   throwIfError(data, error, "blog.findMany");
   return data ?? [];
@@ -309,13 +311,13 @@ async function blogFindUnique(args: any) {
 
 async function blogCreate(args: any) {
   const now = new Date().toISOString();
-  const { data, error } = await getSupabase().from("Blog").insert({ id: crypto.randomUUID(), createdAt: now, updatedAt: now, ...args.data }).select().single();
+  const { data, error } = await getSupabase().from("Blog").insert({ id: crypto.randomUUID(), createdAt: now, ...args.data }).select().single();
   throwIfError(data, error, "blog.create");
   return data;
 }
 
 async function blogUpdate(args: any) {
-  let q: any = getSupabase().from("Blog").update({ ...args.data, updatedAt: new Date().toISOString() });
+  let q: any = getSupabase().from("Blog").update({ ...args.data });
   for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
   const { data, error } = await q.select().single();
   throwIfError(data, error, "blog.update");

@@ -134,18 +134,35 @@ model Review {
 }
 
 model Blog {
-  id          String    @id @default(cuid())
-  title       String
-  slug        String    @unique
-  excerpt     String?   @db.Text
-  body        String    @db.Text
-  coverImage  String?
-  published   Boolean   @default(false)
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
+  id              String    @id @default(cuid())
+  title           String
+  slug            String    @unique
+  excerpt         String?   @db.Text
+  body            String    @db.Text
+  coverImage      String?
+  published       Boolean   @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  // WordPress-style fields
+  status          String    @default("draft")  // draft | published | trashed
+  postType        String    @default("blog")   // blog | glossary | tutorial
+  seoTitle        String?
+  seoDescription  String?   @db.Text
+  focusKeyword    String?
+  tags            String[]
+  categories      String[]
+  authorName      String?
+  authorAvatarUrl String?
+  authorBio       String?   @db.Text
+  readingTime     Int?
+  isFeatured      Boolean   @default(false)
+  revisions       Json?
 
   @@index([slug])
   @@index([published])
+  @@index([status])
+  @@index([postType])
 }
 
 model Routine {
