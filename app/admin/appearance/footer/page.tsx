@@ -38,7 +38,6 @@ const DEFAULT_DATA: FooterData = {
     },
     {
       id: "col2", title: "Help", links: [
-        { id: "l7", label: "Find Your Routine", href: "/find-your-routine", enabled: true },
         { id: "l9", label: "FAQ", href: "/faq", enabled: true },
         { id: "l10", label: "Contact Us", href: "/contact", enabled: true },
         { id: "l11", label: "About Kentelle", href: "/about", enabled: true },
@@ -65,7 +64,11 @@ function normalizeFooterData(data: FooterData): FooterData {
       links: column.id === "col1" || column.title.trim().toLowerCase() === "shop"
         ? SHOP_LINKS
         : column.links.filter(
-            (link) => link.href !== "/skin-regimen" && link.label.trim().toLowerCase() !== "skin regimen"
+            (link) =>
+              link.href !== "/skin-regimen" &&
+              link.label.trim().toLowerCase() !== "skin regimen" &&
+              link.href !== "/find-your-routine" &&
+              link.label.trim().toLowerCase() !== "find your routine"
           ),
     })),
   };

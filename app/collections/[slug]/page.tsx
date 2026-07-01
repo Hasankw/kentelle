@@ -5,11 +5,29 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { db } from "@/lib/db";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import ProductCard from "@/components/store/ProductCard";
 import { ChevronRight } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+const PRO_CATEGORY_SLUG = "professional-use";
+
+async function getProAccess(): Promise<boolean> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    const customer = await db.customer.findUnique({
+      where: { supabaseUid: user.id },
+      select: { proStatus: true },
+    });
+    return customer?.proStatus === "approved";
+  } catch {
+    return false;
+  }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -46,14 +64,17 @@ const CATEGORY_BANNERS: Record<string, { bg: string; position: string }> = {
 
 export default async function CollectionPage({ params }: PageProps) {
   const { slug } = await params;
+  const isProfessionalCategory = slug === PRO_CATEGORY_SLUG;
 
-  const [category, products] = await Promise.all([
+  const [category, products, isProApproved] = await Promise.all([
     db.category.findUnique({ where: { slug } }),
     db.product.findManyByCategory(slug, { orderBy: { name: "asc" } }),
+    isProfessionalCategory ? getProAccess() : Promise.resolve(true),
   ]);
 
   if (!category) notFound();
 
+  const proBlocked = isProfessionalCategory && !isProApproved;
   const banner = CATEGORY_BANNERS[slug] ?? { bg: "/images/collections/col-1.jpg", position: "object-center" };
   const routineHref = COLLECTION_ROUTINE[slug] ?? null;
 
@@ -119,6 +140,40 @@ export default async function CollectionPage({ params }: PageProps) {
 
       {/* Products */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Professional Range Banner */}
+        {isProfessionalCategory && !isProApproved && (
+          <div className="mb-10 border border-brand-navy/20 bg-brand-navy text-white rounded-sm overflow-hidden">
+            <div className="px-6 py-5 md:px-8 md:py-6">
+              <p className="text-[10px] font-heading font-bold tracking-[0.3em] uppercase text-brand-accent mb-2">
+                Restricted Access
+              </p>
+              <h2 className="font-heading font-bold text-xl md:text-2xl mb-3">
+                KENTELLE Professional &amp; Clinical Range
+              </h2>
+              <p className="font-body text-sm text-white/80 leading-relaxed mb-4 max-w-3xl">
+                Welcome to the KENTELLE professional backbar. Our clinical-grade formulations feature advanced active delivery systems designed strictly for trained practitioners.
+              </p>
+              <p className="font-body text-sm text-white/80 leading-relaxed mb-5 max-w-3xl">
+                <span className="font-bold text-white">Access Requirements:</span> To purchase from this range, clients must hold verified professional qualifications (Dermal Therapy, aesthetics, or beauty therapy etc.).
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href="/login?redirect=/shop?category=professional-use"
+                  className="inline-flex items-center px-6 py-2.5 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-accent/85 transition-colors"
+                >
+                  Log In Here
+                </Link>
+                <Link
+                  href="/pro-register"
+                  className="inline-flex items-center px-6 py-2.5 border border-white/40 text-white rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-white/10 transition-colors"
+                >
+                  Apply for Pro Access
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-8">
           <p className="text-xs font-body text-brand-contrast">
             {products.length} product{products.length !== 1 ? "s" : ""}
@@ -157,6 +212,7 @@ export default async function CollectionPage({ params }: PageProps) {
                   images: p.images,
                   stock: p.stock,
                 }}
+                proBlocked={proBlocked}
               />
             ))}
           </div>

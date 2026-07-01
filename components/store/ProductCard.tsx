@@ -112,12 +112,16 @@ export default function ProductCard({ product, proBlocked = false }: ProductCard
             </button>
           )}
           {proBlocked && (
-            <a
-              href="/pro-register"
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                router.push("/pro-register");
+              }}
               className="absolute bottom-0 left-0 right-0 bg-brand-navy text-white rounded py-3 text-xs font-heading font-bold tracking-widest uppercase flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hover:bg-brand-blue"
             >
               Pro Access Required
-            </a>
+            </button>
           )}
         </div>
 
@@ -133,9 +137,16 @@ export default function ProductCard({ product, proBlocked = false }: ProductCard
           )}
           <div className="flex items-center gap-2 mt-1">
             {proBlocked ? (
-              <a href="/login?redirect=/shop?category=professional-use" className="font-body text-xs text-brand-blue hover:underline">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  router.push("/login?redirect=/shop?category=professional-use");
+                }}
+                className="font-body text-xs text-brand-blue hover:underline"
+              >
                 Log in to view price
-              </a>
+              </button>
             ) : product.salePrice ? (
               <>
                 <span className="font-body text-sm text-brand-blue font-bold">

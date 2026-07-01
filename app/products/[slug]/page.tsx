@@ -231,7 +231,7 @@ export default async function ProductPage({ params }: PageProps) {
               </p>
               <div className="flex flex-wrap gap-3 pt-1">
                 <Link
-                  href="/login?redirect=/products/[slug]"
+                  href={`/login?redirect=/products/${slug}`}
                   className="inline-flex items-center px-5 py-2.5 bg-brand-navy text-white rounded text-xs font-heading font-bold tracking-widest uppercase hover:bg-brand-blue transition-colors"
                 >
                   Log In Here
