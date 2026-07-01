@@ -14,6 +14,16 @@ interface FooterData {
   copyright: string;
 }
 
+const SHOP_LINKS: FooterLink[] = [
+  { id: "shop-all-products", label: "All Products", href: "/shop", enabled: true },
+  { id: "shop-collections", label: "Collections", href: "/collections", enabled: true },
+  { id: "shop-everyday-essentials", label: "Everyday Essentials", href: "/collections/everyday-essentials", enabled: true },
+  { id: "shop-peel-and-glow", label: "Peel & Glow", href: "/collections/peel-and-glow", enabled: true },
+  { id: "shop-skin-nutrients", label: "Skin Nutrients", href: "/collections/skin-nutrients", enabled: true },
+  { id: "shop-beauty-accessories", label: "Beauty Accessories", href: "/collections/beauty-accessories", enabled: true },
+  { id: "shop-professional-use", label: "Professional Use", href: "/collections/professional-use", enabled: true },
+];
+
 const DEFAULT: FooterData = {
   brandDescription: "Science-backed skincare crafted for Australian skin. Clean ingredients, real results.",
   socialLinks: [
@@ -23,14 +33,7 @@ const DEFAULT: FooterData = {
   copyright: `© ${new Date().getFullYear()} Kentelle Skincare. All rights reserved.`,
   columns: [
     {
-      id: "col1", title: "Shop", links: [
-        { id: "l1", label: "All Products", href: "/shop", enabled: true },
-        { id: "l2", label: "Collections", href: "/collections", enabled: true },
-        { id: "l3", label: "Face Wash", href: "/shop", enabled: true },
-        { id: "l4", label: "Moisturisers", href: "/shop", enabled: true },
-        { id: "l5", label: "Serums", href: "/shop", enabled: true },
-        { id: "l6", label: "Eye Care", href: "/shop", enabled: true },
-      ],
+      id: "col1", title: "Shop", links: SHOP_LINKS,
     },
     {
       id: "col2", title: "Help", links: [
@@ -53,14 +56,16 @@ const DEFAULT: FooterData = {
   ],
 };
 
-function withoutSkinRegimenLinks(data: FooterData): FooterData {
+function normalizeFooterData(data: FooterData): FooterData {
   return {
     ...data,
     columns: data.columns.map((column) => ({
       ...column,
-      links: column.links.filter(
-        (link) => link.href !== "/skin-regimen" && link.label.trim().toLowerCase() !== "skin regimen"
-      ),
+      links: column.id === "col1" || column.title.trim().toLowerCase() === "shop"
+        ? SHOP_LINKS
+        : column.links.filter(
+            (link) => link.href !== "/skin-regimen" && link.label.trim().toLowerCase() !== "skin regimen"
+          ),
     })),
   };
 }
@@ -120,9 +125,9 @@ export default function Footer() {
           const parsed = JSON.parse(d.value);
           // Handle legacy format (plain columns array)
           if (Array.isArray(parsed)) {
-            setData(withoutSkinRegimenLinks({ ...DEFAULT, columns: parsed }));
+            setData(normalizeFooterData({ ...DEFAULT, columns: parsed }));
           } else {
-            setData(withoutSkinRegimenLinks({ ...DEFAULT, ...parsed }));
+            setData(normalizeFooterData({ ...DEFAULT, ...parsed }));
           }
         }
       })
