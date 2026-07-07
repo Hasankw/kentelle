@@ -58,18 +58,19 @@ const DEFAULT: FooterData = {
 function normalizeFooterData(data: FooterData): FooterData {
   return {
     ...data,
-    columns: data.columns.map((column) => ({
-      ...column,
-      links: column.id === "col1" || column.title.trim().toLowerCase() === "shop"
-        ? SHOP_LINKS
-        : column.links.filter(
-            (link) =>
-              link.href !== "/skin-regimen" &&
-              link.label.trim().toLowerCase() !== "skin regimen" &&
-              link.href !== "/find-your-routine" &&
-              link.label.trim().toLowerCase() !== "find your routine"
-          ),
-    })),
+    columns: data.columns.map((column) => {
+      if (column.id === "col1" || column.title.trim().toLowerCase() === "shop") {
+        return { ...column, links: SHOP_LINKS };
+      }
+      const links = column.links.filter(
+        (link) =>
+          link.href !== "/skin-regimen" &&
+          link.label.trim().toLowerCase() !== "skin regimen" &&
+          link.href !== "/find-your-routine" &&
+          link.label.trim().toLowerCase() !== "find your routine"
+      );
+      return { ...column, links };
+    }),
   };
 }
 function PaymentIcons() {

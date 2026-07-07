@@ -23,6 +23,7 @@ import {
   Sparkles,
   Layout,
   Palette,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ const navItems = [
   { icon: Palette, label: "Appearance", href: "/admin/appearance" },
   { icon: CreditCard, label: "Payments", href: "/admin/payments" },
   { icon: Mail, label: "Leads", href: "/admin/leads" },
+  { icon: ClipboardList, label: "Quiz", href: "/admin/quiz" },
   { icon: CalendarDays, label: "Events", href: "/admin/events" },
   { icon: MessageCircle, label: "Chat", href: "/admin/chat" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },

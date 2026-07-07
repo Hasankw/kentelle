@@ -395,6 +395,44 @@ async function routineCount(args: any = {}) {
   return count ?? 0;
 }
 
+// ─── quizSubmission ────────────────────────────────────────────────────────
+
+async function quizSubmissionFindMany(args: any = {}) {
+  let q: any = getSupabase().from("QuizSubmission").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy);
+  if (args.take) q = q.limit(args.take);
+  const { data, error } = await q;
+  throwIfError(data, error, "quizSubmission.findMany");
+  return data ?? [];
+}
+
+async function quizSubmissionCreate(args: any) {
+  const { data, error } = await getSupabase()
+    .from("QuizSubmission")
+    .insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...args.data })
+    .select()
+    .single();
+  throwIfError(data, error, "quizSubmission.create");
+  return data;
+}
+
+async function quizSubmissionUpdate(args: any) {
+  let q: any = getSupabase().from("QuizSubmission").update(args.data);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "quizSubmission.update");
+  return data;
+}
+
+async function quizSubmissionCount(args: any = {}) {
+  let q: any = getSupabase().from("QuizSubmission").select("id", { count: "exact", head: true });
+  q = applyWhere(q, args.where);
+  const { count, error } = await q;
+  throwIfError(count, error, "quizSubmission.count");
+  return count ?? 0;
+}
+
 // ─── order ─────────────────────────────────────────────────────────────────
 
 function buildOrderSelect(include: any) {
@@ -944,6 +982,12 @@ export const db = {
     update: routineUpdate,
     delete: routineDelete,
     count: routineCount,
+  },
+  quizSubmission: {
+    findMany: quizSubmissionFindMany,
+    create: quizSubmissionCreate,
+    update: quizSubmissionUpdate,
+    count: quizSubmissionCount,
   },
   order: {
     findMany: orderFindMany,

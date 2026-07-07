@@ -182,6 +182,22 @@ model Routine {
   @@index([slug])
 }
 
+model QuizSubmission {
+  id          String   @id @default(cuid())
+  email       String?
+  middaySkin  String
+  breakouts   String
+  sensitivity String
+  experience  String
+  concern     String
+  resultSlug  String
+  resultTitle String?
+  emailSent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model Content {
   id        String   @id @default(cuid())
   key       String   @unique

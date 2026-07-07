@@ -82,6 +82,16 @@ export default async function RoutinesPage({ searchParams }: PageProps) {
             Clinical Treatments
           </Link>
         </div>
+
+        {/* Skin Quiz CTA */}
+        <div className="mt-8">
+          <Link
+            href="/skin-quiz"
+            className="inline-block px-7 py-3 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors"
+          >
+            Not sure? Take the 60-Second Skin Quiz
+          </Link>
+        </div>
       </section>
 
       <div className="max-w-5xl mx-auto px-6 py-16 space-y-16">

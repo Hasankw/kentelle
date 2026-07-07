@@ -12,7 +12,7 @@ export default function robots(): MetadataRoute.Robots {
           "/collections/",
           "/about",
           "/contact",
-          "/find-your-routine",
+          "/skin-quiz",
           "/products/",
           "/blog",
           "/blog/",

@@ -26,7 +26,7 @@ const FALLBACK: CarouselSlide[] = [
   { id: "4", tagline: "Skin Nutrients", headline: "Skin\nNutrients", sub: "Feed the skin to stay youthful.", ctaLabel: "Shop Collection", ctaHref: "/collections/skin-nutrients", image: "/images/hero/hero-slide4.jpg", enabled: true, sortOrder: 3 },
   { id: "5", tagline: "Beauty Accessories", headline: "Beauty\nAccessories", sub: "The support act your skin deserves.", ctaLabel: "Shop Collection", ctaHref: "/collections/beauty-accessories", image: "/images/hero/hero-beauty-accessories.jpg", enabled: true, sortOrder: 4 },
   { id: "6", tagline: "Professional Use", headline: "The Professional's\nSecret", sub: "KENTELLE: The Professional's Secret to Clinical Excellence.", ctaLabel: "Shop Collection", ctaHref: "/collections/professional-use", image: "/images/hero/hero-professional-use.jpg", enabled: true, sortOrder: 5 },
-  { id: "7", tagline: "Diagnosis & Prescription", headline: "What's Your\nSkin Concern?", sub: "Personalised skin diagnosis and product prescription to find your perfect routine.", ctaLabel: "Find Your Routine", ctaHref: "/find-your-routine", image: "/images/hero/hero-slide7.jpg", enabled: true, sortOrder: 6 },
+  { id: "7", tagline: "Diagnosis & Prescription", headline: "What's Your\nSkin Concern?", sub: "Personalised skin diagnosis and product prescription to find your perfect routine.", ctaLabel: "Find Your Routine", ctaHref: "/skin-quiz", image: "/images/hero/hero-slide7.jpg", enabled: true, sortOrder: 6 },
 ];
 
 export default function HeroCarousel({ initialSlides }: { initialSlides?: CarouselSlide[] }) {
