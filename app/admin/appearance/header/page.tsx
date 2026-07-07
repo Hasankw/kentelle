@@ -10,8 +10,16 @@ interface NavItem { id: string; label: string; href: string; enabled: boolean; c
 
 const PRODUCT_LAYERING_NAV: NavItem = {
   id: "product-layering",
-  label: "Layring",
+  label: "Layering",
   href: "/product-layering",
+  enabled: true,
+  children: [],
+};
+
+const BLOG_NAV: NavItem = {
+  id: "blog",
+  label: "Blog",
+  href: "/blog",
   enabled: true,
   children: [],
 };
@@ -20,22 +28,28 @@ const DEFAULTS: NavItem[] = [
   { id: "1", label: "Shop", href: "/shop", enabled: true, children: [] },
   { id: "2", label: "Collections", href: "/collections", enabled: true, children: [] },
   PRODUCT_LAYERING_NAV,
+  BLOG_NAV,
   { id: "3", label: "About", href: "/about", enabled: true, children: [] },
   { id: "4", label: "Contact", href: "/contact", enabled: true, children: [] },
 ];
 
-function withProductLayeringNav(items: NavItem[]) {
-  if (items.some((item) => item.id === PRODUCT_LAYERING_NAV.id || item.href === PRODUCT_LAYERING_NAV.href)) {
+function injectNavItem(items: NavItem[], item: NavItem, afterHref: string, fallbackIndex: number) {
+  if (items.some((it) => it.id === item.id || it.href === item.href)) {
     return items;
   }
 
-  const collectionsIndex = items.findIndex((item) => item.href === "/collections");
-  const insertAt = collectionsIndex >= 0 ? collectionsIndex + 1 : Math.min(2, items.length);
+  const anchorIndex = items.findIndex((it) => it.href === afterHref);
+  const insertAt = anchorIndex >= 0 ? anchorIndex + 1 : Math.min(fallbackIndex, items.length);
   return [
     ...items.slice(0, insertAt),
-    PRODUCT_LAYERING_NAV,
+    item,
     ...items.slice(insertAt),
   ];
+}
+
+function withInjectedNav(items: NavItem[]) {
+  const withLayering = injectNavItem(items, PRODUCT_LAYERING_NAV, "/collections", 2);
+  return injectNavItem(withLayering, BLOG_NAV, PRODUCT_LAYERING_NAV.href, 3);
 }
 
 export default function HeaderNavAdminPage() {
@@ -48,7 +62,7 @@ export default function HeaderNavAdminPage() {
   useEffect(() => {
     fetch("/api/admin/pages/content?key=nav_header")
       .then((r) => r.json())
-      .then((d) => { if (d.value) setItems(withProductLayeringNav(JSON.parse(d.value))); });
+      .then((d) => { if (d.value) setItems(withInjectedNav(JSON.parse(d.value))); });
   }, []);
 
   const save = async (list: NavItem[] = items) => {

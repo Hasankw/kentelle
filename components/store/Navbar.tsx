@@ -13,8 +13,16 @@ interface NavLink { id: string; label: string; href: string; enabled: boolean; c
 
 const PRODUCT_LAYERING_NAV: NavLink = {
   id: "product-layering",
-  label: "Layring",
+  label: "Layering",
   href: "/product-layering",
+  enabled: true,
+  children: [],
+};
+
+const BLOG_NAV: NavLink = {
+  id: "blog",
+  label: "Blog",
+  href: "/blog",
   enabled: true,
   children: [],
 };
@@ -23,22 +31,28 @@ const DEFAULT_NAV: NavLink[] = [
   { id: "1", label: "Shop", href: "/shop", enabled: true, children: [] },
   { id: "2", label: "Collections", href: "/collections", enabled: true, children: [] },
   PRODUCT_LAYERING_NAV,
+  BLOG_NAV,
   { id: "3", label: "About", href: "/about", enabled: true, children: [] },
   { id: "4", label: "Contact", href: "/contact", enabled: true, children: [] },
 ];
 
-function withProductLayeringNav(links: NavLink[]) {
-  if (links.some((link) => link.id === PRODUCT_LAYERING_NAV.id || link.href === PRODUCT_LAYERING_NAV.href)) {
+function injectNavItem(links: NavLink[], item: NavLink, afterHref: string, fallbackIndex: number) {
+  if (links.some((link) => link.id === item.id || link.href === item.href)) {
     return links;
   }
 
-  const collectionsIndex = links.findIndex((link) => link.href === "/collections");
-  const insertAt = collectionsIndex >= 0 ? collectionsIndex + 1 : Math.min(2, links.length);
+  const anchorIndex = links.findIndex((link) => link.href === afterHref);
+  const insertAt = anchorIndex >= 0 ? anchorIndex + 1 : Math.min(fallbackIndex, links.length);
   return [
     ...links.slice(0, insertAt),
-    PRODUCT_LAYERING_NAV,
+    item,
     ...links.slice(insertAt),
   ];
+}
+
+function withInjectedNav(links: NavLink[]) {
+  const withLayering = injectNavItem(links, PRODUCT_LAYERING_NAV, "/collections", 2);
+  return injectNavItem(withLayering, BLOG_NAV, PRODUCT_LAYERING_NAV.href, 3);
 }
 
 interface NavbarProps {
@@ -50,13 +64,13 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [greeting, setGreeting] = useState("");
-  const [navLinks, setNavLinks] = useState<NavLink[]>(withProductLayeringNav(DEFAULT_NAV));
+  const [navLinks, setNavLinks] = useState<NavLink[]>(withInjectedNav(DEFAULT_NAV));
   const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin/pages/content?key=nav_header")
       .then((r) => r.json())
-      .then((d) => { if (d.value) setNavLinks(withProductLayeringNav(JSON.parse(d.value))); })
+      .then((d) => { if (d.value) setNavLinks(withInjectedNav(JSON.parse(d.value))); })
       .catch(() => {});
   }, []);
   const itemCount = useCartStore((s) => s.itemCount());
@@ -100,7 +114,7 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="relative flex items-center justify-between h-16 md:h-20">
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileOpen((o) => !o)}
@@ -110,8 +124,16 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
 
+          {/* Logo */}
+          <Link
+            href="/"
+            className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 font-heading font-bold text-xl md:text-2xl tracking-[0.2em] uppercase text-brand-navy"
+          >
+            Kentelle
+          </Link>
+
           {/* Desktop nav */}
-          <ul className="hidden md:flex items-center gap-7">
+          <ul className="hidden md:flex items-center gap-7 md:absolute md:left-1/2 md:-translate-x-1/2">
             {navLinks.filter((l) => l.enabled).map((link) => {
               const activeChildren = link.children?.filter((c) => c.enabled) ?? [];
               return (
@@ -137,14 +159,6 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
               );
             })}
           </ul>
-
-          {/* Logo */}
-          <Link
-            href="/"
-            className="absolute left-1/2 -translate-x-1/2 font-heading font-bold text-xl md:text-2xl tracking-[0.2em] uppercase text-brand-navy"
-          >
-            Kentelle
-          </Link>
 
           {/* Icons */}
           <div className="flex items-center gap-4">
