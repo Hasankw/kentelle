@@ -115,7 +115,7 @@ export default function HeroCarousel({ initialSlides }: { initialSlides?: Carous
                   For four decades, clients asked: &ldquo;Ken, tell me what to use.&rdquo; The answer is KENTELLE.
                 </p>
                 <p className="font-body text-xs sm:text-sm text-brand-navy/80 leading-relaxed">
-                  Proudly Made in Australia, clinically tested, and 100% vegan. We don&apos;t just follow trends — we continuously source the world&apos;s most advanced, highly effective ingredients to target the deep dermal layer, protect your barrier against harsh environments, and visibly slow down the aging process.
+                  Proudly Made in Australia and clinically tested. We don&apos;t just follow trends — we continuously source the world&apos;s most advanced, highly effective ingredients to target the deep dermal layer, protect your barrier against harsh environments, and visibly slow down the aging process.
                 </p>
                 <div className="mt-4 pt-4 md:mt-6 md:pt-5 border-t border-brand-navy/15">
                   <p className="font-heading font-bold text-xs sm:text-sm text-brand-navy tracking-widest uppercase">

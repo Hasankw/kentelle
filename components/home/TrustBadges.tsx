@@ -1,7 +1,6 @@
 interface Badge { id: string; icon: string; label: string; enabled: boolean; }
 
 const DEFAULTS: Badge[] = [
-  { id: "1", icon: "🌿", label: "100% Vegan", enabled: true },
   { id: "2", icon: "🐰", label: "Cruelty-Free", enabled: true },
   { id: "3", icon: "🧪", label: "Dermatologist Tested", enabled: true },
   { id: "4", icon: "🇦🇺", label: "Made in Australia", enabled: true },

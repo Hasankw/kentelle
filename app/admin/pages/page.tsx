@@ -16,7 +16,7 @@ const sections = [
   {
     icon: Star,
     label: "Trust Strip",
-    description: "Edit the vegan / cruelty-free / dermatologist badges shown below the hero.",
+    description: "Edit the cruelty-free / dermatologist badges shown below the hero.",
     href: "/admin/pages/trust-strip",
     badge: "Homepage",
   },

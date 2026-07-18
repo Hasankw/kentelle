@@ -250,7 +250,7 @@ export default async function ProductPage({ params }: PageProps) {
 
           {/* Trust mini badges */}
           <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-brand-contrast/20">
-            {["Cruelty-Free", "Vegan", "Australian Made"].map((b) => (
+            {["Cruelty-Free", "Australian Made"].map((b) => (
               <span
                 key={b}
                 className="text-xs font-heading font-bold text-brand-contrast uppercase tracking-wider"

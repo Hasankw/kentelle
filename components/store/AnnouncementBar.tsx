@@ -3,7 +3,7 @@
 const messages = [
   "Free shipping on orders over $80 AUD",
   "✦",
-  "Cruelty-free · Vegan · Made in Australia",
+  "Cruelty-free · Made in Australia",
   "✦",
   "Treat yourself — Beauty you can telle",
   "✦",
@@ -13,7 +13,7 @@ const messages = [
   "✦",
   "Free shipping on orders over $80 AUD",
   "✦",
-  "Cruelty-free · Vegan · Made in Australia",
+  "Cruelty-free · Made in Australia",
   "✦",
   "Treat yourself — Beauty you can telle",
   "✦",
