@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Questrial, Archivo } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import StoreLayout from "@/components/store/StoreLayout";
 
@@ -56,6 +57,18 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${questrial.variable} ${archivo.variable}`}>
       <body className="min-h-screen flex flex-col">
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-BD2J6F4165"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-BD2J6F4165');
+          `}
+        </Script>
         <StoreLayout>{children}</StoreLayout>
       </body>
     </html>
