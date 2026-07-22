@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { optimizeImage } from "@/lib/imageOptimize";
 
 const BUCKET = "products";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "image/svg+xml"];
@@ -78,13 +79,14 @@ export async function POST(req: NextRequest) {
 
   if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: "Only images are allowed" }, { status: 400 });
 
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const originalExt = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const bytes = await file.arrayBuffer();
+  const { buffer, contentType, ext } = await optimizeImage(bytes, file.type, originalExt);
   const filename = `blog/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const bytes = await file.arrayBuffer();
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(filename, bytes, { contentType: file.type, upsert: false });
+    .upload(filename, buffer, { contentType, upsert: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

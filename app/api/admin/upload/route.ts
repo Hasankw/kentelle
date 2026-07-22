@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { optimizeImage } from "@/lib/imageOptimize";
 
 export async function POST(req: NextRequest) {
   const supabase = createClient(
@@ -12,13 +13,14 @@ export async function POST(req: NextRequest) {
 
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const originalExt = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const bytes = await file.arrayBuffer();
+  const { buffer, contentType, ext } = await optimizeImage(bytes, file.type, originalExt);
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const bytes = await file.arrayBuffer();
   const { error } = await supabase.storage
     .from("products")
-    .upload(filename, bytes, { contentType: file.type, upsert: false });
+    .upload(filename, buffer, { contentType, upsert: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
