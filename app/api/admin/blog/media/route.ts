@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { optimizeImage } from "@/lib/imageOptimize";
+import { verifyAdminToken } from "@/lib/auth/admin";
 
 const BUCKET = "products";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "image/svg+xml"];
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif", "svg"]);
+const MAX_DELETE_BATCH = 100;
 
 function getSupabase() {
   return createClient(
@@ -12,6 +14,12 @@ function getSupabase() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
   );
+}
+
+async function requireAdmin(req: NextRequest) {
+  const token = req.cookies.get("admin_token")?.value;
+  const payload = token ? await verifyAdminToken(token) : null;
+  return payload;
 }
 
 function isImagePath(path: string) {
@@ -55,7 +63,9 @@ async function listImages(supabase: ReturnType<typeof getSupabase>, prefix = "")
   });
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!(await requireAdmin(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const images = await listImages(getSupabase());
     return NextResponse.json({ images });
@@ -68,6 +78,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await requireAdmin(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const supabase = getSupabase();
 
   const formData = await req.formData();
@@ -95,4 +107,34 @@ export async function POST(req: NextRequest) {
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(filename);
   return NextResponse.json({ url: data.publicUrl, filename });
+}
+
+export async function DELETE(req: NextRequest) {
+  if (!(await requireAdmin(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  let paths: unknown;
+  try {
+    ({ paths } = await req.json());
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (!Array.isArray(paths) || paths.length === 0) {
+    return NextResponse.json({ error: "paths must be a non-empty array" }, { status: 400 });
+  }
+  if (paths.length > MAX_DELETE_BATCH) {
+    return NextResponse.json({ error: `Cannot delete more than ${MAX_DELETE_BATCH} files at once` }, { status: 400 });
+  }
+  const invalid = paths.find(
+    (p) => typeof p !== "string" || p.startsWith("/") || p.includes("..") || !isImagePath(p)
+  );
+  if (invalid !== undefined) {
+    return NextResponse.json({ error: `Invalid path: ${String(invalid)}` }, { status: 400 });
+  }
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase.storage.from(BUCKET).remove(paths as string[]);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ deleted: data?.length ?? 0 });
 }
