@@ -18,9 +18,12 @@ export async function POST(req: NextRequest) {
   const { buffer, contentType, ext } = await optimizeImage(bytes, file.type, originalExt);
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
+  // Upload as a Blob, not a raw Buffer: the Hostinger runtime's fetch
+  // stringifies Buffer bodies, corrupting binary data (utf-8 mangling).
+  const blob = new Blob([new Uint8Array(buffer)], { type: contentType });
   const { error } = await supabase.storage
     .from("products")
-    .upload(filename, buffer, { contentType, upsert: false });
+    .upload(filename, blob, { contentType, upsert: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
