@@ -15,8 +15,28 @@ const ADMIN_COOKIE_OPTS = {
   maxAge: 60 * 60 * 24 * 30, // 30 days
 };
 
+// Admin API endpoints the public storefront reads (GET only). Everything
+// else under /api/admin requires a valid admin_token cookie.
+const PUBLIC_ADMIN_GETS = new Set(["/api/admin/pages/content", "/api/admin/settings"]);
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // --- Admin API protection ---
+  if (pathname.startsWith("/api/admin")) {
+    const isPublic =
+      pathname === "/api/admin/login" ||
+      pathname === "/api/admin/logout" ||
+      (request.method === "GET" && PUBLIC_ADMIN_GETS.has(pathname));
+    if (!isPublic) {
+      const token = request.cookies.get("admin_token")?.value;
+      const payload = token ? await verifyAdminToken(token) : null;
+      if (!payload) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
+    return NextResponse.next();
+  }
 
   // --- Admin route protection + sliding-window renewal ---
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
@@ -81,5 +101,9 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // The pattern above skips image-suffixed paths, which would let requests
+    // like /api/admin/products/x.png bypass the admin API guard — so always
+    // run the proxy for API routes.
+    "/api/:path*",
   ],
 };
