@@ -61,7 +61,7 @@ export default function HeroCarousel({ initialSlides }: { initialSlides?: Carous
   );
 
   return (
-    <section className="relative h-[760px] sm:h-[700px] md:h-[700px] overflow-hidden">
+    <section className="relative h-[760px] sm:h-[700px] md:h-[700px] -mt-[68px] md:-mt-[76px] overflow-hidden">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={slide.id}

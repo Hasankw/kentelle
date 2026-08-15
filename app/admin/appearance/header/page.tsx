@@ -24,11 +24,20 @@ const BLOG_NAV: NavItem = {
   children: [],
 };
 
+const SKIN_QUIZ_NAV: NavItem = {
+  id: "skin-quiz",
+  label: "Skin Quiz",
+  href: "/skin-quiz",
+  enabled: true,
+  children: [],
+};
+
 const DEFAULTS: NavItem[] = [
   { id: "1", label: "Shop", href: "/shop", enabled: true, children: [] },
   { id: "2", label: "Collections", href: "/collections", enabled: true, children: [] },
   PRODUCT_LAYERING_NAV,
   BLOG_NAV,
+  SKIN_QUIZ_NAV,
   { id: "3", label: "About", href: "/about", enabled: true, children: [] },
   { id: "4", label: "Contact", href: "/contact", enabled: true, children: [] },
 ];
@@ -49,7 +58,8 @@ function injectNavItem(items: NavItem[], item: NavItem, afterHref: string, fallb
 
 function withInjectedNav(items: NavItem[]) {
   const withLayering = injectNavItem(items, PRODUCT_LAYERING_NAV, "/collections", 2);
-  return injectNavItem(withLayering, BLOG_NAV, PRODUCT_LAYERING_NAV.href, 3);
+  const withBlog = injectNavItem(withLayering, BLOG_NAV, PRODUCT_LAYERING_NAV.href, 3);
+  return injectNavItem(withBlog, SKIN_QUIZ_NAV, BLOG_NAV.href, 4);
 }
 
 export default function HeaderNavAdminPage() {

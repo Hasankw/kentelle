@@ -140,7 +140,9 @@ export default async function HomePage() {
         <FadeIn delay={0.05}><RoutinesSection routines={routines} clinical={clinical} content={routinesSectionContent} /></FadeIn>
       )}
       {/* <FadeIn delay={0.05}><SkinConcernNav /></FadeIn> */}
-      <FadeIn delay={0.05}><ReviewsBanner content={reviewsContent} approvedReviews={approvedReviews as any} /></FadeIn>
+      <div id="reviews" className="scroll-mt-20 md:scroll-mt-24">
+        <FadeIn delay={0.05}><ReviewsBanner content={reviewsContent} approvedReviews={approvedReviews as any} /></FadeIn>
+      </div>
     </>
   );
 }

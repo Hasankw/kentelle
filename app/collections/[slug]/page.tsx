@@ -81,7 +81,7 @@ export default async function CollectionPage({ params }: PageProps) {
   return (
     <div>
       {/* Category hero banner */}
-      <div className="relative h-[280px] md:h-[380px] overflow-hidden">
+      <div className="relative h-[280px] md:h-[380px] -mt-[68px] md:-mt-[76px] overflow-hidden">
         <Image
           src={(category as any).image ?? banner.bg}
           alt={(category as any).name}

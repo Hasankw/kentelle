@@ -9,12 +9,16 @@ const csvCell = (v: unknown) => {
 export async function GET() {
   const submissions = await db.quizSubmission.findMany({ orderBy: { createdAt: "desc" } });
 
-  const header = ["Date", "Email", "MiddaySkin", "Breakouts", "Sensitivity", "Experience", "Concern", "ResultSlug", "ResultTitle", "EmailSent"];
-  const rows = submissions.map((s: any) =>
-    [s.createdAt, s.email, s.middaySkin, s.breakouts, s.sensitivity, s.experience, s.concern, s.resultSlug, s.resultTitle, s.emailSent]
+  const header = ["Date", "Email", "Name", "Concerns", "Routine Summary", "Advisory Notes", "EmailSent"];
+  const rows = submissions.map((s: any) => {
+    const concerns: string[] = Array.isArray(s.concerns) ? s.concerns : [];
+    const groups: { label: string; products: { name: string }[] }[] = s.routine?.groups ?? [];
+    const routineSummary = groups.map((g) => `${g.label}: ${g.products.map((p) => p.name).join(" / ")}`).join(" | ");
+    const notes: string[] = s.routine?.notes ?? [];
+    return [s.createdAt, s.email, s.name, concerns.join(", "), routineSummary, notes.join(" "), s.emailSent]
       .map(csvCell)
-      .join(",")
-  );
+      .join(",");
+  });
   const csv = [header.join(","), ...rows].join("\n");
 
   return new NextResponse(csv, {

@@ -25,6 +25,11 @@ model Product {
   orderItems  OrderItem[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  // Skin quiz recommendation-engine metadata: which routine step this
+  // product belongs in, and which safety-exclusion tags it carries
+  // (e.g. "retinoid", "aha", "high-vitc").
+  quizStep    String?
+  quizTags    String[]    @default([])
 
   @@index([slug])
   @@index([isActive])
@@ -183,19 +188,80 @@ model Routine {
 }
 
 model QuizSubmission {
-  id          String   @id @default(cuid())
-  email       String?
-  middaySkin  String
-  breakouts   String
-  sensitivity String
-  experience  String
-  concern     String
-  resultSlug  String
-  resultTitle String?
-  emailSent   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  email     String?
+  name      String?
+  concerns  String[]
+  responses Json
+  routine   Json?
+  emailSent Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model QuizConcern {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  label     String
+  note      String?
+  poolKey   String
+  sortOrder Int      @default(0)
+  enabled   Boolean  @default(true)
+}
+
+model QuizQuestion {
+  id          String       @id @default(cuid())
+  poolKey     String
+  prompt      String       @db.Text
+  subtitle    String?
+  why         String?      @db.Text
+  type        String       @default("single")
+  placeholder String?
+  sortOrder   Int          @default(0)
+  enabled     Boolean      @default(true)
+  options     QuizOption[]
+
+  @@index([poolKey])
+}
+
+model QuizOption {
+  id         String       @id @default(cuid())
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  value      String
+  label      String
+  note       String?
+  sortOrder  Int          @default(0)
+  productIds String[]     @default([])
+  flags      String[]     @default([])
+
+  @@index([questionId])
+}
+
+// Defines what a safety/behaviour flag (set by a QuizOption) actually does
+// to the recommendation engine — which catalog tag it excludes, or which
+// product it substitutes in. Admin-editable so new exclusion rules can be
+// added without a code change.
+model QuizFlagRule {
+  id                  String  @id @default(cuid())
+  flag                String
+  label               String
+  excludesTag         String?
+  substituteProductId String?
+  note                String? @db.Text
+  sortOrder           Int     @default(0)
+
+  @@index([flag])
+}
+
+model QuizSettings {
+  id                String  @id @default("singleton")
+  coreCleanserId    String?
+  coreTonerId       String?
+  coreTreatmentId   String?
+  coreMoisturiserId String?
+  maxTreatments     Int     @default(5)
 }
 
 model Content {

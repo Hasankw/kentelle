@@ -433,6 +433,172 @@ async function quizSubmissionCount(args: any = {}) {
   return count ?? 0;
 }
 
+// ─── quizConcern ───────────────────────────────────────────────────────────
+
+async function quizConcernFindMany(args: any = {}) {
+  let q: any = getSupabase().from("QuizConcern").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy ?? { sortOrder: "asc" });
+  const { data, error } = await q;
+  throwIfError(data, error, "quizConcern.findMany");
+  return data ?? [];
+}
+
+async function quizConcernCreate(args: any) {
+  const { data, error } = await getSupabase()
+    .from("QuizConcern")
+    .insert({ id: crypto.randomUUID(), ...args.data })
+    .select()
+    .single();
+  throwIfError(data, error, "quizConcern.create");
+  return data;
+}
+
+async function quizConcernUpdate(args: any) {
+  let q: any = getSupabase().from("QuizConcern").update(args.data);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "quizConcern.update");
+  return data;
+}
+
+async function quizConcernDelete(args: any) {
+  let q: any = getSupabase().from("QuizConcern").delete();
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { error } = await q;
+  throwIfError(true, error, "quizConcern.delete");
+  return { id: args.where.id };
+}
+
+// ─── quizQuestion (with nested options) ────────────────────────────────────
+
+const QUESTION_SELECT = "*, options:QuizOption(*)";
+
+function sortQuestionOptions(rows: any[]) {
+  return rows.map((q) => ({
+    ...q,
+    options: (q.options ?? []).slice().sort((a: any, b: any) => a.sortOrder - b.sortOrder),
+  }));
+}
+
+async function quizQuestionFindMany(args: any = {}) {
+  let q: any = getSupabase().from("QuizQuestion").select(QUESTION_SELECT);
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy ?? { sortOrder: "asc" });
+  const { data, error } = await q;
+  throwIfError(data, error, "quizQuestion.findMany");
+  return sortQuestionOptions(data ?? []);
+}
+
+async function quizQuestionFindUnique(args: any) {
+  let q: any = getSupabase().from("QuizQuestion").select(QUESTION_SELECT);
+  q = applyWhere(q, args.where);
+  const { data, error } = await q.maybeSingle();
+  throwIfError(data, error, "quizQuestion.findUnique");
+  return data ? sortQuestionOptions([data])[0] : null;
+}
+
+async function quizQuestionCreate(args: any) {
+  const { options, ...rest } = args.data;
+  const { data, error } = await getSupabase()
+    .from("QuizQuestion")
+    .insert({ id: crypto.randomUUID(), ...rest })
+    .select()
+    .single();
+  throwIfError(data, error, "quizQuestion.create");
+  if (options?.length) {
+    const rows = options.map((o: any, i: number) => ({ id: crypto.randomUUID(), sortOrder: i, ...o, questionId: data.id }));
+    const { error: optErr } = await getSupabase().from("QuizOption").insert(rows);
+    throwIfError(true, optErr, "quizQuestion.create.options");
+  }
+  return quizQuestionFindUnique({ where: { id: data.id } });
+}
+
+/** Full replace-update: updates question fields, then replaces its entire
+ * option set with the provided list (delete-all + re-insert) so the admin
+ * editor can add/remove/reorder options in one call. */
+async function quizQuestionUpdate(args: any) {
+  const { options, ...rest } = args.data;
+  let q: any = getSupabase().from("QuizQuestion").update(rest);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "quizQuestion.update");
+
+  if (options) {
+    const { error: delErr } = await getSupabase().from("QuizOption").delete().eq("questionId", data.id);
+    throwIfError(true, delErr, "quizQuestion.update.clearOptions");
+    if (options.length) {
+      const rows = options.map((o: any, i: number) => ({ id: crypto.randomUUID(), sortOrder: i, ...o, questionId: data.id }));
+      const { error: optErr } = await getSupabase().from("QuizOption").insert(rows);
+      throwIfError(true, optErr, "quizQuestion.update.options");
+    }
+  }
+  return quizQuestionFindUnique({ where: { id: data.id } });
+}
+
+async function quizQuestionDelete(args: any) {
+  let q: any = getSupabase().from("QuizQuestion").delete();
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { error } = await q;
+  throwIfError(true, error, "quizQuestion.delete");
+  return { id: args.where.id };
+}
+
+// ─── quizFlagRule ───────────────────────────────────────────────────────────
+
+async function quizFlagRuleFindMany(args: any = {}) {
+  let q: any = getSupabase().from("QuizFlagRule").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy ?? { sortOrder: "asc" });
+  const { data, error } = await q;
+  throwIfError(data, error, "quizFlagRule.findMany");
+  return data ?? [];
+}
+
+async function quizFlagRuleCreate(args: any) {
+  const { data, error } = await getSupabase()
+    .from("QuizFlagRule")
+    .insert({ id: crypto.randomUUID(), ...args.data })
+    .select()
+    .single();
+  throwIfError(data, error, "quizFlagRule.create");
+  return data;
+}
+
+async function quizFlagRuleUpdate(args: any) {
+  let q: any = getSupabase().from("QuizFlagRule").update(args.data);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "quizFlagRule.update");
+  return data;
+}
+
+async function quizFlagRuleDelete(args: any) {
+  let q: any = getSupabase().from("QuizFlagRule").delete();
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { error } = await q;
+  throwIfError(true, error, "quizFlagRule.delete");
+  return { id: args.where.id };
+}
+
+// ─── quizSettings (singleton row) ──────────────────────────────────────────
+
+async function quizSettingsFind() {
+  const { data, error } = await getSupabase().from("QuizSettings").select("*").eq("id", "singleton").maybeSingle();
+  throwIfError(data, error, "quizSettings.find");
+  return data ?? null;
+}
+
+async function quizSettingsUpdate(args: any) {
+  const { data, error } = await getSupabase()
+    .from("QuizSettings")
+    .upsert({ id: "singleton", ...args.data })
+    .select()
+    .single();
+  throwIfError(data, error, "quizSettings.update");
+  return data;
+}
+
 // ─── order ─────────────────────────────────────────────────────────────────
 
 function buildOrderSelect(include: any) {
@@ -988,6 +1154,29 @@ export const db = {
     create: quizSubmissionCreate,
     update: quizSubmissionUpdate,
     count: quizSubmissionCount,
+  },
+  quizConcern: {
+    findMany: quizConcernFindMany,
+    create: quizConcernCreate,
+    update: quizConcernUpdate,
+    delete: quizConcernDelete,
+  },
+  quizQuestion: {
+    findMany: quizQuestionFindMany,
+    findUnique: quizQuestionFindUnique,
+    create: quizQuestionCreate,
+    update: quizQuestionUpdate,
+    delete: quizQuestionDelete,
+  },
+  quizFlagRule: {
+    findMany: quizFlagRuleFindMany,
+    create: quizFlagRuleCreate,
+    update: quizFlagRuleUpdate,
+    delete: quizFlagRuleDelete,
+  },
+  quizSettings: {
+    find: quizSettingsFind,
+    update: quizSettingsUpdate,
   },
   order: {
     findMany: orderFindMany,

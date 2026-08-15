@@ -5,18 +5,21 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import { db } from "@/lib/db";
 import AdminShell from "@/components/admin/AdminShell";
+import QuizAdminTabs from "@/components/admin/QuizAdminTabs";
 
 export const metadata: Metadata = { title: "Quiz Submissions" };
 
-const LABELS: Record<string, Record<string, string>> = {
-  middaySkin: { oily: "Oily/Shiny", dry: "Dry/Tight", normal: "Normal" },
-  breakouts: { often: "Often", sometimes: "Sometimes", rarely: "Rarely" },
-  sensitivity: { very: "Very reactive", sometimes: "Sometimes", no: "No" },
-  experience: { beginner: "Beginner (0–3)", advanced: "Advanced (4+)" },
-  concern: { oil: "Shine/Oil", dryness: "Dryness", acne: "Acne/Clogs", redness: "Redness" },
+const CONCERN_LABELS: Record<string, string> = {
+  acne: "Breakouts",
+  redness: "Redness",
+  sensitivity: "Sensitivity",
+  lines: "Fine Lines",
+  firmness: "Firmness",
+  pigment: "Pigmentation",
+  dryness: "Dryness",
+  shine: "Oil & Pores",
+  posttreatment: "Post-Treatment",
 };
-
-const label = (field: string, value: string) => LABELS[field]?.[value] ?? value;
 
 export default async function AdminQuizPage() {
   let submissions: any[] = [];
@@ -29,6 +32,7 @@ export default async function AdminQuizPage() {
   return (
     <AdminShell>
       <div className="p-8">
+        <QuizAdminTabs />
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-heading font-bold text-2xl text-brand-navy">
             Skin Quiz Submissions ({submissions.length})
@@ -51,7 +55,7 @@ export default async function AdminQuizPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-brand-contrast/10">
-                  {["Date", "Email", "Midday Skin", "Breakouts", "Sensitivity", "Experience", "Concern", "Result", "Emailed"].map((h) => (
+                  {["Date", "Email", "Name", "Concerns", "Routine Steps", "Emailed"].map((h) => (
                     <th key={h} className="px-4 py-3 text-[10px] font-heading font-bold uppercase tracking-widest text-brand-contrast whitespace-nowrap">
                       {h}
                     </th>
@@ -59,37 +63,37 @@ export default async function AdminQuizPage() {
                 </tr>
               </thead>
               <tbody>
-                {submissions.map((s) => (
-                  <tr key={s.id} className="border-b border-brand-contrast/5 last:border-b-0">
-                    <td className="px-4 py-3 text-xs font-body text-brand-contrast whitespace-nowrap">
-                      {new Date(s.createdAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}
-                    </td>
-                    <td className="px-4 py-3 text-xs font-body">
-                      {s.email ? (
-                        <a href={`mailto:${s.email}`} className="text-brand-blue hover:underline">{s.email}</a>
-                      ) : (
-                        <span className="text-brand-contrast/50">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs font-body text-brand-navy">{label("middaySkin", s.middaySkin)}</td>
-                    <td className="px-4 py-3 text-xs font-body text-brand-navy">{label("breakouts", s.breakouts)}</td>
-                    <td className="px-4 py-3 text-xs font-body text-brand-navy">{label("sensitivity", s.sensitivity)}</td>
-                    <td className="px-4 py-3 text-xs font-body text-brand-navy">{label("experience", s.experience)}</td>
-                    <td className="px-4 py-3 text-xs font-body text-brand-navy">{label("concern", s.concern)}</td>
-                    <td className="px-4 py-3 text-xs font-body whitespace-nowrap">
-                      <Link href={`/routines/${s.resultSlug}`} className="text-brand-blue hover:underline">
-                        {s.resultTitle ?? s.resultSlug}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-xs font-body">
-                      {s.emailSent ? (
-                        <span className="px-2 py-0.5 text-[10px] font-heading font-bold uppercase bg-green-100 text-green-800 rounded">Sent</span>
-                      ) : (
-                        <span className="text-brand-contrast/50">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {submissions.map((s) => {
+                  const concerns: string[] = Array.isArray(s.concerns) ? s.concerns : [];
+                  const groups: { label: string; products: { name: string }[] }[] = s.routine?.groups ?? [];
+                  const productCount = groups.reduce((n, g) => n + g.products.length, 0);
+                  return (
+                    <tr key={s.id} className="border-b border-brand-contrast/5 last:border-b-0">
+                      <td className="px-4 py-3 text-xs font-body text-brand-contrast whitespace-nowrap">
+                        {new Date(s.createdAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-body">
+                        {s.email ? (
+                          <a href={`mailto:${s.email}`} className="text-brand-blue hover:underline">{s.email}</a>
+                        ) : (
+                          <span className="text-brand-contrast/50">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-body text-brand-navy">{s.name || <span className="text-brand-contrast/50">—</span>}</td>
+                      <td className="px-4 py-3 text-xs font-body text-brand-navy">
+                        {concerns.length ? concerns.map((c) => CONCERN_LABELS[c] ?? c).join(", ") : <span className="text-brand-contrast/50">Everyday essentials</span>}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-body text-brand-navy whitespace-nowrap">{productCount} products</td>
+                      <td className="px-4 py-3 text-xs font-body">
+                        {s.emailSent ? (
+                          <span className="px-2 py-0.5 text-[10px] font-heading font-bold uppercase bg-green-100 text-green-800 rounded">Sent</span>
+                        ) : (
+                          <span className="text-brand-contrast/50">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

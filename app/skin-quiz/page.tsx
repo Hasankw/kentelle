@@ -1,206 +1,195 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Sparkles, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { motion } from "framer-motion";
 
-type Option = { value: string; label: string; desc?: string; emoji?: string };
+const reveal = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+};
 
-const QUESTIONS: { key: string; title: string; options: Option[] }[] = [
-  {
-    key: "middaySkin",
-    title: "How does your skin feel by midday?",
-    options: [
-      { value: "oily", label: "Oily / Shiny", desc: "Visible shine, especially the T-zone", emoji: "💧" },
-      { value: "dry", label: "Dry / Tight", desc: "Feels tight, sometimes flaky", emoji: "🏜️" },
-      { value: "normal", label: "Normal", desc: "Comfortable and balanced", emoji: "✨" },
-    ],
-  },
-  {
-    key: "breakouts",
-    title: "Do you get breakouts often?",
-    options: [
-      { value: "often", label: "Yes, often", desc: "Regular spots or congestion", emoji: "😣" },
-      { value: "sometimes", label: "Sometimes", desc: "The occasional breakout", emoji: "🤔" },
-      { value: "rarely", label: "Rarely / Never", desc: "Breakouts aren't my problem", emoji: "😌" },
-    ],
-  },
-  {
-    key: "sensitivity",
-    title: "Does your skin sting or go red easily?",
-    options: [
-      { value: "very", label: "Yes, very reactive", desc: "New products often irritate me", emoji: "🌡️" },
-      { value: "sometimes", label: "Sometimes", desc: "Certain actives can sting", emoji: "🌸" },
-      { value: "no", label: "No", desc: "My skin tolerates most things", emoji: "💪" },
-    ],
-  },
-  {
-    key: "experience",
-    title: "How many skincare steps do you use now?",
-    options: [
-      { value: "beginner", label: "0–3 steps", desc: "Keeping it simple (beginner)", emoji: "🌱" },
-      { value: "advanced", label: "4+ steps", desc: "Layered routine (advanced)", emoji: "🧪" },
-    ],
-  },
-  {
-    key: "concern",
-    title: "What's your biggest concern?",
-    options: [
-      { value: "oil", label: "Shine / Oil", desc: "Managing excess oil through the day", emoji: "🫧" },
-      { value: "dryness", label: "Dryness / Flaking", desc: "Skin needs deeper moisture", emoji: "🧴" },
-      { value: "acne", label: "Acne / Clogs", desc: "Breakouts and congestion", emoji: "🎯" },
-      { value: "redness", label: "Redness / Irritation", desc: "Calming and strengthening", emoji: "🍃" },
-    ],
-  },
+const STEPS = [
+  { stat: "3 min", title: "Take the quiz", body: "Your concerns, sensitivity, skin type and lifestyle — mapped in a few taps." },
+  { stat: "1 profile", title: "We read your skin", body: "Answers are cross-referenced against Kentelle's dermal-grade formulations." },
+  { stat: "1 routine", title: "Get your routine", body: "A cleanser-to-moisturiser system built around what your skin actually needs." },
 ];
 
-export default function SkinQuizPage() {
-  const router = useRouter();
-  const [stepIndex, setStepIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+const PRODUCTS = [
+  { name: "Personalised Cleanser", body: "Matched to your barrier and reactivity", img: "/images/products/ceramide-cleanser.jpg" },
+  { name: "Targeted Treatment", body: "Actives selected for your specific concerns", img: "/images/products/derma-moisture-fix.jpg" },
+  { name: "Moisturiser", body: "Seals the barrier, day and night", img: "/images/products/bio-ferment-barrier-cream.jpg" },
+];
 
-  const totalSteps = QUESTIONS.length + 1; // +1 for the email step
-  const onEmailStep = stepIndex === QUESTIONS.length;
-  const question = QUESTIONS[stepIndex];
-  const progressPct = ((stepIndex + 1) / totalSteps) * 100;
-
-  const selectAnswer = (key: string, value: string) => {
-    setAnswers((p) => ({ ...p, [key]: value }));
-    setTimeout(() => setStepIndex((i) => Math.min(i + 1, QUESTIONS.length)), 200);
-  };
-
-  const handleSubmit = async (withEmail: boolean) => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/quiz", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...answers,
-          email: withEmail && email.trim() ? email.trim() : undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong");
-      router.push(data.redirect);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Something went wrong — please try again.");
-      setLoading(false);
-    }
-  };
-
+export default function SkinQuizLandingPage() {
   return (
-    <div className="max-w-xl mx-auto px-4 py-16">
-      <div className="text-center mb-8">
-        <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-2">
-          Your Skin, Your Routine
-        </p>
-        <h1 className="font-heading font-bold text-2xl text-brand-navy">
-          Find Your Perfect Routine
-        </h1>
-        <p className="font-body text-xs text-brand-contrast mt-1">
-          Step {stepIndex + 1} of {totalSteps} · takes 60 seconds
-        </p>
-      </div>
+    <div className="flex flex-col min-h-screen bg-brand-bg">
+      <main className="flex-grow">
+        {/* Hero */}
+        <section className="relative w-full min-h-[85vh] flex items-center overflow-hidden">
+          <div className="absolute inset-0">
+            <Image
+              src="/images/hero/hero-brand.jpg"
+              alt=""
+              fill
+              priority
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-navy/70 via-brand-navy/40 to-transparent" />
+          </div>
+          <div className="relative z-10 max-w-2xl px-6 md:px-16 py-24">
+            <p className="font-heading text-xs font-bold tracking-[0.3em] uppercase text-brand-accent mb-4">
+              Kentelle Skin Quiz
+            </p>
+            <h1 className="font-heading font-bold text-4xl md:text-6xl text-brand-white leading-[1.05] mb-5">
+              Your Skin, <em className="not-italic text-brand-accent">Decoded</em>
+            </h1>
+            <p className="font-body text-base md:text-lg text-brand-white/85 mb-8 max-w-md">
+              Answer a few questions and get a science-backed Kentelle routine built for your exact skin — concerns, sensitivity and lifestyle included.
+            </p>
+            <div className="flex flex-wrap items-center gap-4 mb-8">
+              <span className="font-body text-xs uppercase tracking-widest text-brand-white/70 border border-brand-white/30 rounded-full px-4 py-2">
+                3-Minute Quiz
+              </span>
+              <span className="font-body text-xs uppercase tracking-widest text-brand-white/70 border border-brand-white/30 rounded-full px-4 py-2">
+                Dermal-Grade Actives
+              </span>
+              <span className="font-body text-xs uppercase tracking-widest text-brand-white/70 border border-brand-white/30 rounded-full px-4 py-2">
+                100% Free
+              </span>
+            </div>
+            <Link
+              href="/skin-quiz/quiz"
+              className="inline-flex items-center justify-center px-10 py-4 bg-brand-accent text-brand-navy font-heading font-bold text-sm uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors"
+            >
+              Start the Quiz
+            </Link>
+          </div>
+        </section>
 
-      <div className="h-1.5 bg-brand-contrast/15 rounded-full mb-10 overflow-hidden">
-        <div
-          className="h-full bg-brand-accent rounded-full transition-all duration-400"
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
+        {/* Trust line */}
+        <section aria-label="Credentials" className="py-10 border-b border-brand-contrast/10">
+          <div className="max-w-3xl mx-auto px-6 text-center">
+            <p className="font-body text-sm text-brand-contrast">
+              Science-backed skincare crafted for Australian skin — developed in partnership with{" "}
+              <strong className="text-brand-navy">Beaubelle Beauty Clinic, Perth WA</strong>. Cruelty-free, always.
+            </p>
+          </div>
+        </section>
 
-      {!onEmailStep && (
-        <div>
-          <h2 className="font-heading font-bold text-lg text-brand-navy mb-6 text-center">
-            {question.title}
-          </h2>
-          <div className="space-y-3">
-            {question.options.map((o) => (
-              <button
-                key={o.value}
-                onClick={() => selectAnswer(question.key, o.value)}
-                className={`w-full flex items-center gap-4 px-5 py-4 border-2 text-left transition-colors ${
-                  answers[question.key] === o.value
-                    ? "border-brand-navy bg-brand-navy/5"
-                    : "border-brand-contrast/20 hover:border-brand-navy/40"
-                }`}
+        {/* How it works */}
+        <section aria-label="How it works" className="py-20 px-6">
+          <motion.p
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={reveal}
+            className="text-center font-heading text-xs font-bold tracking-[0.3em] uppercase text-brand-blue mb-10"
+          >
+            How It Works
+          </motion.p>
+          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10">
+            {STEPS.map((s, i) => (
+              <motion.div
+                key={s.title}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-80px" }}
+                variants={reveal}
+                transition={{ delay: i * 0.1 }}
+                className="text-center"
               >
-                {o.emoji && <span className="text-2xl">{o.emoji}</span>}
-                <div className="flex-1">
-                  <p className="font-heading font-bold text-sm text-brand-navy">{o.label}</p>
-                  {o.desc && <p className="font-body text-xs text-brand-contrast">{o.desc}</p>}
-                </div>
-                {answers[question.key] === o.value && (
-                  <Check size={16} className="text-brand-navy shrink-0" />
-                )}
-              </button>
+                <div className="font-heading font-bold text-3xl text-brand-navy mb-2">{s.stat}</div>
+                <p className="font-heading font-bold text-sm uppercase tracking-wider text-brand-navy mb-2">{s.title}</p>
+                <p className="font-body text-sm text-brand-contrast leading-relaxed">{s.body}</p>
+              </motion.div>
             ))}
           </div>
-          {stepIndex > 0 && (
-            <button
-              onClick={() => setStepIndex((i) => i - 1)}
-              className="mt-8 inline-flex items-center gap-2 text-xs font-heading font-bold uppercase tracking-widest text-brand-contrast hover:text-brand-navy transition-colors"
-            >
-              <ChevronLeft size={14} /> Back
-            </button>
-          )}
-        </div>
-      )}
+        </section>
 
-      {onEmailStep && (
-        <div>
-          <h2 className="font-heading font-bold text-lg text-brand-navy mb-2 text-center">
-            Where should we send your routine?
-          </h2>
-          <p className="text-center text-xs text-brand-contrast font-body mb-6">
-            Optional — we&apos;ll email your personalised routine so you can come back to it anytime.
-          </p>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="w-full px-5 py-4 border-2 border-brand-contrast/20 focus:border-brand-navy outline-none font-body text-sm text-brand-navy mb-6"
-          />
-          {error && (
-            <p className="text-center text-xs text-red-600 font-body mb-4">{error}</p>
-          )}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setStepIndex((i) => i - 1)}
-              className="flex-1 py-3 border border-brand-contrast/30 text-brand-contrast text-xs font-heading font-bold uppercase tracking-widest hover:border-brand-navy hover:text-brand-navy transition-colors flex items-center justify-center gap-2"
-            >
-              <ChevronLeft size={16} /> Back
-            </button>
-            <button
-              onClick={() => handleSubmit(true)}
-              disabled={loading}
-              className="flex-1 py-3 bg-brand-accent text-brand-navy rounded text-xs font-heading font-bold uppercase tracking-widest hover:bg-brand-accent/85 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              ) : (
-                <><Sparkles size={14} /> See My Routine</>
-              )}
-            </button>
-          </div>
-          <button
-            onClick={() => handleSubmit(false)}
-            disabled={loading}
-            className="w-full mt-4 text-center text-xs text-brand-contrast font-body underline underline-offset-2 disabled:opacity-50"
+        {/* Product teaser */}
+        <section aria-labelledby="qz-product-heading" className="py-20 px-6 bg-brand-pink">
+          <motion.p
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={reveal}
+            className="text-center font-heading text-xs font-bold tracking-[0.3em] uppercase text-brand-accent mb-6"
           >
-            Skip — just show my routine <ChevronRight size={12} className="inline" />
-          </button>
-        </div>
-      )}
+            Your Personalised Routine
+          </motion.p>
+          <motion.h2
+            id="qz-product-heading"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={reveal}
+            className="text-center font-heading font-bold text-2xl md:text-4xl text-brand-navy mb-4 max-w-2xl mx-auto"
+          >
+            Everything your skin needs. Nothing it doesn&apos;t.
+          </motion.h2>
+          <motion.p
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={reveal}
+            className="text-center font-body text-sm text-brand-contrast max-w-md mx-auto mb-14"
+          >
+            A calibrated system — every step and active chosen for your skin specifically.
+          </motion.p>
+          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            {PRODUCTS.map((p, i) => (
+              <motion.div
+                key={p.name}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-80px" }}
+                variants={reveal}
+                transition={{ delay: i * 0.1 }}
+                className="bg-brand-white rounded overflow-hidden"
+              >
+                <div className="relative h-56 w-full">
+                  <Image src={p.img} alt={p.name} fill className="object-cover" />
+                </div>
+                <div className="p-5">
+                  <p className="font-heading font-bold text-sm text-brand-navy">{p.name}</p>
+                  <p className="font-body text-xs text-brand-contrast mt-1">{p.body}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+          <div className="text-center mt-12">
+            <Link
+              href="/skin-quiz/quiz"
+              className="inline-flex items-center justify-center px-10 py-4 border-2 border-brand-navy text-brand-navy font-heading font-bold text-sm uppercase tracking-widest rounded hover:bg-brand-navy hover:text-brand-white transition-colors"
+            >
+              Start the Quiz
+            </Link>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section aria-labelledby="qz-final-heading" className="py-24 px-6 text-center">
+          <motion.h2
+            id="qz-final-heading"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={reveal}
+            className="font-heading font-bold text-2xl md:text-4xl text-brand-navy max-w-2xl mx-auto mb-8"
+          >
+            Your skin is waiting. <em className="not-italic text-brand-accent">3 minutes</em> is all it takes.
+          </motion.h2>
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={reveal}>
+            <Link
+              href="/skin-quiz/quiz"
+              className="inline-flex items-center justify-center px-10 py-4 bg-brand-accent text-brand-navy font-heading font-bold text-sm uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors"
+            >
+              Start the Quiz
+            </Link>
+          </motion.div>
+        </section>
+      </main>
     </div>
   );
 }

@@ -527,12 +527,32 @@ export async function sendOrderStatusUpdate(
 
 // ─── Skin Quiz Result Email ─────────────────────────────────────────────────
 
-export async function sendQuizResultEmail(
-  email: string,
-  routineTitle: string,
-  routineUrl: string,
-  answers: { middaySkin: string; concern: string },
-) {
+type RoutineForEmail = {
+  groups: { label: string; products: { name: string }[] }[];
+  notes: string[];
+};
+
+export async function sendQuizResultEmail(email: string, name: string, routine: RoutineForEmail) {
+  const greeting = name ? `Hi ${name},` : "Hi there,";
+
+  const groupsHtml = routine.groups
+    .map(
+      (g) => `
+      <div style="margin-bottom:20px;">
+        <p style="margin:0 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B5C9C5;font-family:Arial,sans-serif;font-weight:bold;">${g.label}</p>
+        <ul style="margin:0;padding:0 0 0 18px;">
+          ${g.products.map((p) => `<li style="font-size:14px;color:#3A3240;font-family:Arial,sans-serif;line-height:1.8;">${p.name}</li>`).join("")}
+        </ul>
+      </div>`,
+    )
+    .join("");
+
+  const notesHtml = routine.notes.length
+    ? `<div style="background:#F5EEF3;border-left:3px solid #D4A5B5;padding:16px 20px;margin-top:8px;">
+        ${routine.notes.map((n) => `<p style="margin:0 0 8px;font-size:12px;color:#3A3240;font-family:Arial,sans-serif;line-height:1.6;">${n}</p>`).join("")}
+      </div>`
+    : "";
+
   const html = emailWrapper(`
     <div style="background:#F5EEF3;padding:32px 40px;text-align:center;border-bottom:2px solid #D4A5B5;">
       <p style="margin:0 0 4px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#D4A5B5;font-family:Arial,sans-serif;">Your Skin Quiz Results</p>
@@ -540,20 +560,14 @@ export async function sendQuizResultEmail(
     </div>
 
     <div style="padding:32px 40px;">
-      <p style="margin:0 0 20px;font-size:15px;color:#444;font-family:Arial,sans-serif;line-height:1.6;">
-        Thanks for taking the Kentelle Skin Quiz. Based on your answers — <strong style="color:#3A3240;">${answers.middaySkin}</strong> skin with a focus on <strong style="color:#3A3240;">${answers.concern}</strong> — we've matched you with the routine below.
+      <p style="margin:0 0 24px;font-size:15px;color:#444;font-family:Arial,sans-serif;line-height:1.6;">
+        ${greeting} thanks for taking the Kentelle Skin Quiz. Here's the routine we've matched to your skin.
       </p>
 
-      <div style="background:#F5EEF3;border-left:3px solid #B5C9C5;padding:20px 24px;margin-bottom:28px;">
-        <p style="margin:0 0 4px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#9B8FA0;font-family:Arial,sans-serif;">Recommended For You</p>
-        <p style="margin:0;font-size:18px;font-weight:bold;color:#3A3240;font-family:Arial,sans-serif;">${routineTitle}</p>
-      </div>
+      ${groupsHtml}
+      ${notesHtml}
 
-      <p style="margin:0 0 28px;font-size:14px;color:#555;font-family:Arial,sans-serif;line-height:1.6;">
-        Your routine walks you through every step — what to use morning and night, and how to layer each product for the best results.
-      </p>
-
-      <a href="${routineUrl}" style="display:inline-block;background:#D4A5B5;color:#3A3240;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">View My Routine</a>
+      <a href="https://kentelle.com/shop" style="display:inline-block;margin-top:24px;background:#D4A5B5;color:#3A3240;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">Shop These Products</a>
 
       <p style="margin:28px 0 0;font-size:13px;color:#9B8FA0;font-family:Arial,sans-serif;line-height:1.6;">
         Want expert eyes on your skin? Book a personalised consultation with our Beaubelle-trained team in Perth — call <a href="tel:0892280191" style="color:#3A3240;font-weight:bold;">(08) 9228 0191</a>.
@@ -564,7 +578,7 @@ export async function sendQuizResultEmail(
   await getResend().emails.send({
     from: "Kentelle Skincare <noreply@kentelle.com>",
     to: email,
-    subject: `Your Personalised Skincare Routine — ${routineTitle} | Kentelle`,
+    subject: "Your Personalised Skincare Routine | Kentelle",
     html,
   });
 }
