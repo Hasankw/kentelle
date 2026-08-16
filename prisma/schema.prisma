@@ -30,6 +30,10 @@ model Product {
   // (e.g. "retinoid", "aha", "high-vitc").
   quizStep    String?
   quizTags    String[]    @default([])
+  // Products sharing a non-null group key are interchangeable — the quiz
+  // presents them as an either/or choice (e.g. DayCare vs Day Beauty
+  // Radiance) instead of prescribing both.
+  quizAltGroup String?
 
   @@index([slug])
   @@index([isActive])

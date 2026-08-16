@@ -72,7 +72,7 @@ export default async function AboutPage() {
         <div className="relative">
           <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-lg">
             <Image
-              src="/images/about/ken-profile.jpg"
+              src="/images/about/ken-profile.webp"
               alt={`${data.founderName} — Founder of KENTELLE`}
               fill
               className="object-cover object-top"

@@ -12,16 +12,17 @@ export async function GET() {
     images: p.images ?? [],
     quizStep: p.quizStep ?? null,
     quizTags: p.quizTags ?? [],
+    quizAltGroup: p.quizAltGroup ?? null,
   }));
   return NextResponse.json(minimal);
 }
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const { id, quizStep, quizTags } = body;
+  const { id, quizStep, quizTags, quizAltGroup } = body;
   const product = await db.product.update({
     where: { id },
-    data: { quizStep: quizStep || null, quizTags: quizTags ?? [] },
+    data: { quizStep: quizStep || null, quizTags: quizTags ?? [], quizAltGroup: quizAltGroup || null },
   });
   return NextResponse.json(product);
 }

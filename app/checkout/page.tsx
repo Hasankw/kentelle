@@ -213,7 +213,7 @@ export default function CheckoutPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
       <h1 className="font-heading font-bold text-3xl text-brand-navy mb-2">Checkout</h1>
       <p className="text-xs font-body text-brand-contrast mb-8 flex items-center gap-1">
-        🇦🇺 Shipping within Australia only
+        🇦🇺 Shipping within Australia only · Free delivery over {formatPrice(shippingConfig.threshold)}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
@@ -460,6 +460,15 @@ export default function CheckoutPage() {
                 <span className="text-brand-contrast">Shipping</span>
                 <span>{shippingCost === 0 ? "Free" : formatPrice(shippingCost)}</span>
               </div>
+              {shippingCost === 0 ? (
+                <p className="text-[11px] font-body text-green-600">
+                  🎉 You&apos;ve unlocked free delivery within Australia
+                </p>
+              ) : (
+                <p className="text-[11px] font-body text-brand-contrast">
+                  Add {formatPrice(shippingConfig.threshold - subtotal)} more for free delivery within Australia
+                </p>
+              )}
             </div>
             <div className="border-t border-brand-contrast/20 pt-3 flex justify-between font-heading font-bold">
               <span>Total</span>

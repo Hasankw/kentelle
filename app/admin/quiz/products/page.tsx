@@ -15,6 +15,7 @@ type QuizProduct = {
   images: string[];
   quizStep: string | null;
   quizTags: string[];
+  quizAltGroup: string | null;
 };
 
 const STEP_OPTIONS = [
@@ -34,7 +35,7 @@ export default function QuizProductsAdminPage() {
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
-  const [dirty, setDirty] = useState<Record<string, { quizStep: string; quizTagsText: string }>>({});
+  const [dirty, setDirty] = useState<Record<string, { quizStep: string; quizTagsText: string; quizAltGroup: string }>>({});
 
   useEffect(() => {
     fetch("/api/admin/quiz/products")
@@ -52,13 +53,15 @@ export default function QuizProductsAdminPage() {
 
   const getStep = (p: QuizProduct) => dirty[p.id]?.quizStep ?? p.quizStep ?? "";
   const getTagsText = (p: QuizProduct) => dirty[p.id]?.quizTagsText ?? p.quizTags.join(", ");
+  const getAltGroup = (p: QuizProduct) => dirty[p.id]?.quizAltGroup ?? p.quizAltGroup ?? "";
 
-  const setField = (p: QuizProduct, field: "quizStep" | "quizTagsText", value: string) => {
+  const setField = (p: QuizProduct, field: "quizStep" | "quizTagsText" | "quizAltGroup", value: string) => {
     setDirty((prev) => ({
       ...prev,
       [p.id]: {
         quizStep: field === "quizStep" ? value : (prev[p.id]?.quizStep ?? p.quizStep ?? ""),
         quizTagsText: field === "quizTagsText" ? value : (prev[p.id]?.quizTagsText ?? p.quizTags.join(", ")),
+        quizAltGroup: field === "quizAltGroup" ? value : (prev[p.id]?.quizAltGroup ?? p.quizAltGroup ?? ""),
       },
     }));
   };
@@ -69,16 +72,17 @@ export default function QuizProductsAdminPage() {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
+    const quizAltGroup = getAltGroup(p).trim();
 
     setSavingId(p.id);
     try {
       const res = await fetch("/api/admin/quiz/products", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: p.id, quizStep: quizStep || null, quizTags }),
+        body: JSON.stringify({ id: p.id, quizStep: quizStep || null, quizTags, quizAltGroup: quizAltGroup || null }),
       });
       if (!res.ok) throw new Error();
-      setProducts((prev) => prev!.map((row) => (row.id === p.id ? { ...row, quizStep: quizStep || null, quizTags } : row)));
+      setProducts((prev) => prev!.map((row) => (row.id === p.id ? { ...row, quizStep: quizStep || null, quizTags, quizAltGroup: quizAltGroup || null } : row)));
       setDirty((prev) => {
         const next = { ...prev };
         delete next[p.id];
@@ -110,7 +114,8 @@ export default function QuizProductsAdminPage() {
           <Link href="/admin/quiz/safety" className="text-brand-blue underline">
             Safety Flag Rules
           </Link>
-          .
+          . Products sharing the same <strong>Alt Group</strong> key (e.g. <code className="text-brand-navy">am-moisturiser</code>)
+          are shown to the user as an either/or choice instead of both being prescribed.
         </p>
 
         <div className="relative max-w-sm mb-5">
@@ -132,7 +137,7 @@ export default function QuizProductsAdminPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-brand-contrast/10">
-                  {["", "Product", "Routine Step", "Safety Tags", ""].map((h, i) => (
+                  {["", "Product", "Routine Step", "Safety Tags", "Alt Group", ""].map((h, i) => (
                     <th key={i} className="px-4 py-3 text-[10px] font-heading font-bold uppercase tracking-widest text-brand-contrast whitespace-nowrap">
                       {h}
                     </th>
@@ -167,6 +172,14 @@ export default function QuizProductsAdminPage() {
                         className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
                       />
                     </td>
+                    <td className="px-4 py-2.5 min-w-[140px]">
+                      <input
+                        value={getAltGroup(p)}
+                        onChange={(e) => setField(p, "quizAltGroup", e.target.value)}
+                        placeholder="e.g. am-moisturiser"
+                        className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
+                      />
+                    </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       {savedId === p.id ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-heading font-bold uppercase tracking-widest text-green-700">
@@ -186,7 +199,7 @@ export default function QuizProductsAdminPage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-sm font-body text-brand-contrast">
+                    <td colSpan={6} className="px-4 py-8 text-center text-sm font-body text-brand-contrast">
                       No products match &quot;{query}&quot;.
                     </td>
                   </tr>

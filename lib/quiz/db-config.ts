@@ -10,6 +10,10 @@ export type QuizProductRef = {
   price: number;
   salePrice: number | null;
   stock: number;
+  ingredients: string | null;
+  /** Products sharing a group are interchangeable — the results UI shows
+   * them as an either/or choice instead of prescribing both. */
+  altGroup: string | null;
 };
 
 export type QuizOptionDto = {
@@ -112,6 +116,14 @@ export async function loadQuizConfig(): Promise<QuizConfig> {
     .filter(Boolean)
     .forEach((id) => productIds.add(id as string));
 
+  // Also pull in every product that belongs to an either/or alternative
+  // group (e.g. DayCare / Day Beauty Radiance) even if no question option
+  // references it directly — its group-mate being recommended is enough to
+  // surface the pair as a choice.
+  const allActiveProducts = await db.product.findMany({ where: { isActive: true } });
+  const altGroupProducts = (allActiveProducts as any[]).filter((p) => p.quizAltGroup);
+  altGroupProducts.forEach((p) => productIds.add(p.id));
+
   const productRows = productIds.size
     ? await db.product.findMany({ where: { id: { in: [...productIds] } } })
     : [];
@@ -128,6 +140,8 @@ export async function loadQuizConfig(): Promise<QuizConfig> {
       price: p.price,
       salePrice: p.salePrice,
       stock: p.stock,
+      ingredients: p.ingredients ?? null,
+      altGroup: p.quizAltGroup ?? null,
     };
   }
 

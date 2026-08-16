@@ -7,7 +7,8 @@ export type QuizAnswers = {
   responses: Record<string, string | string[]>;
 };
 
-export type RoutineGroup = { step: string; label: string; products: QuizProductRef[] };
+export type RoutineChoice = { groupKey: string; options: QuizProductRef[] };
+export type RoutineGroup = { step: string; label: string; products: QuizProductRef[]; choices: RoutineChoice[] };
 export type RoutineResult = {
   groups: RoutineGroup[];
   notes: string[];
@@ -63,6 +64,9 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
   }
 
   // Free-text allergy exclusion — the one free-text lifestyle question.
+  // Matched against each product's full INCI ingredient list (not just its
+  // name), per the source guide's "cross-reference against the complete
+  // INCI ingredient list of every product" instruction.
   const allergyQuestion = (config.questionsByPool["lifestyle"] ?? []).find((q) => q.type === "text");
   const allergyText = allergyQuestion ? String(answers.responses[allergyQuestion.id] ?? "").trim() : "";
   const allergyTerms = allergyText
@@ -88,13 +92,25 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
     }
   }
 
+  // Either/or alternatives: if a product with an alt-group made it in,
+  // pull its group-mate(s) in alongside it — the two get presented as a
+  // choice rather than the mate silently never appearing.
+  for (const id of [...counts.keys()]) {
+    const group = config.products[id]?.altGroup;
+    if (!group) continue;
+    Object.values(config.products)
+      .filter((p) => p.altGroup === group && p.id !== id)
+      .forEach((p) => bump(p.id));
+  }
+
   let excludedCount = 0;
   const includedIds = [...counts.keys()].filter((id) => {
     const product = config.products[id];
     if (!product) return false;
     const isExcluded = product.tags?.some((t) => excludeTags.has(t));
     if (isExcluded) excludedCount++;
-    const isAllergen = allergyTerms.some((term) => product.name.toLowerCase().includes(term));
+    const haystack = `${product.name} ${product.ingredients ?? ""}`.toLowerCase();
+    const isAllergen = allergyTerms.some((term) => haystack.includes(term));
     if (isAllergen) excludedCount++;
     return !isExcluded && !isAllergen;
   });
@@ -127,9 +143,26 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
 
   notes.push("KENTELLE doesn't currently formulate an SPF — finish every morning routine with a broad-spectrum SPF 30 to protect your active treatments.");
 
+  // Split each step's products into singular items vs. either/or choice
+  // groups (products sharing an altGroup key).
   const groups: RoutineGroup[] = STEP_ORDER
-    .map((step) => ({ step, label: STEP_LABELS[step] ?? step, products: byStep.get(step) ?? [] }))
-    .filter((g) => g.products.length > 0);
+    .map((step) => {
+      const stepProducts = byStep.get(step) ?? [];
+      const choiceMap = new Map<string, QuizProductRef[]>();
+      const singles: QuizProductRef[] = [];
+      for (const p of stepProducts) {
+        if (p.altGroup) {
+          const list = choiceMap.get(p.altGroup) ?? [];
+          list.push(p);
+          choiceMap.set(p.altGroup, list);
+        } else {
+          singles.push(p);
+        }
+      }
+      const choices: RoutineChoice[] = [...choiceMap.entries()].map(([groupKey, options]) => ({ groupKey, options }));
+      return { step, label: STEP_LABELS[step] ?? step, products: singles, choices };
+    })
+    .filter((g) => g.products.length > 0 || g.choices.length > 0);
 
   return { groups, notes: [...new Set(notes)], flags: [...flags] };
 }

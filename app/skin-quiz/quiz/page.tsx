@@ -422,11 +422,30 @@ function ResultsView({ name, result }: { name: string; result: RoutineResult }) 
             {result.groups.map((g) => (
               <div key={g.step}>
                 <p className="font-heading font-bold text-xs uppercase tracking-widest text-brand-blue mb-4">{g.label}</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {g.products.map((p) => (
-                    <ProductCard key={p.id} product={p} />
-                  ))}
-                </div>
+                {g.products.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                    {g.products.map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                  </div>
+                )}
+                {g.choices.map((choice) => (
+                  <div key={choice.groupKey} className="mb-4">
+                    <p className="font-body text-[11px] text-brand-contrast uppercase tracking-wider mb-2">Choose one</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-start">
+                      {choice.options.map((p, i) => (
+                        <div key={p.id} className="relative">
+                          {i > 0 && (
+                            <span className="absolute -left-3 top-1/2 -translate-y-1/2 -translate-x-full font-heading font-bold text-[10px] uppercase text-brand-contrast/60 hidden sm:block">
+                              or
+                            </span>
+                          )}
+                          <ProductCard product={p} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
