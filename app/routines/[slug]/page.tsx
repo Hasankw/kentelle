@@ -36,7 +36,7 @@ export default async function RoutinePage({ params }: PageProps) {
   return (
     <main className="min-h-screen bg-brand-bg">
       {/* Header */}
-      <section className="bg-brand-navy py-14 px-6 text-center">
+      <section className="bg-brand-navy -mt-[68px] md:-mt-[76px] pt-[124px] md:pt-[132px] pb-14 px-6 text-center">
         <div className="max-w-3xl mx-auto">
           <p className="text-xs font-heading font-bold uppercase tracking-widest text-brand-accent mb-3">
             {isClinical ? "Clinical Treatment" : "Skincare Routine"}

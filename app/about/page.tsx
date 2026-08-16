@@ -43,7 +43,7 @@ export default async function AboutPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative h-[55vh] min-h-[400px] overflow-hidden">
+      <section className="relative h-[55vh] min-h-[400px] -mt-[68px] md:-mt-[76px] overflow-hidden">
         <Image
           src="/images/about/about-banner.jpg"
           alt="Kentelle skincare"

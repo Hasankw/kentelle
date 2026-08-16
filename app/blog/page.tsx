@@ -19,7 +19,7 @@ export default async function BlogPage() {
 
   return (
     <div>
-      <section className="bg-brand-navy text-brand-white py-16 px-4">
+      <section className="bg-brand-navy text-brand-white -mt-[68px] md:-mt-[76px] pt-[132px] md:pt-[140px] pb-16 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-xs font-heading font-bold tracking-widest uppercase text-brand-blue mb-2">
             Kentelle Journal
