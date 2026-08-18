@@ -528,50 +528,155 @@ export async function sendOrderStatusUpdate(
 // ─── Skin Quiz Result Email ─────────────────────────────────────────────────
 
 type RoutineForEmail = {
-  groups: { label: string; products: { name: string }[] }[];
+  groups: {
+    label: string;
+    products: QuizEmailProduct[];
+    choices: { groupKey: string; options: QuizEmailProduct[] }[];
+  }[];
   notes: string[];
 };
 
-export async function sendQuizResultEmail(email: string, name: string, routine: RoutineForEmail) {
-  const greeting = name ? `Hi ${name},` : "Hi there,";
+type QuizEmailProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  images: string[];
+  price: number;
+  salePrice: number | null;
+  stock: number;
+};
 
-  const groupsHtml = routine.groups
-    .map(
-      (g) => `
-      <div style="margin-bottom:20px;">
-        <p style="margin:0 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B5C9C5;font-family:Arial,sans-serif;font-weight:bold;">${g.label}</p>
-        <ul style="margin:0;padding:0 0 0 18px;">
-          ${g.products.map((p) => `<li style="font-size:14px;color:#3A3240;font-family:Arial,sans-serif;line-height:1.8;">${p.name}</li>`).join("")}
-        </ul>
-      </div>`,
-    )
-    .join("");
+type QuizEmailProfileRow = { label: string; value: string };
+
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function absoluteStoreUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `https://kentelle.com${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function quizPriceHtml(product: QuizEmailProduct) {
+  const price = Number(product.price);
+  const salePrice = product.salePrice == null ? null : Number(product.salePrice);
+  if (salePrice != null && Number.isFinite(salePrice) && salePrice < price) {
+    return `<span style="font-size:16px;font-weight:bold;color:#3A3240;">$${salePrice.toFixed(2)} AUD</span>
+      <span style="margin-left:7px;font-size:12px;color:#9B8FA0;text-decoration:line-through;">$${price.toFixed(2)}</span>`;
+  }
+  return `<span style="font-size:16px;font-weight:bold;color:#3A3240;">$${price.toFixed(2)} AUD</span>`;
+}
+
+export async function sendQuizResultEmail(
+  email: string,
+  name: string,
+  routine: RoutineForEmail,
+  profile: QuizEmailProfileRow[] = [],
+) {
+  const greetingName = escapeHtml(name || "there");
+
+  const productEntries = routine.groups.flatMap((group, groupIndex) => [
+    ...group.products.map((product) => ({ product, step: group.label, stepNumber: groupIndex + 1, choice: false })),
+    ...group.choices.flatMap((choice) =>
+      choice.options.map((product) => ({ product, step: group.label, stepNumber: groupIndex + 1, choice: true })),
+    ),
+  ]);
+  const seenProductIds = new Set<string>();
+  const uniqueProducts = productEntries.filter(({ product }) => {
+    if (seenProductIds.has(product.id)) return false;
+    seenProductIds.add(product.id);
+    return true;
+  });
+
+  const profileHtml = profile.length
+    ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-top:1px solid #E3D9D5;">
+        ${profile
+          .map(
+            (row) => `<tr>
+              <td width="34%" style="padding:13px 0;border-bottom:1px solid #E3D9D5;vertical-align:top;font:700 9px Arial,sans-serif;letter-spacing:1.7px;text-transform:uppercase;color:#627A82;">${escapeHtml(row.label)}</td>
+              <td style="padding:13px 0 13px 18px;border-bottom:1px solid #E3D9D5;vertical-align:top;font:12px Arial,sans-serif;line-height:1.5;color:#3A3240;">${escapeHtml(row.value)}</td>
+            </tr>`,
+          )
+          .join("")}
+      </table>`
+    : "";
+
+  const productsHtml = uniqueProducts.length
+    ? uniqueProducts
+        .map(({ product, step, stepNumber, choice }) => {
+          const image = absoluteStoreUrl(product.images?.[0] || "/images/placeholder.svg");
+          const productUrl = `https://kentelle.com/products/${encodeURIComponent(product.slug)}`;
+          const checkoutUrl = `https://kentelle.com/buy/${encodeURIComponent(product.slug)}`;
+          const canBuy = product.stock !== 0;
+          return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 14px;background:#FFFFFF;border:1px solid #E8DEDA;">
+            <tr>
+              <td width="154" style="width:154px;padding:0;vertical-align:middle;background:#F2ECE8;">
+                <a href="${productUrl}" style="text-decoration:none;">
+                  <img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" width="154" style="display:block;width:154px;max-width:100%;height:auto;border:0;" />
+                </a>
+              </td>
+              <td style="padding:20px 22px;vertical-align:middle;font-family:Arial,sans-serif;">
+                <p style="margin:0 0 7px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">Step ${stepNumber} &nbsp;&middot;&nbsp; ${escapeHtml(step)}${choice ? " &nbsp;&middot;&nbsp; Choose one" : ""}</p>
+                <h3 style="margin:0 0 9px;font:normal 21px Georgia,'Times New Roman',serif;line-height:1.18;color:#3A3240;">${escapeHtml(product.name)}</h3>
+                <p style="margin:0 0 14px;font-family:Arial,sans-serif;">${quizPriceHtml(product)}</p>
+                ${
+                  canBuy
+                    ? `<a href="${checkoutUrl}" style="display:inline-block;background:#C8DFE8;border:1px solid #3A3240;border-radius:22px;padding:10px 19px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.3px;text-transform:uppercase;text-decoration:none;">Buy Now &rarr;</a>
+                      <a href="${productUrl}" style="display:inline-block;margin-left:10px;color:#655C62;font:700 9px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;text-decoration:underline;">Details</a>`
+                    : `<span style="display:inline-block;background:#EEE8E5;border-radius:22px;padding:10px 19px;color:#897E84;font:700 10px Arial,sans-serif;letter-spacing:1.3px;text-transform:uppercase;">Out of stock</span>`
+                }
+              </td>
+            </tr>
+          </table>`;
+        })
+        .join("")
+    : `<div style="padding:18px 20px;background:#F5EEF3;border-left:3px solid #D4A5B5;font:13px Arial,sans-serif;line-height:1.6;color:#3A3240;">
+        Your personalised product selection is being reviewed. Explore the Kentelle range while we finish matching your routine.
+      </div>`;
 
   const notesHtml = routine.notes.length
-    ? `<div style="background:#F5EEF3;border-left:3px solid #D4A5B5;padding:16px 20px;margin-top:8px;">
-        ${routine.notes.map((n) => `<p style="margin:0 0 8px;font-size:12px;color:#3A3240;font-family:Arial,sans-serif;line-height:1.6;">${n}</p>`).join("")}
+    ? `<div style="background:#F5EEF3;border-left:3px solid #D4A5B5;padding:16px 20px;margin-top:24px;">
+        ${routine.notes.map((n) => `<p style="margin:0 0 8px;font-size:12px;color:#3A3240;font-family:Arial,sans-serif;line-height:1.6;">${escapeHtml(n)}</p>`).join("")}
       </div>`
     : "";
 
   const html = emailWrapper(`
-    <div style="background:#F5EEF3;padding:32px 40px;text-align:center;border-bottom:2px solid #D4A5B5;">
-      <p style="margin:0 0 4px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#D4A5B5;font-family:Arial,sans-serif;">Your Skin Quiz Results</p>
-      <h2 style="margin:0;font-size:22px;color:#3A3240;font-family:Arial,sans-serif;">Your routine is ready</h2>
+    <div style="background:#F7F2EE;padding:42px 40px 36px;text-align:center;border-bottom:1px solid #D9A5B7;">
+      <p style="margin:0 0 10px;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#D09BB0;font-family:Arial,sans-serif;">Your Skin Quiz Results</p>
+      <h2 style="margin:0;font:normal 38px Georgia,'Times New Roman',serif;line-height:1.08;color:#3A3240;">Your Skin Results<br/>Are In</h2>
     </div>
 
-    <div style="padding:32px 40px;">
-      <p style="margin:0 0 24px;font-size:15px;color:#444;font-family:Arial,sans-serif;line-height:1.6;">
-        ${greeting} thanks for taking the Kentelle Skin Quiz. Here's the routine we've matched to your skin.
-      </p>
+    <div style="padding:34px 40px;background:#FBF8F4;">
+      <p style="margin:0 0 7px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">${greetingName}&apos;s Skin Profile</p>
+      <h3 style="margin:0 0 18px;font:700 17px Arial,sans-serif;color:#3A3240;">Here&apos;s what we found.</h3>
+      ${profileHtml}
 
-      ${groupsHtml}
+      <p style="margin:22px 0 0;text-align:center;">
+        <a href="https://kentelle.com/skin-quiz/quiz" style="display:inline-block;background:#C8DFE8;border-radius:24px;padding:12px 25px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.2px;text-transform:uppercase;text-decoration:none;">Retake My Quiz</a>
+      </p>
+    </div>
+
+    <div style="padding:38px 40px 34px;background:#F7F2EE;text-align:center;">
+      <h3 style="margin:0 0 12px;font:normal 30px Georgia,'Times New Roman',serif;line-height:1.12;color:#3A3240;">${uniqueProducts.length} Products.<br/>One Personalised System.</h3>
+      <p style="margin:0 auto 28px;max-width:430px;font:13px Arial,sans-serif;line-height:1.6;color:#655C62;">Selected from your answers and arranged step by step, so every product has a clear place in your routine.</p>
+
+      <div style="text-align:left;">${productsHtml}</div>
       ${notesHtml}
 
-      <a href="https://kentelle.com/shop" style="display:inline-block;margin-top:24px;background:#D4A5B5;color:#3A3240;padding:14px 32px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-decoration:none;border-radius:2px;font-family:Arial,sans-serif;">Shop These Products</a>
-
-      <p style="margin:28px 0 0;font-size:13px;color:#9B8FA0;font-family:Arial,sans-serif;line-height:1.6;">
-        Want expert eyes on your skin? Book a personalised consultation with our Beaubelle-trained team in Perth — call <a href="tel:0892280191" style="color:#3A3240;font-weight:bold;">(08) 9228 0191</a>.
+      <p style="margin:28px 0 0;">
+        <a href="https://kentelle.com/shop" style="display:inline-block;background:#C8DFE8;border:1px solid #3A3240;border-radius:24px;padding:13px 26px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.4px;text-transform:uppercase;text-decoration:none;">Shop My Routine &rarr;</a>
       </p>
+    </div>
+
+    <div style="padding:28px 40px;background:#C8DFE8;text-align:center;">
+      <h3 style="margin:0 0 8px;font:700 20px Arial,sans-serif;color:#27343A;">Want expert eyes on your skin?</h3>
+      <p style="margin:0 0 18px;font:13px Arial,sans-serif;line-height:1.55;color:#3A4850;">Book a personalised consultation with our Beaubelle-trained team in Perth.</p>
+      <a href="tel:0892280191" style="display:inline-block;background:#FFFFFF;border:1px solid #3A3240;border-radius:22px;padding:11px 22px;color:#3A3240;font:700 10px Arial,sans-serif;letter-spacing:1.2px;text-transform:uppercase;text-decoration:none;">Call (08) 9228 0191 &rarr;</a>
     </div>
   `);
 
