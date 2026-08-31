@@ -42,17 +42,21 @@ export default function SkinQuizLandingPage() {
               Kentelle Skin Quiz
             </p>
             <h1 className="font-heading font-bold text-4xl md:text-6xl text-brand-white leading-[1.05] mb-5">
-              Your Skin, <em className="not-italic text-brand-accent">Decoded</em>
+              Understand Your Skin.<br />
+              <em className="not-italic text-brand-accent">Discover Your Routine.</em>
             </h1>
-            <p className="font-body text-base md:text-lg text-brand-white/85 mb-8 max-w-md">
-              Answer a few questions and get a science-backed Kentelle routine built for your exact skin — concerns, sensitivity and lifestyle included.
+            <p className="font-body text-base md:text-lg text-brand-white/85 mb-2 max-w-md">
+              Your skin is unique — your skincare should be too.
+            </p>
+            <p className="font-body text-sm md:text-base text-brand-white/70 mb-8 max-w-md">
+              Answer a few simple questions about your skin type, concerns, sensitivity and lifestyle. We&apos;ll guide you towards KENTELLE products and active ingredients selected to support your individual skincare needs.
             </p>
             <div className="flex flex-wrap items-center gap-4 mb-8">
               <span className="font-body text-xs uppercase tracking-widest text-brand-white/70 border border-brand-white/30 rounded-full px-4 py-2">
                 3-Minute Quiz
               </span>
               <span className="font-body text-xs uppercase tracking-widest text-brand-white/70 border border-brand-white/30 rounded-full px-4 py-2">
-                Dermal-Grade Actives
+                Personalised Skin Guidance
               </span>
               <span className="font-body text-xs uppercase tracking-widest text-brand-white/70 border border-brand-white/30 rounded-full px-4 py-2">
                 100% Free
@@ -62,7 +66,7 @@ export default function SkinQuizLandingPage() {
               href="/skin-quiz/quiz"
               className="inline-flex items-center justify-center px-10 py-4 bg-brand-accent text-brand-navy font-heading font-bold text-sm uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors"
             >
-              Start the Quiz
+              Discover My Skin Routine
             </Link>
           </div>
         </section>
@@ -163,7 +167,7 @@ export default function SkinQuizLandingPage() {
               href="/skin-quiz/quiz"
               className="inline-flex items-center justify-center px-10 py-4 border-2 border-brand-navy text-brand-navy font-heading font-bold text-sm uppercase tracking-widest rounded hover:bg-brand-navy hover:text-brand-white transition-colors"
             >
-              Start the Quiz
+              Discover My Skin Routine
             </Link>
           </div>
         </section>
@@ -185,7 +189,7 @@ export default function SkinQuizLandingPage() {
               href="/skin-quiz/quiz"
               className="inline-flex items-center justify-center px-10 py-4 bg-brand-accent text-brand-navy font-heading font-bold text-sm uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors"
             >
-              Start the Quiz
+              Discover My Skin Routine
             </Link>
           </motion.div>
         </section>

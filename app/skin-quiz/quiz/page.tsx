@@ -8,7 +8,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import QuizProgressBar from "@/components/quiz/QuizHeader";
 import QuizOptionCard from "@/components/quiz/QuizOptionCard";
 import ProductCard from "@/components/store/ProductCard";
-import { resolveRoutine, type RoutineResult } from "@/lib/quiz/engine";
+import { resolveRoutine, type RoutineResult, type RoutineGroup } from "@/lib/quiz/engine";
 import type { QuizConfig, QuizQuestionDto } from "@/lib/quiz/db-config";
 
 const POOL_LABELS: Record<string, string> = {
@@ -402,69 +402,98 @@ function QuestionLayout({
 }
 
 function ResultsView({ name, result }: { name: string; result: RoutineResult }) {
+  const allProducts = [...result.am, ...result.pm].flatMap((g) => [...g.products, ...g.choices.flatMap((c) => c.options)]);
+  const hasRoutine = !result.mappingError && allProducts.length > 0;
+  const needsTitration = allProducts.some((p) => p.frequency.toLowerCase().includes("pm only"));
+  const { primaryConcern, secondaryConcerns } = result.skinProfile;
+
   return (
     <div className="flex flex-col min-h-screen bg-brand-bg">
       <main className="flex-grow pt-12 pb-20 px-5">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <p className="font-heading text-xs font-bold tracking-[0.3em] uppercase text-brand-accent mb-3">
-              {name ? `${name}'s Routine` : "Your Routine"}
+              {name ? `${name}'s Skin Profile` : "Your Skin Profile"}
             </p>
             <h1 className="font-heading font-bold text-2xl md:text-3xl text-brand-navy mb-3">
-              Your Kentelle skin profile is ready
+              Your Personalised Skin Profile
             </h1>
             <p className="font-body text-sm text-brand-contrast max-w-md mx-auto">
-              Here&apos;s the routine we&apos;d build for your skin, step by step.
+              Here&apos;s what your answers told us, and the KENTELLE routine we&apos;ve built around it.
             </p>
           </div>
 
-          <div className="space-y-10 mb-10 max-w-3xl mx-auto">
-            {result.groups.map((g) => (
-              <div key={g.step}>
-                <p className="font-heading font-bold text-xs uppercase tracking-widest text-brand-blue mb-4">{g.label}</p>
-                {g.products.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-                    {g.products.map((p) => (
-                      <ProductCard key={p.id} product={p} />
-                    ))}
-                  </div>
-                )}
-                {g.choices.map((choice) => (
-                  <div key={choice.groupKey} className="mb-4">
-                    <p className="font-body text-[11px] text-brand-contrast uppercase tracking-wider mb-2">Choose one</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-start">
-                      {choice.options.map((p, i) => (
-                        <div key={p.id} className="relative">
-                          {i > 0 && (
-                            <span className="absolute -left-3 top-1/2 -translate-y-1/2 -translate-x-full font-heading font-bold text-[10px] uppercase text-brand-contrast/60 hidden sm:block">
-                              or
-                            </span>
-                          )}
-                          <ProductCard product={p} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          {/* Your Skin Profile */}
+          {(primaryConcern || secondaryConcerns.length > 0) && (
+            <div className="max-w-3xl mx-auto mb-12 bg-white border border-brand-contrast/10 rounded p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {primaryConcern && (
+                <div>
+                  <p className="font-heading font-bold text-[10px] uppercase tracking-widest text-brand-blue mb-1">Primary Skin Concern</p>
+                  <p className="font-body text-sm text-brand-navy">{primaryConcern}</p>
+                </div>
+              )}
+              {secondaryConcerns.length > 0 && (
+                <div>
+                  <p className="font-heading font-bold text-[10px] uppercase tracking-widest text-brand-blue mb-1">Secondary Concern{secondaryConcerns.length > 1 ? "s" : ""}</p>
+                  <p className="font-body text-sm text-brand-navy">{secondaryConcerns.join(", ")}</p>
+                </div>
+              )}
+            </div>
+          )}
 
-          {result.notes.length > 0 && (
-            <div className="bg-brand-pink border-l-2 border-brand-accent rounded p-5 mb-10 space-y-2 max-w-3xl mx-auto">
-              {result.notes.map((n, i) => (
+          {/* Your Recommended Kentelle Routine */}
+          {hasRoutine ? (
+            <>
+              <h2 className="text-center font-heading font-bold text-xl text-brand-navy mb-8">Your Recommended Kentelle Routine</h2>
+              <RoutineSection title="Morning Routine" groups={result.am} />
+              <RoutineSection title="Evening Routine" groups={result.pm} />
+            </>
+          ) : (
+            <div className="max-w-3xl mx-auto mb-10 bg-brand-pink border-l-2 border-brand-accent rounded p-6 text-center">
+              <p className="font-body text-sm text-brand-navy">
+                We&apos;re finalising your product matches by hand — our team will follow up shortly with your personalised picks. In the meantime, feel free to browse the full range below.
+              </p>
+            </div>
+          )}
+
+          {/* Why These Products? — advisories (SPF etc.) */}
+          {result.advisories.length > 0 && (
+            <div className="bg-brand-pink border-l-2 border-brand-accent rounded p-5 mb-6 space-y-2 max-w-3xl mx-auto">
+              {result.advisories.map((n, i) => (
                 <p key={i} className="font-body text-xs text-brand-navy leading-relaxed">{n}</p>
               ))}
             </div>
           )}
+          {result.notes.length > 0 && (
+            <div className="bg-white border border-brand-contrast/10 rounded p-5 mb-10 space-y-2 max-w-3xl mx-auto">
+              {result.notes.map((n, i) => (
+                <p key={i} className="font-body text-xs text-brand-contrast leading-relaxed">{n}</p>
+              ))}
+            </div>
+          )}
 
-          <div className="flex flex-col sm:flex-row gap-3 max-w-3xl mx-auto">
-            <Link
-              href="/shop"
-              className="flex-1 text-center py-4 bg-brand-accent text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors"
-            >
-              Shop These Products
-            </Link>
+          {/* How To Introduce Your Routine */}
+          {hasRoutine && (
+            <div className="max-w-3xl mx-auto mb-10 bg-white border border-brand-contrast/10 rounded p-6">
+              <p className="font-heading font-bold text-[10px] uppercase tracking-widest text-brand-blue mb-2">How To Introduce Your Routine</p>
+              <p className="font-body text-xs text-brand-contrast leading-relaxed">
+                {needsTitration
+                  ? "Start any active treatment 2–3 nights a week and build up gradually as your skin adjusts — introduce one new active at a time rather than all at once."
+                  : "Introduce each new product one at a time over the first couple of weeks so you can see how your skin responds before layering in the next."}
+              </p>
+            </div>
+          )}
+
+          {/* Shop Your Personalised Routine */}
+          <div className="flex flex-col sm:flex-row gap-3 max-w-3xl mx-auto mb-10">
+            {hasRoutine && (
+              <Link
+                href="/shop"
+                className="flex-1 text-center py-4 bg-brand-accent text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors"
+              >
+                Shop This Routine
+              </Link>
+            )}
             <Link
               href="/skin-quiz"
               className="flex-1 text-center py-4 border-2 border-brand-navy text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-navy hover:text-brand-white transition-colors"
@@ -472,8 +501,66 @@ function ResultsView({ name, result }: { name: string; result: RoutineResult }) 
               Retake the Quiz
             </Link>
           </div>
+
+          {/* Need Professional Advice? */}
+          <div className="max-w-3xl mx-auto text-center bg-brand-navy rounded p-8">
+            <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-white mb-2">Need Professional Advice?</p>
+            <p className="font-body text-xs text-brand-white/70 mb-5 max-w-sm mx-auto">
+              Book a personalised consultation with our Beaubelle-trained team in Perth.
+            </p>
+            <a
+              href="tel:0892280191"
+              className="inline-block px-6 py-3 bg-brand-white text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent transition-colors"
+            >
+              Call (08) 9228 0191
+            </a>
+          </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function RoutineSection({ title, groups }: { title: string; groups: RoutineGroup[] }) {
+  if (!groups.length) return null;
+  return (
+    <div className="mb-12 max-w-3xl mx-auto">
+      <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-6 pb-2 border-b border-brand-contrast/15">{title}</p>
+      <div className="space-y-8">
+        {groups.map((g) => (
+          <div key={g.step}>
+            <p className="font-heading font-bold text-xs uppercase tracking-widest text-brand-blue mb-4">{g.label}</p>
+            {g.products.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                {g.products.map((p) => (
+                  <div key={p.id}>
+                    <ProductCard product={p} />
+                    <p className="font-body text-[11px] text-brand-contrast leading-relaxed mt-2">{p.reason}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {g.choices.map((choice) => (
+              <div key={choice.groupKey} className="mb-4">
+                <p className="font-body text-[11px] text-brand-contrast uppercase tracking-wider mb-2">Choose one</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-start">
+                  {choice.options.map((p, i) => (
+                    <div key={p.id} className="relative">
+                      {i > 0 && (
+                        <span className="absolute -left-3 top-1/2 -translate-y-1/2 -translate-x-full font-heading font-bold text-[10px] uppercase text-brand-contrast/60 hidden sm:block">
+                          or
+                        </span>
+                      )}
+                      <ProductCard product={p} />
+                      <p className="font-body text-[11px] text-brand-contrast leading-relaxed mt-2">{p.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

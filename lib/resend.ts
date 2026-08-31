@@ -527,13 +527,19 @@ export async function sendOrderStatusUpdate(
 
 // ─── Skin Quiz Result Email ─────────────────────────────────────────────────
 
+type RoutineForEmailGroup = {
+  label: string;
+  products: QuizEmailProduct[];
+  choices: { groupKey: string; options: QuizEmailProduct[] }[];
+};
+
 type RoutineForEmail = {
-  groups: {
-    label: string;
-    products: QuizEmailProduct[];
-    choices: { groupKey: string; options: QuizEmailProduct[] }[];
-  }[];
+  skinProfile?: { primaryConcern: string | null; secondaryConcerns: string[] };
+  am: RoutineForEmailGroup[];
+  pm: RoutineForEmailGroup[];
   notes: string[];
+  advisories?: string[];
+  mappingError?: boolean;
 };
 
 type QuizEmailProduct = {
@@ -544,6 +550,8 @@ type QuizEmailProduct = {
   price: number;
   salePrice: number | null;
   stock: number;
+  reason?: string;
+  frequency?: string;
 };
 
 type QuizEmailProfileRow = { label: string; value: string };
@@ -572,6 +580,49 @@ function quizPriceHtml(product: QuizEmailProduct) {
   return `<span style="font-size:16px;font-weight:bold;color:#3A3240;">$${price.toFixed(2)} AUD</span>`;
 }
 
+function quizProductCardHtml(product: QuizEmailProduct, step: string, stepNumber: number, choice: boolean) {
+  const image = absoluteStoreUrl(product.images?.[0] || "/images/placeholder.svg");
+  const productUrl = `https://kentelle.com/products/${encodeURIComponent(product.slug)}`;
+  const checkoutUrl = `https://kentelle.com/buy/${encodeURIComponent(product.slug)}`;
+  const canBuy = product.stock !== 0;
+  return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 14px;background:#FFFFFF;border:1px solid #E8DEDA;">
+    <tr>
+      <td width="154" style="width:154px;padding:0;vertical-align:middle;background:#F2ECE8;">
+        <a href="${productUrl}" style="text-decoration:none;">
+          <img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" width="154" style="display:block;width:154px;max-width:100%;height:auto;border:0;" />
+        </a>
+      </td>
+      <td style="padding:20px 22px;vertical-align:middle;font-family:Arial,sans-serif;">
+        <p style="margin:0 0 7px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">Step ${stepNumber} &nbsp;&middot;&nbsp; ${escapeHtml(step)}${choice ? " &nbsp;&middot;&nbsp; Choose one" : ""}</p>
+        <h3 style="margin:0 0 9px;font:normal 21px Georgia,'Times New Roman',serif;line-height:1.18;color:#3A3240;">${escapeHtml(product.name)}</h3>
+        ${product.reason ? `<p style="margin:0 0 9px;font-size:11px;line-height:1.55;color:#655C62;font-family:Arial,sans-serif;"><strong style="color:#3A3240;">Why we chose this:</strong> ${escapeHtml(product.reason)}</p>` : ""}
+        ${product.frequency ? `<p style="margin:0 0 12px;font-size:10px;font-weight:bold;letter-spacing:0.6px;text-transform:uppercase;color:#9B8FA0;">${escapeHtml(product.frequency)}</p>` : ""}
+        <p style="margin:0 0 14px;font-family:Arial,sans-serif;">${quizPriceHtml(product)}</p>
+        ${
+          canBuy
+            ? `<a href="${checkoutUrl}" style="display:inline-block;background:#C8DFE8;border:1px solid #3A3240;border-radius:22px;padding:10px 19px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.3px;text-transform:uppercase;text-decoration:none;">Buy Now &rarr;</a>
+              <a href="${productUrl}" style="display:inline-block;margin-left:10px;color:#655C62;font:700 9px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;text-decoration:underline;">Details</a>`
+            : `<span style="display:inline-block;background:#EEE8E5;border-radius:22px;padding:10px 19px;color:#897E84;font:700 10px Arial,sans-serif;letter-spacing:1.3px;text-transform:uppercase;">Out of stock</span>`
+        }
+      </td>
+    </tr>
+  </table>`;
+}
+
+function quizRoutineSectionHtml(heading: string, groups: RoutineForEmailGroup[]) {
+  if (!groups.length) return "";
+  const cardsHtml = groups
+    .flatMap((group, groupIndex) => [
+      ...group.products.map((product) => quizProductCardHtml(product, group.label, groupIndex + 1, false)),
+      ...group.choices.flatMap((choice) => choice.options.map((product) => quizProductCardHtml(product, group.label, groupIndex + 1, true))),
+    ])
+    .join("");
+  return `<div style="margin-bottom:30px;">
+    <p style="margin:0 0 14px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">${escapeHtml(heading)}</p>
+    ${cardsHtml}
+  </div>`;
+}
+
 export async function sendQuizResultEmail(
   email: string,
   name: string,
@@ -580,22 +631,29 @@ export async function sendQuizResultEmail(
 ) {
   const greetingName = escapeHtml(name || "there");
 
-  const productEntries = routine.groups.flatMap((group, groupIndex) => [
-    ...group.products.map((product) => ({ product, step: group.label, stepNumber: groupIndex + 1, choice: false })),
-    ...group.choices.flatMap((choice) =>
-      choice.options.map((product) => ({ product, step: group.label, stepNumber: groupIndex + 1, choice: true })),
-    ),
-  ]);
+  const allGroups = [...routine.am, ...routine.pm];
   const seenProductIds = new Set<string>();
-  const uniqueProducts = productEntries.filter(({ product }) => {
-    if (seenProductIds.has(product.id)) return false;
-    seenProductIds.add(product.id);
-    return true;
-  });
+  const uniqueProducts = allGroups
+    .flatMap((g) => [...g.products, ...g.choices.flatMap((c) => c.options)])
+    .filter((product) => {
+      if (seenProductIds.has(product.id)) return false;
+      seenProductIds.add(product.id);
+      return true;
+    });
+  const hasRoutine = uniqueProducts.length > 0 && !routine.mappingError;
 
-  const profileHtml = profile.length
+  const skinProfileRows: QuizEmailProfileRow[] = [];
+  if (routine.skinProfile?.primaryConcern) {
+    skinProfileRows.push({ label: "Primary skin concern", value: routine.skinProfile.primaryConcern });
+  }
+  if (routine.skinProfile?.secondaryConcerns?.length) {
+    skinProfileRows.push({ label: "Secondary concerns", value: routine.skinProfile.secondaryConcerns.join(", ") });
+  }
+  skinProfileRows.push(...profile);
+
+  const profileHtml = skinProfileRows.length
     ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-top:1px solid #E3D9D5;">
-        ${profile
+        ${skinProfileRows
           .map(
             (row) => `<tr>
               <td width="34%" style="padding:13px 0;border-bottom:1px solid #E3D9D5;vertical-align:top;font:700 9px Arial,sans-serif;letter-spacing:1.7px;text-transform:uppercase;color:#627A82;">${escapeHtml(row.label)}</td>
@@ -606,49 +664,36 @@ export async function sendQuizResultEmail(
       </table>`
     : "";
 
-  const productsHtml = uniqueProducts.length
-    ? uniqueProducts
-        .map(({ product, step, stepNumber, choice }) => {
-          const image = absoluteStoreUrl(product.images?.[0] || "/images/placeholder.svg");
-          const productUrl = `https://kentelle.com/products/${encodeURIComponent(product.slug)}`;
-          const checkoutUrl = `https://kentelle.com/buy/${encodeURIComponent(product.slug)}`;
-          const canBuy = product.stock !== 0;
-          return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 14px;background:#FFFFFF;border:1px solid #E8DEDA;">
-            <tr>
-              <td width="154" style="width:154px;padding:0;vertical-align:middle;background:#F2ECE8;">
-                <a href="${productUrl}" style="text-decoration:none;">
-                  <img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" width="154" style="display:block;width:154px;max-width:100%;height:auto;border:0;" />
-                </a>
-              </td>
-              <td style="padding:20px 22px;vertical-align:middle;font-family:Arial,sans-serif;">
-                <p style="margin:0 0 7px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">Step ${stepNumber} &nbsp;&middot;&nbsp; ${escapeHtml(step)}${choice ? " &nbsp;&middot;&nbsp; Choose one" : ""}</p>
-                <h3 style="margin:0 0 9px;font:normal 21px Georgia,'Times New Roman',serif;line-height:1.18;color:#3A3240;">${escapeHtml(product.name)}</h3>
-                <p style="margin:0 0 14px;font-family:Arial,sans-serif;">${quizPriceHtml(product)}</p>
-                ${
-                  canBuy
-                    ? `<a href="${checkoutUrl}" style="display:inline-block;background:#C8DFE8;border:1px solid #3A3240;border-radius:22px;padding:10px 19px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.3px;text-transform:uppercase;text-decoration:none;">Buy Now &rarr;</a>
-                      <a href="${productUrl}" style="display:inline-block;margin-left:10px;color:#655C62;font:700 9px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;text-decoration:underline;">Details</a>`
-                    : `<span style="display:inline-block;background:#EEE8E5;border-radius:22px;padding:10px 19px;color:#897E84;font:700 10px Arial,sans-serif;letter-spacing:1.3px;text-transform:uppercase;">Out of stock</span>`
-                }
-              </td>
-            </tr>
-          </table>`;
-        })
-        .join("")
-    : `<div style="padding:18px 20px;background:#F5EEF3;border-left:3px solid #D4A5B5;font:13px Arial,sans-serif;line-height:1.6;color:#3A3240;">
-        Your personalised product selection is being reviewed. Explore the Kentelle range while we finish matching your routine.
+  const routineHtml = hasRoutine
+    ? quizRoutineSectionHtml("Morning Routine", routine.am) + quizRoutineSectionHtml("Evening Routine", routine.pm)
+    : `<div style="padding:18px 20px;background:#F5EEF3;border-left:3px solid #D4A5B5;font:13px Arial,sans-serif;line-height:1.6;color:#3A3240;text-align:left;">
+        We're finishing up your product matches by hand — a member of our team will follow up shortly with your personalised picks. In the meantime, feel free to browse the full KENTELLE range or book a consultation below.
       </div>`;
 
-  const notesHtml = routine.notes.length
-    ? `<div style="background:#F5EEF3;border-left:3px solid #D4A5B5;padding:16px 20px;margin-top:24px;">
-        ${routine.notes.map((n) => `<p style="margin:0 0 8px;font-size:12px;color:#3A3240;font-family:Arial,sans-serif;line-height:1.6;">${escapeHtml(n)}</p>`).join("")}
+  const introduceHtml = hasRoutine
+    ? `<div style="background:#FBF8F4;border:1px solid #E8DEDA;padding:18px 20px;margin-top:8px;">
+        <p style="margin:0 0 6px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">How To Introduce Your Routine</p>
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#3A3240;font-family:Arial,sans-serif;">
+          ${
+            uniqueProducts.some((p) => (p.frequency ?? "").toLowerCase().includes("pm only"))
+              ? "Start any active treatment 2–3 nights a week and build up gradually as your skin adjusts — introduce one new active at a time rather than all at once."
+              : "Introduce each new product one at a time over the first couple of weeks so you can see how your skin responds before layering in the next."
+          }
+        </p>
+      </div>`
+    : "";
+
+  const advisoriesAndNotes = [...(routine.advisories ?? []), ...routine.notes];
+  const notesHtml = advisoriesAndNotes.length
+    ? `<div style="background:#F5EEF3;border-left:3px solid #D4A5B5;padding:16px 20px;margin-top:16px;text-align:left;">
+        ${advisoriesAndNotes.map((n) => `<p style="margin:0 0 8px;font-size:12px;color:#3A3240;font-family:Arial,sans-serif;line-height:1.6;">${escapeHtml(n)}</p>`).join("")}
       </div>`
     : "";
 
   const html = emailWrapper(`
     <div style="background:#F7F2EE;padding:42px 40px 36px;text-align:center;border-bottom:1px solid #D9A5B7;">
       <p style="margin:0 0 10px;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#D09BB0;font-family:Arial,sans-serif;">Your Skin Quiz Results</p>
-      <h2 style="margin:0;font:normal 38px Georgia,'Times New Roman',serif;line-height:1.08;color:#3A3240;">Your Skin Results<br/>Are In</h2>
+      <h2 style="margin:0;font:normal 36px Georgia,'Times New Roman',serif;line-height:1.12;color:#3A3240;">Your Personalised<br/>Skin Profile</h2>
     </div>
 
     <div style="padding:34px 40px;background:#FBF8F4;">
@@ -661,16 +706,23 @@ export async function sendQuizResultEmail(
       </p>
     </div>
 
-    <div style="padding:38px 40px 34px;background:#F7F2EE;text-align:center;">
-      <h3 style="margin:0 0 12px;font:normal 30px Georgia,'Times New Roman',serif;line-height:1.12;color:#3A3240;">${uniqueProducts.length} Products.<br/>One Personalised System.</h3>
-      <p style="margin:0 auto 28px;max-width:430px;font:13px Arial,sans-serif;line-height:1.6;color:#655C62;">Selected from your answers and arranged step by step, so every product has a clear place in your routine.</p>
+    <div style="padding:38px 40px 34px;background:#F7F2EE;">
+      <div style="text-align:center;">
+        <h3 style="margin:0 0 12px;font:normal 28px Georgia,'Times New Roman',serif;line-height:1.12;color:#3A3240;">${hasRoutine ? "Your Recommended Kentelle Routine" : "Your Routine Is Being Finalised"}</h3>
+        <p style="margin:0 auto 28px;max-width:430px;font:13px Arial,sans-serif;line-height:1.6;color:#655C62;">${hasRoutine ? "Selected from your answers and arranged step by step, so every product has a clear place in your morning and evening routine." : "We want to get this exactly right for you."}</p>
+      </div>
 
-      <div style="text-align:left;">${productsHtml}</div>
+      ${routineHtml}
+      ${introduceHtml}
       ${notesHtml}
 
-      <p style="margin:28px 0 0;">
+      ${
+        hasRoutine
+          ? `<p style="margin:28px 0 0;text-align:center;">
         <a href="https://kentelle.com/shop" style="display:inline-block;background:#C8DFE8;border:1px solid #3A3240;border-radius:24px;padding:13px 26px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.4px;text-transform:uppercase;text-decoration:none;">Shop My Routine &rarr;</a>
-      </p>
+      </p>`
+          : ""
+      }
     </div>
 
     <div style="padding:28px 40px;background:#C8DFE8;text-align:center;">

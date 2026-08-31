@@ -21,6 +21,20 @@ const CONCERN_LABELS: Record<string, string> = {
   posttreatment: "Post-Treatment",
 };
 
+// Submissions stored before the AM/PM engine rewrite carry a flat
+// `routine.groups` list; newer ones carry `routine.am` / `routine.pm`.
+function routineProductCount(routine: any): number {
+  if (!routine) return 0;
+  const groups: { products: unknown[] }[] = Array.isArray(routine.groups)
+    ? routine.groups
+    : [...(routine.am ?? []), ...(routine.pm ?? [])];
+  const ids = new Set<string>();
+  for (const g of groups) {
+    for (const p of g.products as { id?: string }[]) ids.add(p.id ?? JSON.stringify(p));
+  }
+  return ids.size || groups.reduce((n, g) => n + g.products.length, 0);
+}
+
 export default async function AdminQuizPage() {
   let submissions: any[] = [];
   try {
@@ -65,8 +79,7 @@ export default async function AdminQuizPage() {
               <tbody>
                 {submissions.map((s) => {
                   const concerns: string[] = Array.isArray(s.concerns) ? s.concerns : [];
-                  const groups: { label: string; products: { name: string }[] }[] = s.routine?.groups ?? [];
-                  const productCount = groups.reduce((n, g) => n + g.products.length, 0);
+                  const productCount = routineProductCount(s.routine);
                   return (
                     <tr key={s.id} className="border-b border-brand-contrast/5 last:border-b-0">
                       <td className="px-4 py-3 text-xs font-body text-brand-contrast whitespace-nowrap">

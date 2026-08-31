@@ -37,6 +37,7 @@ const DEFAULT: FooterData = {
     },
     {
       id: "col2", title: "Help", links: [
+        { id: "l-quiz", label: "Skin Quiz", href: "/skin-quiz", enabled: true },
         { id: "l9", label: "FAQ", href: "/faq", enabled: true },
         { id: "l10", label: "Contact Us", href: "/contact", enabled: true },
         { id: "l11", label: "About Kentelle", href: "/about", enabled: true },
