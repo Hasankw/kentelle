@@ -219,13 +219,26 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
   // Matched against each product's full INCI ingredient list (not just its
   // name), per the source guide's "cross-reference against the complete
   // INCI ingredient list of every product" instruction.
+  //
+  // Customers very often answer this with "no", "none", "n/a", etc. rather
+  // than leaving it blank. Treated literally, a two-letter word like "no"
+  // is a substring of extremely common ingredients (e.g. Phenoxyethanol,
+  // Panthenol) and would silently exclude most of the catalog. Filter out
+  // negative/non-answers and require a minimum length so only real
+  // ingredient/allergen names are matched.
+  const NON_ALLERGY_ANSWERS = new Set([
+    "no", "none", "n/a", "na", "nil", "nope", "nothing", "not applicable",
+    "no allergies", "no allergy", "no known allergies", "not sure", "unsure",
+    "don't know", "dont know", "idk", "none that i know of", "no known",
+  ]);
   const allergyQuestion = (config.questionsByPool["lifestyle"] ?? []).find((q) => q.type === "text");
   const allergyText = allergyQuestion ? String(answers.responses[allergyQuestion.id] ?? "").trim() : "";
   const allergyTerms = allergyText
     .toLowerCase()
     .split(/[,;\n]/)
     .map((s) => s.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((term) => term.length >= 3 && !NON_ALLERGY_ANSWERS.has(term));
 
   // Always anchor the core routine — weighted so high it always wins its
   // step's singles cap regardless of concern scoring.
