@@ -71,7 +71,7 @@ export default async function AdminQuizPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-brand-contrast/10">
-                  {["Date", "Email", "Name", "Concerns", "Routine Steps", "Emailed"].map((h) => (
+                  {["Date", "Email", "Name", "Concerns", "Routine Steps", "Emailed", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-[10px] font-heading font-bold uppercase tracking-widest text-brand-contrast whitespace-nowrap">
                       {h}
                     </th>
@@ -83,7 +83,7 @@ export default async function AdminQuizPage() {
                   const concerns: string[] = Array.isArray(s.concerns) ? s.concerns : [];
                   const productCount = routineProductCount(s.routine);
                   return (
-                    <tr key={s.id} className="border-b border-brand-contrast/5 last:border-b-0">
+                    <tr key={s.id} className="border-b border-brand-contrast/5 last:border-b-0 hover:bg-brand-bg/50 transition-colors">
                       <td className="px-4 py-3 text-xs font-body text-brand-contrast whitespace-nowrap">
                         {new Date(s.createdAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}
                       </td>
@@ -105,6 +105,11 @@ export default async function AdminQuizPage() {
                         ) : (
                           <span className="text-brand-contrast/50">—</span>
                         )}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-body whitespace-nowrap">
+                        <Link href={`/admin/quiz/${s.id}`} className="text-brand-blue hover:underline font-heading font-bold uppercase tracking-widest text-[10px]">
+                          View Answers
+                        </Link>
                       </td>
                     </tr>
                   );
