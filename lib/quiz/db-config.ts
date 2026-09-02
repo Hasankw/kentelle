@@ -30,6 +30,9 @@ export type QuizProductRef = {
   alternativeForTags: string[];
   /** Shown but not yet purchasable — excluded from recommendations. */
   comingSoon: boolean;
+  /** Category ids this product belongs to — carried onto the cart item so
+   * category-scoped discount tiers apply correctly from the quiz too. */
+  categoryIds: string[];
 };
 
 export type QuizOptionDto = {
@@ -179,6 +182,7 @@ export async function loadQuizConfig(): Promise<QuizConfig> {
       bestMatchTags: p.quizBestMatchTags ?? [],
       alternativeForTags: p.quizAlternativeForTags ?? [],
       comingSoon: !!p.comingSoon,
+      categoryIds: (p.categories ?? []).map((c: any) => c.id),
     };
   }
 

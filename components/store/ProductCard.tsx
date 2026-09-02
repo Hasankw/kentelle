@@ -15,7 +15,7 @@ interface ProductCardProps {
   product: Pick<
     Product,
     "id" | "name" | "slug" | "price" | "salePrice" | "images" | "stock"
-  > & { description?: string | null; comingSoon?: boolean };
+  > & { description?: string | null; comingSoon?: boolean; categories?: { id: string }[] };
   proBlocked?: boolean;
 }
 
@@ -49,6 +49,7 @@ export default function ProductCard({ product, proBlocked = false }: ProductCard
       slug: product.slug,
       image: img1Src,
       price: product.salePrice ?? product.price,
+      categoryIds: product.categories?.map((c) => c.id),
     });
     router.push("/cart");
   };

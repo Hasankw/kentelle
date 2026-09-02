@@ -529,7 +529,7 @@ function ResultsView({
 
   const addRoutineToCart = () => {
     for (const p of selectedProducts) {
-      addItem({ id: p.id, name: p.name, slug: p.slug, image: p.images[0] || PLACEHOLDER_IMG, price: p.salePrice ?? p.price });
+      addItem({ id: p.id, name: p.name, slug: p.slug, image: p.images[0] || PLACEHOLDER_IMG, price: p.salePrice ?? p.price, categoryIds: p.categoryIds });
     }
     router.push("/cart");
   };

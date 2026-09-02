@@ -115,12 +115,12 @@ export const useCartStore = create<CartStore>()(
       setDiscountConfig: (discountTiers, discountSettings) => set({ discountTiers, discountSettings }),
 
       tierDiscount: () => {
-        const { coupon, discountTiers, discountSettings } = get();
+        const { coupon, discountTiers, discountSettings, items } = get();
         if (coupon && !discountSettings.combinableWithCoupons) return 0;
-        return tierDiscountAmount(get().total(), discountTiers);
+        return tierDiscountAmount(items, discountTiers);
       },
 
-      nextTierMessage: () => computeNextTierMessage(get().total(), get().discountTiers),
+      nextTierMessage: () => computeNextTierMessage(get().items, get().discountTiers),
 
       bundleDiscount: () => {
         const items = get().items;

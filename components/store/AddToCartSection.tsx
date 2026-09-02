@@ -16,6 +16,7 @@ interface AddToCartSectionProps {
     images: string[];
     stock: number;
     comingSoon?: boolean;
+    categories?: { id: string }[];
   };
 }
 
@@ -32,6 +33,7 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
         slug: product.slug,
         image: product.images[0] ?? "/images/placeholder.jpg",
         price: product.salePrice ?? product.price,
+        categoryIds: product.categories?.map((c) => c.id),
       });
     }
     toast("success", `${qty}× ${product.name} added to cart`);

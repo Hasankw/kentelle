@@ -21,14 +21,18 @@ type Settings = {
   freeShippingEligible: boolean;
 };
 
+type Category = { id: string; name: string };
+
 export default function DiscountsAdminPage() {
   const [tiers, setTiers] = useState<Tier[] | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const load = () => {
     fetch("/api/admin/discount-tiers").then((r) => r.json()).then(setTiers).catch(() => toast("error", "Failed to load tiers"));
     fetch("/api/admin/discount-settings").then((r) => r.json()).then(setSettings).catch(() => toast("error", "Failed to load settings"));
+    fetch("/api/admin/categories").then((r) => r.json()).then(setCategories).catch(() => {});
   };
 
   useEffect(load, []);
@@ -87,9 +91,10 @@ export default function DiscountsAdminPage() {
       <div className="p-8 max-w-4xl">
         <h1 className="font-heading font-bold text-2xl text-brand-navy mb-1">Automatic Basket Discount Tiers</h1>
         <p className="font-body text-sm text-brand-contrast mb-6 max-w-2xl">
-          Spend-based discounts applied automatically to the whole cart — no coupon code required. Recalculates live
-          whenever the customer adds, removes, or changes quantity. Changes here take effect immediately, no
-          developer needed.
+          Spend-based discounts applied automatically — no coupon code required. Recalculates live whenever the
+          customer adds, removes, or changes quantity. Leave <strong>Categories</strong> empty to measure a tier
+          against the whole basket; select one or more categories to scope both the threshold and the discount to
+          just those items. Changes here take effect immediately, no developer needed.
         </p>
 
         {!settings ? (
@@ -122,7 +127,7 @@ export default function DiscountsAdminPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-brand-contrast/10">
-                  {["Active", "Label", "Threshold ($)", "Discount (%)", "Saving"].map((h) => (
+                  {["Active", "Label", "Threshold ($)", "Discount (%)", "Categories", "Saving"].map((h) => (
                     <th key={h} className="px-4 py-3 text-[10px] font-heading font-bold uppercase tracking-widest text-brand-contrast whitespace-nowrap">
                       {h}
                     </th>
@@ -164,6 +169,25 @@ export default function DiscountsAdminPage() {
                           onBlur={(e) => patchTier(t.id, { percent: Number(e.target.value) })}
                           className="text-sm font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy w-20"
                         />
+                      </td>
+                      <td className="px-4 py-2.5 min-w-[180px]">
+                        <select
+                          multiple
+                          value={t.eligibleCategoryIds}
+                          onChange={(e) => {
+                            const selected = [...e.target.selectedOptions].map((o) => o.value);
+                            setTiers((prev) => prev!.map((row) => (row.id === t.id ? { ...row, eligibleCategoryIds: selected } : row)));
+                            patchTier(t.id, { eligibleCategoryIds: selected });
+                          }}
+                          className="text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy w-full h-20"
+                        >
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                        {t.eligibleCategoryIds.length === 0 && (
+                          <p className="text-[10px] text-brand-contrast/60 mt-1">Whole basket</p>
+                        )}
                       </td>
                       <td className="px-4 py-2.5 text-xs font-body text-brand-contrast whitespace-nowrap">
                         {savingId === t.id ? (

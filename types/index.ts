@@ -41,6 +41,10 @@ export interface CartItem {
   image: string;
   price: number;
   quantity: number;
+  /** Category ids this product belongs to — used to scope discount tiers
+   * that are restricted to specific categories. Omitted/empty means the
+   * item only counts toward whole-basket (unscoped) tiers. */
+  categoryIds?: string[];
 }
 
 export interface ShippingAddress {

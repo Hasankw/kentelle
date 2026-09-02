@@ -20,27 +20,61 @@ export const DEFAULT_DISCOUNT_SETTINGS: DiscountSettings = {
   freeShippingEligible: true,
 };
 
-/** Highest active tier the given subtotal qualifies for, or null. Tiers with
- * eligibleCategoryIds set are skipped here — this computes the simple
- * whole-cart-subtotal case used by the storefront cart today. */
-export function matchTier(subtotal: number, tiers: DiscountTier[]): DiscountTier | null {
-  const eligible = tiers
-    .filter((t) => t.active && t.eligibleCategoryIds.length === 0 && subtotal >= t.threshold)
-    .sort((a, b) => b.threshold - a.threshold);
-  return eligible[0] ?? null;
+export type DiscountableItem = {
+  price: number;
+  quantity: number;
+  /** Category ids the item belongs to — items with no categoryIds only
+   * count toward whole-basket (unscoped) tiers. */
+  categoryIds?: string[];
+};
+
+function lineTotal(item: DiscountableItem): number {
+  return item.price * item.quantity;
 }
 
-export function tierDiscountAmount(subtotal: number, tiers: DiscountTier[]): number {
-  const tier = matchTier(subtotal, tiers);
-  return tier ? subtotal * (tier.percent / 100) : 0;
+/** The subtotal a given tier's threshold/discount is measured against —
+ * the whole basket for an unscoped tier, or just the items in its eligible
+ * categories for a category-scoped tier. */
+export function eligibleSubtotalForTier(items: DiscountableItem[], tier: DiscountTier): number {
+  if (tier.eligibleCategoryIds.length === 0) {
+    return items.reduce((sum, i) => sum + lineTotal(i), 0);
+  }
+  return items
+    .filter((i) => i.categoryIds?.some((c) => tier.eligibleCategoryIds.includes(c)))
+    .reduce((sum, i) => sum + lineTotal(i), 0);
 }
 
-/** "Spend another $X to unlock Y% off" — looks at the next tier up from
- * whichever one currently applies (or the first tier if none do yet). */
-export function nextTierMessage(subtotal: number, tiers: DiscountTier[]): string | null {
-  const whole = tiers.filter((t) => t.active && t.eligibleCategoryIds.length === 0).sort((a, b) => a.threshold - b.threshold);
-  const next = whole.find((t) => subtotal < t.threshold);
-  if (!next) return null;
-  const remaining = next.threshold - subtotal;
-  return `Spend another $${remaining.toFixed(2)} to unlock ${next.percent}% off.`;
+/** The tier producing the largest discount the basket currently qualifies
+ * for, or null. Each tier is measured against its own eligible subtotal
+ * (whole basket, or just its eligible categories), so a category-scoped
+ * tier and a whole-basket tier can be compared fairly by dollar saving. */
+export function matchTier(items: DiscountableItem[], tiers: DiscountTier[]): DiscountTier | null {
+  const qualifying = tiers
+    .filter((t) => t.active)
+    .map((t) => ({ tier: t, subtotal: eligibleSubtotalForTier(items, t) }))
+    .filter(({ tier, subtotal }) => subtotal >= tier.threshold);
+  if (!qualifying.length) return null;
+  qualifying.sort((a, b) => b.subtotal * b.tier.percent - a.subtotal * a.tier.percent);
+  return qualifying[0].tier;
+}
+
+export function tierDiscountAmount(items: DiscountableItem[], tiers: DiscountTier[]): number {
+  const tier = matchTier(items, tiers);
+  if (!tier) return 0;
+  return eligibleSubtotalForTier(items, tier) * (tier.percent / 100);
+}
+
+/** "Spend another $X [on eligible items] to unlock Y% off" — looks at
+ * whichever not-yet-qualified tier is closest to unlocking. */
+export function nextTierMessage(items: DiscountableItem[], tiers: DiscountTier[]): string | null {
+  const candidates = tiers
+    .filter((t) => t.active)
+    .map((t) => ({ tier: t, subtotal: eligibleSubtotalForTier(items, t) }))
+    .filter(({ tier, subtotal }) => subtotal < tier.threshold)
+    .map(({ tier, subtotal }) => ({ tier, remaining: tier.threshold - subtotal }))
+    .sort((a, b) => a.remaining - b.remaining);
+  if (!candidates.length) return null;
+  const { tier, remaining } = candidates[0];
+  const scope = tier.eligibleCategoryIds.length > 0 ? " on eligible items" : "";
+  return `Spend another $${remaining.toFixed(2)}${scope} to unlock ${tier.percent}% off.`;
 }
