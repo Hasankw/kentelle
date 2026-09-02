@@ -21,18 +21,20 @@ const CONCERN_LABELS: Record<string, string> = {
   posttreatment: "Post-Treatment",
 };
 
-// Submissions stored before the AM/PM engine rewrite carry a flat
-// `routine.groups` list; newer ones carry `routine.am` / `routine.pm`.
+// Submissions stored before the master-prescription rewrite carry a flat
+// `routine.groups` list or `routine.am`/`routine.pm` with embedded products;
+// newer ones carry a deduplicated `routine.prescription` list.
 function routineProductCount(routine: any): number {
   if (!routine) return 0;
+  if (Array.isArray(routine.prescription)) return routine.prescription.length;
   const groups: { products: unknown[] }[] = Array.isArray(routine.groups)
     ? routine.groups
     : [...(routine.am ?? []), ...(routine.pm ?? [])];
   const ids = new Set<string>();
   for (const g of groups) {
-    for (const p of g.products as { id?: string }[]) ids.add(p.id ?? JSON.stringify(p));
+    for (const p of (g.products ?? []) as { id?: string }[]) ids.add(p.id ?? JSON.stringify(p));
   }
-  return ids.size || groups.reduce((n, g) => n + g.products.length, 0);
+  return ids.size || groups.reduce((n, g) => n + (g.products?.length ?? 0), 0);
 }
 
 export default async function AdminQuizPage() {

@@ -1,4 +1,4 @@
-import type { QuizConfig, QuizConcernDto, QuizProductRef } from "./db-config";
+import type { QuizConfig, QuizConcernDto, QuizProductRef, RoutineTiming } from "./db-config";
 
 export type QuizAnswers = {
   concerns: string[];
@@ -7,15 +7,36 @@ export type QuizAnswers = {
   responses: Record<string, string | string[]>;
 };
 
-export type RoutineProduct = QuizProductRef & { reason: string; frequency: string };
-export type RoutineChoice = { groupKey: string; options: RoutineProduct[] };
-export type RoutineGroup = { step: string; label: string; products: RoutineProduct[]; choices: RoutineChoice[] };
+export type PrescriptionProduct = QuizProductRef & {
+  reason: string;
+  frequency: string;
+  timing: RoutineTiming;
+  timingLabel: string;
+  pairWith: { id: string; name: string; slug: string }[];
+};
+
+/** One line of the master prescription — either a single product, or an
+ * either/or choice slot (the customer picks one, but it's still one
+ * prescription line / one basket item either way). */
+export type PrescriptionEntry =
+  | { kind: "product"; id: string; product: PrescriptionProduct }
+  | { kind: "choice"; id: string; groupKey: string; options: PrescriptionProduct[] };
+
+/** Day/Night routine steps are *instructions* — they reference prescription
+ * entries by id in application order, they never carry their own copy of
+ * the product/price data and never introduce a product that isn't already
+ * on the master prescription. */
+export type RoutineRef = { entryId: string };
+export type RoutineGroup = { step: string; label: string; refs: RoutineRef[] };
+
 export type RoutineResult = {
   skinProfile: {
     primaryConcern: string | null;
     secondaryConcerns: string[];
   };
-  /** Morning and evening routines, each ordered cleanser → toner → treatment → eye → moisturiser → special. */
+  /** "Your Prescribed Kentelle Products" — one line per product, ever. */
+  prescription: PrescriptionEntry[];
+  /** Morning and evening application order — instructions only, reference `prescription` by id. */
   am: RoutineGroup[];
   pm: RoutineGroup[];
   notes: string[];
@@ -37,11 +58,21 @@ const STEP_LABELS: Record<string, string> = {
 
 const STEP_ORDER = ["cleanser", "toner", "treatment", "eye", "moisturiser", "special"];
 
+const TIMING_LABELS: Record<RoutineTiming, string> = {
+  DAY: "Day",
+  NIGHT: "Night",
+  DAY_NIGHT: "Day & Night",
+  SPECIAL: "Special / Prescribed Days",
+};
+
 // Products carrying these tags are sun-sensitising / high-turnover actives —
-// per the source guide they're scheduled PM-only rather than shown in both
-// the morning and evening routine. Must match the real product tag
-// vocabulary used across the catalog (see admin → Quiz → Product Tags):
-// "retinoid", "aha", "mild-exfoliant", "high-vitc".
+// used only as a *fallback* when a product has no explicit admin-set
+// routineTiming. Per Kentelle's approved instructions, actives are not
+// assumed Night-only by default (e.g. Glycolic 10 is normally a Day
+// treatment) — admins should set routineTiming explicitly rather than rely
+// on this heuristic. Must match the real product tag vocabulary used across
+// the catalog (see admin → Quiz → Product Tags): "retinoid", "aha",
+// "mild-exfoliant", "high-vitc".
 const PM_ONLY_TAGS = new Set(["retinoid", "aha"]);
 
 // Per-step cap on how many *single* (non either/or) products can appear —
@@ -53,24 +84,32 @@ const STEP_SINGLES_CAP: Record<string, number> = { cleanser: 1, toner: 1, moistu
 
 function computeFrequency(tags: string[]): string {
   if (tags.includes("retinoid")) return "PM only — start 2–3x weekly and build up gradually";
-  if (tags.includes("aha")) return "PM only — 2–3x weekly, alternate nights with other actives";
+  if (tags.includes("aha")) return "2–3x weekly, alternate nights with other actives";
   if (tags.includes("mild-exfoliant")) return "2–3x weekly";
   return "Daily, AM & PM";
 }
 
-function isPmOnly(tags: string[]): boolean {
-  return tags.some((t) => PM_ONLY_TAGS.has(t));
+/** Kentelle's approved timing — explicit admin setting first, tag heuristic
+ * only as a fallback for products that haven't been classified yet. */
+function resolveTiming(product: QuizProductRef): RoutineTiming {
+  if (product.routineTiming) return product.routineTiming;
+  return (product.tags ?? []).some((t) => PM_ONLY_TAGS.has(t)) ? "NIGHT" : "DAY_NIGHT";
 }
 
-/** Resolves quiz answers into a recommended AM/PM routine using the live,
+/** Resolves quiz answers into a recommended routine using the live,
  * admin-editable config (questions/options/product tags/safety flag rules
  * all loaded from the DB). Selected concerns are ranked into a primary
  * concern (the one the customer engaged with most — highest weight, drives
  * the hero treatment) and secondary concerns (lower weight, only add
  * support where compatible), rather than flatly unioning every tagged
  * product. Configured safety excludes (tag-based, e.g. pregnancy → exclude
- * "retinoid") and free-text allergy/INCI matching are applied on top, and
- * every recommended product carries a reason tied to the customer's answers.
+ * "retinoid") and free-text allergy/INCI matching are applied on top.
+ *
+ * The result is a single deduplicated master `prescription` (one line per
+ * product, even if it's used Day & Night) plus `am`/`pm` routine
+ * instructions that only reference that prescription by id, in application
+ * order — they never introduce a second copy of a product or an extra
+ * basket item.
  */
 export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): RoutineResult {
   const flags = new Set<string>();
@@ -155,6 +194,27 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
     }
   }
 
+  // Direct product-to-concern links — set on the product itself (Best
+  // Match For / Alternative For), independent of the question/option
+  // builder. Lets an admin hook a product to a concern without wiring any
+  // question. Best Match carries the same weight as an answer-driven match;
+  // Alternative For is scored lower so it only fills in as a backup.
+  const bestMatchIds = new Set<string>();
+  const alternativeForIds = new Set<string>();
+  for (const product of Object.values(config.products)) {
+    for (const concern of selectedConcerns) {
+      const weight = concernWeight.get(concern.key) ?? 1;
+      if (product.bestMatchTags.includes(concern.key)) {
+        bump(product.id, weight, concern.label);
+        bestMatchIds.add(product.id);
+      }
+      if (product.alternativeForTags.includes(concern.key)) {
+        bump(product.id, Math.max(weight - 1, 0.5), concern.label);
+        alternativeForIds.add(product.id);
+      }
+    }
+  }
+
   // Free-text allergy exclusion — the one free-text lifestyle question.
   // Matched against each product's full INCI ingredient list (not just its
   // name), per the source guide's "cross-reference against the complete
@@ -216,7 +276,7 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
   let excludedCount = 0;
   const includedIds = [...counts.keys()].filter((id) => {
     const product = config.products[id];
-    if (!product) return false;
+    if (!product || product.comingSoon) return false;
     const isExcluded = product.tags?.some((t) => excludeTags.has(t));
     if (isExcluded) excludedCount++;
     const haystack = `${product.name} ${product.ingredients ?? ""}`.toLowerCase();
@@ -281,7 +341,7 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
     advisories.push("Finish every morning routine with a broad-spectrum SPF 30 — KENTELLE doesn't currently formulate one, so pair your actives with a sunscreen you trust.");
   }
 
-  function toRoutineProduct(id: string): RoutineProduct {
+  function toPrescriptionProduct(id: string): PrescriptionProduct {
     const product = config.products[id];
     const labels = reasonLabels.get(id);
     const reason = coreIds.has(id)
@@ -290,42 +350,72 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
         ? "Selected as a safer alternative based on your sensitivity, allergy or safety answers."
         : altGroupFromCore.has(id)
           ? "An alternative to your baseline pick — either works, so choose whichever formula and finish suit your skin."
-          : labels && labels.size
-            ? `Recommended for your ${[...labels].join(" & ")} concern${labels.size > 1 ? "s" : ""}, based on your quiz answers.`
-            : "Selected as a safe match based on your quiz answers.";
-    return { ...product, reason, frequency: computeFrequency(product.tags ?? []) };
+          : bestMatchIds.has(id) && labels && labels.size
+            ? `Kentelle's best match for your ${[...labels].join(" & ")} concern${labels.size > 1 ? "s" : ""}.`
+            : labels && labels.size
+              ? `Recommended for your ${[...labels].join(" & ")} concern${labels.size > 1 ? "s" : ""}, based on your quiz answers.`
+              : alternativeForIds.has(id)
+                ? "Offered as an alternative option to support your skin concerns."
+                : "Selected as a safe match based on your quiz answers.";
+    const timing = resolveTiming(product);
+    const frequency = product.frequencyOverride ?? (timing === "SPECIAL" ? "As prescribed" : computeFrequency(product.tags ?? []));
+    const pairWith = (product.pairWithIds ?? [])
+      .map((pid) => config.products[pid])
+      .filter((p): p is QuizProductRef => Boolean(p))
+      .map((p) => ({ id: p.id, name: p.name, slug: p.slug }));
+    return { ...product, reason, frequency, timing, timingLabel: TIMING_LABELS[timing], pairWith };
   }
 
-  function buildGroups(includeProduct: (product: QuizProductRef) => boolean): RoutineGroup[] {
-    return STEP_ORDER.map((step) => {
-      const ids = finalByStep.get(step) ?? [];
-      const choiceMap = new Map<string, RoutineProduct[]>();
-      const singles: RoutineProduct[] = [];
-      for (const id of ids) {
-        const product = config.products[id];
-        if (!product || !includeProduct(product)) continue;
-        const routineProduct = toRoutineProduct(id);
-        if (product.altGroup) {
-          const list = choiceMap.get(product.altGroup) ?? [];
-          list.push(routineProduct);
-          choiceMap.set(product.altGroup, list);
-        } else {
-          singles.push(routineProduct);
-        }
+  // ── Master prescription: one entry per product, ever — even if it's used
+  // Day & Night or appears in more than one step's candidate list. ─────────
+  const prescription: PrescriptionEntry[] = [];
+  const seenSingle = new Set<string>();
+  const seenGroup = new Set<string>();
+  for (const step of STEP_ORDER) {
+    for (const id of finalByStep.get(step) ?? []) {
+      const product = config.products[id];
+      if (!product) continue;
+      if (product.altGroup) {
+        if (seenGroup.has(product.altGroup)) continue;
+        seenGroup.add(product.altGroup);
+        const options = [...new Set(finalByStep.get(step) ?? [])]
+          .filter((oid) => config.products[oid]?.altGroup === product.altGroup)
+          .map(toPrescriptionProduct);
+        prescription.push({ kind: "choice", id: `choice:${product.altGroup}`, groupKey: product.altGroup, options });
+      } else {
+        if (seenSingle.has(id)) continue;
+        seenSingle.add(id);
+        prescription.push({ kind: "product", id, product: toPrescriptionProduct(id) });
       }
-      const choices: RoutineChoice[] = [...choiceMap.entries()].map(([groupKey, options]) => ({ groupKey, options }));
-      return { step, label: STEP_LABELS[step] ?? step, products: singles, choices };
-    }).filter((g) => g.products.length > 0 || g.choices.length > 0);
+    }
   }
 
-  const am = buildGroups((p) => !isPmOnly(p.tags ?? []));
-  const pm = buildGroups(() => true);
+  // Timing eligibility for an entry — an either/or choice qualifies for a
+  // period if any of its options do (each option keeps its own timing on
+  // the prescription card; the instructions just place the slot once).
+  const entryTiming = (entry: PrescriptionEntry): RoutineTiming[] =>
+    entry.kind === "product" ? [entry.product.timing] : entry.options.map((o) => o.timing);
+  const qualifiesAm = (t: RoutineTiming[]) => t.some((x) => x === "DAY" || x === "DAY_NIGHT" || x === "SPECIAL");
+  const qualifiesPm = (t: RoutineTiming[]) => t.some((x) => x === "NIGHT" || x === "DAY_NIGHT" || x === "SPECIAL");
+
+  function buildInstructions(qualifies: (t: RoutineTiming[]) => boolean): RoutineGroup[] {
+    return STEP_ORDER.map((step) => {
+      const entries = prescription.filter((e) => {
+        const product = e.kind === "product" ? config.products[e.id] : config.products[e.options[0]?.id ?? ""];
+        return (product?.step ?? "special") === step && qualifies(entryTiming(e));
+      });
+      return { step, label: STEP_LABELS[step] ?? step, refs: entries.map((e) => ({ entryId: e.id })) };
+    }).filter((g) => g.refs.length > 0);
+  }
+
+  const am = buildInstructions(qualifiesAm);
+  const pm = buildInstructions(qualifiesPm);
 
   // Golden rule: never show a customer 0 products. The core anchors above
   // mean this should be unreachable in practice, but if the config is ever
   // missing its core routine settings, flag it for internal review instead
   // of silently showing an empty result.
-  const mappingError = allIncludedIds.length === 0;
+  const mappingError = prescription.length === 0;
   if (mappingError) {
     notes.push("We couldn't confidently match every answer to a product — showing KENTELLE's everyday essentials while our team reviews your quiz.");
   }
@@ -335,6 +425,7 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
       primaryConcern: primaryConcern?.label ?? null,
       secondaryConcerns: secondaryConcerns.map((c) => c.label),
     },
+    prescription,
     am,
     pm,
     notes: [...new Set(notes)],

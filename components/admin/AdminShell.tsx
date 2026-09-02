@@ -37,6 +37,7 @@ const navItems = [
   { icon: Users, label: "Customers", href: "/admin/customers" },
   { icon: Gift, label: "Gift Cards", href: "/admin/gift-cards" },
   { icon: Ticket, label: "Coupons", href: "/admin/coupons" },
+  { icon: Tag, label: "Discount Tiers", href: "/admin/discounts" },
   { icon: Star, label: "Reviews", href: "/admin/reviews" },
   { icon: FileText, label: "Blog", href: "/admin/blog" },
   { icon: ImageIcon, label: "Media", href: "/admin/media" },

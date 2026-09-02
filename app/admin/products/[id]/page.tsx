@@ -20,7 +20,7 @@ export default async function AdminProductEditPage({ params }: PageProps) {
     db.product.findUnique({ where: { id } }),
     db.category.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
-  type ProductRow = { id: string; name: string; slug: string; description: string | null; ingredients: string | null; howToUse: string | null; routine: string | null; cautions: string | null; price: number; salePrice: number | null; stock: number; isActive: boolean; images: string[]; categories: Array<{ id: string }> };
+  type ProductRow = { id: string; name: string; slug: string; description: string | null; ingredients: string | null; howToUse: string | null; routine: string | null; cautions: string | null; price: number; salePrice: number | null; stock: number; isActive: boolean; comingSoon: boolean; images: string[]; categories: Array<{ id: string }> };
   const product = rawProduct as ProductRow | null;
 
   if (!product) notFound();
@@ -52,6 +52,7 @@ export default async function AdminProductEditPage({ params }: PageProps) {
               salePrice: product.salePrice ? String(product.salePrice) : "",
               stock: String(product.stock),
               isActive: product.isActive,
+              comingSoon: product.comingSoon,
               images: product.images,
               categoryIds: product.categories.map((c) => c.id),
             }}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -7,7 +8,11 @@ import { useCartStore } from "@/store/cart";
 
 export default function FloatingCart() {
   const { itemCount } = useCartStore();
-  const count = itemCount();
+  // See Navbar.tsx — the persisted cart count is only known client-side;
+  // wait for mount so the first client render matches SSR (nothing shown).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const count = mounted ? itemCount() : 0;
   const router = useRouter();
 
   return (

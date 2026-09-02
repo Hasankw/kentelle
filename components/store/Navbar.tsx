@@ -125,7 +125,15 @@ export default function Navbar({ onSearchOpen, onCartOpen }: NavbarProps) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [greeting, setGreeting] = useState("");
   const pathname = usePathname();
-  const itemCount = useCartStore((s) => s.itemCount());
+  const rawItemCount = useCartStore((s) => s.itemCount());
+  // The cart persists to localStorage, so the real count is only known
+  // client-side — rendering it on the first client pass (before this effect
+  // runs) would mismatch the server-rendered "0" and force React to
+  // regenerate the whole tree, which can wipe in-flight UI state (e.g. mid
+  // quiz-flow). Stay at 0 until after mount, matching SSR exactly.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const itemCount = mounted ? rawItemCount : 0;
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openNow = (id: string) => {

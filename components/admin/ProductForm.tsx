@@ -24,6 +24,7 @@ interface ProductData {
   salePrice: string;
   stock: string;
   isActive: boolean;
+  comingSoon: boolean;
   images: string[];
   categoryIds: string[];
 }
@@ -50,6 +51,7 @@ export default function ProductForm({
     salePrice: product?.salePrice ?? "",
     stock: product?.stock ?? "0",
     isActive: product?.isActive ?? true,
+    comingSoon: product?.comingSoon ?? false,
     images: product?.images ?? [],
     categoryIds: product?.categoryIds ?? [],
   });
@@ -342,6 +344,19 @@ export default function ProductForm({
         />
         <label htmlFor="isActive" className="text-sm font-body text-brand-navy">
           Active (visible in store)
+        </label>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="comingSoon"
+          checked={form.comingSoon}
+          onChange={(e) => set("comingSoon", e.target.checked)}
+          className="accent-brand-blue w-4 h-4"
+        />
+        <label htmlFor="comingSoon" className="text-sm font-body text-brand-navy">
+          Coming Soon (shown, not yet purchasable — excluded from Skin Quiz recommendations)
         </label>
       </div>
 

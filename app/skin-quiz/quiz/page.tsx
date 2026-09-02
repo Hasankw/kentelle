@@ -1,15 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Check } from "lucide-react";
 import QuizProgressBar from "@/components/quiz/QuizHeader";
 import QuizOptionCard from "@/components/quiz/QuizOptionCard";
-import ProductCard from "@/components/store/ProductCard";
-import { resolveRoutine, type RoutineResult, type RoutineGroup } from "@/lib/quiz/engine";
+import { formatPrice } from "@/lib/utils";
+import { useCartStore } from "@/store/cart";
+import {
+  resolveRoutine,
+  type RoutineResult,
+  type RoutineGroup,
+  type PrescriptionEntry,
+  type PrescriptionProduct,
+} from "@/lib/quiz/engine";
 import type { QuizConfig, QuizQuestionDto } from "@/lib/quiz/db-config";
+
+const RESULT_STORAGE_KEY = "kentelle-quiz-result";
+const PLACEHOLDER_IMG = "/images/placeholder.svg";
+
+type StoredResult = { name: string; result: RoutineResult };
 
 const POOL_LABELS: Record<string, string> = {
   sensitivity: "Sensitivity",
@@ -95,6 +108,20 @@ function buildSteps(config: QuizConfig, concerns: string[]): Step[] {
 }
 
 export default function SkinQuizFlowPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-brand-bg">
+        <Loader2 className="animate-spin text-brand-navy" size={28} />
+      </div>
+    }>
+      <SkinQuizFlowInner />
+    </Suspense>
+  );
+}
+
+function SkinQuizFlowInner() {
+  const searchParams = useSearchParams();
+  const isPreview = searchParams.get("preview") === "1";
   const [config, setConfig] = useState<QuizConfig | null>(null);
   const [configError, setConfigError] = useState(false);
   const [concerns, setConcerns] = useState<string[]>([]);
@@ -104,12 +131,35 @@ export default function SkinQuizFlowPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<RoutineResult | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     fetch("/api/quiz/config")
       .then((r) => r.json())
       .then(setConfig)
       .catch(() => setConfigError(true));
+  }, []);
+
+  // Restore a previously computed result — so following "View Product
+  // Details" to a product page and coming back doesn't lose the quiz.
+  useEffect(() => {
+    if (isPreview) {
+      setHydrated(true);
+      return;
+    }
+    try {
+      const raw = window.sessionStorage.getItem(RESULT_STORAGE_KEY);
+      if (raw) {
+        const stored: StoredResult = JSON.parse(raw);
+        setName(stored.name);
+        setResult(stored.result);
+      }
+    } catch {
+      // ignore — worst case the customer retakes the quiz
+    } finally {
+      setHydrated(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const steps = useMemo(() => (config ? buildSteps(config, concerns) : []), [config, concerns]);
@@ -133,7 +183,24 @@ export default function SkinQuizFlowPage() {
     );
   }
 
-  if (!config || !step) {
+  if (result) {
+    return (
+      <ResultsView
+        name={name}
+        result={result}
+        isPreview={isPreview}
+        onRetake={() => {
+          try {
+            window.sessionStorage.removeItem(RESULT_STORAGE_KEY);
+          } catch {
+            // ignore
+          }
+        }}
+      />
+    );
+  }
+
+  if (!hydrated || !config || !step) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-brand-bg">
         <Loader2 className="animate-spin text-brand-navy" size={28} />
@@ -175,6 +242,19 @@ export default function SkinQuizFlowPage() {
     const finalEmail = withEmail && email.trim() ? email.trim() : undefined;
     const computed = resolveRoutine(config, { concerns, name, responses });
     setResult(computed);
+    try {
+      if (!isPreview) window.sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify({ name, result: computed }));
+    } catch {
+      // non-blocking — persistence is a convenience, not required to see the result
+    }
+
+    // Preview/Test Mode (admin) never writes a submission or sends an
+    // email — it's purely for checking how a set of answers resolves
+    // before publishing config changes.
+    if (isPreview) {
+      setSubmitting(false);
+      return;
+    }
 
     try {
       await fetch("/api/quiz", {
@@ -188,10 +268,6 @@ export default function SkinQuizFlowPage() {
       setSubmitting(false);
     }
   };
-
-  if (result) {
-    return <ResultsView name={name} result={result} />;
-  }
 
   const canProceed =
     step.kind === "concerns" ? true :
@@ -401,16 +477,74 @@ function QuestionLayout({
   );
 }
 
-function ResultsView({ name, result }: { name: string; result: RoutineResult }) {
-  const allProducts = [...result.am, ...result.pm].flatMap((g) => [...g.products, ...g.choices.flatMap((c) => c.options)]);
-  const hasRoutine = !result.mappingError && allProducts.length > 0;
-  const needsTitration = allProducts.some((p) => p.frequency.toLowerCase().includes("pm only"));
+
+function ResultsView({
+  name,
+  result,
+  onRetake,
+  isPreview = false,
+}: {
+  name: string;
+  result: RoutineResult;
+  onRetake: () => void;
+  isPreview?: boolean;
+}) {
+  const prescription = result.prescription ?? [];
+  const hasRoutine = !result.mappingError && prescription.length > 0;
   const { primaryConcern, secondaryConcerns } = result.skinProfile;
+  const addItem = useCartStore((s) => s.addItem);
+  const router = useRouter();
+
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [choiceSelection, setChoiceSelection] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const sel: Record<string, boolean> = {};
+    const choice: Record<string, string> = {};
+    for (const entry of prescription) {
+      sel[entry.id] = true;
+      if (entry.kind === "choice") choice[entry.id] = entry.options[0]?.id ?? "";
+    }
+    setSelected(sel);
+    setChoiceSelection(choice);
+    // Only re-derive when the result itself changes (new quiz submission).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
+  const entryProduct = (entry: PrescriptionEntry): PrescriptionProduct | undefined =>
+    entry.kind === "product"
+      ? entry.product
+      : entry.options.find((o) => o.id === choiceSelection[entry.id]) ?? entry.options[0];
+
+  const entriesById = useMemo(() => new Map(prescription.map((e) => [e.id, e])), [prescription]);
+
+  const selectedEntries = prescription.filter((e) => selected[e.id] !== false);
+  const selectedProducts = selectedEntries.map(entryProduct).filter((p): p is PrescriptionProduct => Boolean(p));
+  const total = selectedProducts.reduce((sum, p) => sum + (p.salePrice ?? p.price), 0);
+
+  const needsTitration = prescription.some((e) => {
+    const p = entryProduct(e);
+    return p ? p.frequency.toLowerCase().includes("weekly") || p.frequency.toLowerCase().includes("prescribed") : false;
+  });
+
+  const addRoutineToCart = () => {
+    for (const p of selectedProducts) {
+      addItem({ id: p.id, name: p.name, slug: p.slug, image: p.images[0] || PLACEHOLDER_IMG, price: p.salePrice ?? p.price });
+    }
+    router.push("/cart");
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-brand-bg">
       <main className="flex-grow pt-12 pb-20 px-5">
         <div className="max-w-5xl mx-auto">
+          {isPreview && (
+            <div className="mb-8 bg-amber-100 border border-amber-400 rounded p-3 text-center">
+              <p className="font-heading font-bold text-[11px] uppercase tracking-widest text-amber-800">
+                Admin Preview / Test Mode — this result is not saved and no email is sent
+              </p>
+            </div>
+          )}
           <div className="text-center mb-10">
             <p className="font-heading text-xs font-bold tracking-[0.3em] uppercase text-brand-accent mb-3">
               {name ? `${name}'s Skin Profile` : "Your Skin Profile"}
@@ -419,7 +553,7 @@ function ResultsView({ name, result }: { name: string; result: RoutineResult }) 
               Your Personalised Skin Profile
             </h1>
             <p className="font-body text-sm text-brand-contrast max-w-md mx-auto">
-              Here&apos;s what your answers told us, and the KENTELLE routine we&apos;ve built around it.
+              Here&apos;s what your answers told us, and the KENTELLE prescription we&apos;ve built around it.
             </p>
           </div>
 
@@ -441,12 +575,31 @@ function ResultsView({ name, result }: { name: string; result: RoutineResult }) 
             </div>
           )}
 
-          {/* Your Recommended Kentelle Routine */}
           {hasRoutine ? (
             <>
-              <h2 className="text-center font-heading font-bold text-xl text-brand-navy mb-8">Your Recommended Kentelle Routine</h2>
-              <RoutineSection title="Morning Routine" groups={result.am} />
-              <RoutineSection title="Evening Routine" groups={result.pm} />
+              {/* Your Prescribed Kentelle Products — the master list, one line per product, ever */}
+              <div className="mb-12 max-w-3xl mx-auto">
+                <h2 className="text-center font-heading font-bold text-xl text-brand-navy mb-2">Your Prescribed Kentelle Products</h2>
+                <p className="text-center font-body text-xs text-brand-contrast mb-8 max-w-md mx-auto">
+                  Each product appears once, even if it&apos;s part of both your Day and Night routine. Deselect anything you&apos;d rather leave out.
+                </p>
+                <div className="space-y-4">
+                  {prescription.map((entry) => (
+                    <PrescriptionCard
+                      key={entry.id}
+                      entry={entry}
+                      checked={selected[entry.id] !== false}
+                      onToggle={() => setSelected((s) => ({ ...s, [entry.id]: s[entry.id] === false }))}
+                      selectedOptionId={choiceSelection[entry.id]}
+                      onSelectOption={(id) => setChoiceSelection((s) => ({ ...s, [entry.id]: id }))}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Day / Night routine — instructions only, no extra basket items */}
+              <RoutineInstructions title="Your Day Routine" groups={result.am} entriesById={entriesById} entryProduct={entryProduct} />
+              <RoutineInstructions title="Your Night Routine" groups={result.pm} entriesById={entriesById} entryProduct={entryProduct} />
             </>
           ) : (
             <div className="max-w-3xl mx-auto mb-10 bg-brand-pink border-l-2 border-brand-accent rounded p-6 text-center">
@@ -456,7 +609,7 @@ function ResultsView({ name, result }: { name: string; result: RoutineResult }) 
             </div>
           )}
 
-          {/* Why These Products? — advisories (SPF etc.) */}
+          {/* Advisories (SPF etc.) */}
           {result.advisories.length > 0 && (
             <div className="bg-brand-pink border-l-2 border-brand-accent rounded p-5 mb-6 space-y-2 max-w-3xl mx-auto">
               {result.advisories.map((n, i) => (
@@ -478,24 +631,49 @@ function ResultsView({ name, result }: { name: string; result: RoutineResult }) 
               <p className="font-heading font-bold text-[10px] uppercase tracking-widest text-brand-blue mb-2">How To Introduce Your Routine</p>
               <p className="font-body text-xs text-brand-contrast leading-relaxed">
                 {needsTitration
-                  ? "Start any active treatment 2–3 nights a week and build up gradually as your skin adjusts — introduce one new active at a time rather than all at once."
+                  ? "Start any prescribed treatment at its noted frequency and build up gradually as your skin adjusts — introduce one new active at a time rather than all at once."
                   : "Introduce each new product one at a time over the first couple of weeks so you can see how your skin responds before layering in the next."}
               </p>
             </div>
           )}
 
-          {/* Shop Your Personalised Routine */}
-          <div className="flex flex-col sm:flex-row gap-3 max-w-3xl mx-auto mb-10">
-            {hasRoutine && (
-              <Link
-                href="/shop"
-                className="flex-1 text-center py-4 bg-brand-accent text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors"
+          {/* Your Kentelle Prescription — selectable summary before basket */}
+          {hasRoutine && (
+            <div className="max-w-3xl mx-auto mb-10 bg-white border border-brand-contrast/10 rounded p-6">
+              <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-5">Your Kentelle Prescription</p>
+              <div className="space-y-2.5 mb-6">
+                {selectedProducts.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between gap-3 text-sm font-body">
+                    <span className="flex items-center gap-2 text-brand-navy">
+                      <Check size={14} className="text-brand-blue shrink-0" />
+                      {p.name} — {p.timingLabel}
+                    </span>
+                    <span className="text-brand-contrast whitespace-nowrap">{formatPrice(p.salePrice ?? p.price)}</span>
+                  </div>
+                ))}
+                {selectedProducts.length === 0 && (
+                  <p className="font-body text-xs text-brand-contrast">Select at least one product above to build your prescription.</p>
+                )}
+              </div>
+              <div className="flex items-center justify-between border-t border-brand-contrast/15 pt-4 mb-6">
+                <span className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">Product Total</span>
+                <span className="font-heading font-bold text-lg text-brand-navy">{formatPrice(total)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={addRoutineToCart}
+                disabled={selectedProducts.length === 0}
+                className="w-full py-4 bg-brand-accent text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Shop This Routine
-              </Link>
-            )}
+                Add My Prescribed Routine To Cart
+              </button>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 max-w-3xl mx-auto mb-10">
             <Link
               href="/skin-quiz"
+              onClick={onRetake}
               className="flex-1 text-center py-4 border-2 border-brand-navy text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-navy hover:text-brand-white transition-colors"
             >
               Retake the Quiz
@@ -521,46 +699,151 @@ function ResultsView({ name, result }: { name: string; result: RoutineResult }) 
   );
 }
 
-function RoutineSection({ title, groups }: { title: string; groups: RoutineGroup[] }) {
+// A single line of "Your Prescribed Kentelle Products" — a product, or an
+// either/or choice slot (customer picks one option, but it's still one
+// prescription line / one basket item either way).
+function PrescriptionCard({
+  entry,
+  checked,
+  onToggle,
+  selectedOptionId,
+  onSelectOption,
+}: {
+  entry: PrescriptionEntry;
+  checked: boolean;
+  onToggle: () => void;
+  selectedOptionId?: string;
+  onSelectOption: (id: string) => void;
+}) {
+  const options = entry.kind === "product" ? [entry.product] : entry.options;
+  const active = entry.kind === "product" ? entry.product : options.find((o) => o.id === selectedOptionId) ?? options[0];
+  if (!active) return null;
+  const image = active.images[0] || PLACEHOLDER_IMG;
+  const discounted = active.salePrice != null && active.salePrice < active.price;
+
+  return (
+    <div className={`bg-white border rounded p-4 sm:p-5 flex flex-col sm:flex-row gap-4 transition-opacity ${checked ? "border-brand-contrast/15" : "border-brand-contrast/10 opacity-50"}`}>
+      <label className="flex items-start gap-3 sm:gap-4 flex-1 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          className="mt-1.5 w-4 h-4 accent-brand-navy shrink-0"
+        />
+        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded overflow-hidden bg-brand-bg shrink-0">
+          <Image src={image} alt={active.name} fill className="object-cover" unoptimized={image.startsWith("http")} />
+        </div>
+        <div className="flex-1 min-w-0">
+          {entry.kind === "choice" && (
+            <p className="font-body text-[10px] uppercase tracking-wider text-brand-contrast mb-1">Choose one</p>
+          )}
+          {entry.kind === "choice" ? (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1">
+              {options.map((o) => (
+                <label
+                  key={o.id}
+                  className="flex items-center gap-1.5 font-heading font-bold text-sm text-brand-navy cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="radio"
+                    name={`choice-${entry.id}`}
+                    checked={o.id === active.id}
+                    onChange={() => onSelectOption(o.id)}
+                    className="accent-brand-navy"
+                  />
+                  {o.name}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="font-heading font-bold text-sm text-brand-navy mb-1">{active.name}</p>
+          )}
+          <p className="font-body text-xs text-brand-contrast leading-relaxed mb-2">{active.reason}</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
+            <span className="font-body text-[11px] text-brand-navy">
+              <span className="font-heading font-bold uppercase tracking-wide text-brand-blue">When: </span>
+              {active.timingLabel}
+            </span>
+            <span className="font-body text-[11px] text-brand-navy">
+              <span className="font-heading font-bold uppercase tracking-wide text-brand-blue">Frequency: </span>
+              {active.frequency}
+            </span>
+          </div>
+          {active.pairWith.length > 0 && (
+            <p className="font-body text-[11px] text-brand-contrast mb-2">
+              <span className="font-heading font-bold uppercase tracking-wide text-brand-blue">Pair with: </span>
+              {active.pairWith.map((p) => p.name).join(", ")}
+            </p>
+          )}
+          <div className="flex items-center gap-2 mb-2">
+            {discounted ? (
+              <>
+                <span className="font-body text-sm font-bold text-brand-blue">{formatPrice(active.salePrice!)}</span>
+                <span className="font-body text-xs text-brand-contrast line-through">{formatPrice(active.price)}</span>
+              </>
+            ) : (
+              <span className="font-body text-sm text-brand-navy">{formatPrice(active.price)}</span>
+            )}
+          </div>
+        </div>
+      </label>
+      <div className="shrink-0 sm:self-center">
+        <Link
+          href={`/products/${active.slug}`}
+          className="inline-block text-center px-4 py-2.5 border border-brand-navy text-brand-navy font-heading font-bold text-[10px] uppercase tracking-widest rounded hover:bg-brand-navy hover:text-white transition-colors whitespace-nowrap"
+        >
+          View Product Details
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Day/Night routine — usage instructions only. Renders the application
+// order by referencing the master prescription above; never introduces a
+// second copy of a product or its own add-to-cart action.
+function RoutineInstructions({
+  title,
+  groups,
+  entriesById,
+  entryProduct,
+}: {
+  title: string;
+  groups: RoutineGroup[];
+  entriesById: Map<string, PrescriptionEntry>;
+  entryProduct: (entry: PrescriptionEntry) => PrescriptionProduct | undefined;
+}) {
   if (!groups.length) return null;
   return (
     <div className="mb-12 max-w-3xl mx-auto">
       <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-6 pb-2 border-b border-brand-contrast/15">{title}</p>
-      <div className="space-y-8">
-        {groups.map((g) => (
-          <div key={g.step}>
-            <p className="font-heading font-bold text-xs uppercase tracking-widest text-brand-blue mb-4">{g.label}</p>
-            {g.products.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-                {g.products.map((p) => (
-                  <div key={p.id}>
-                    <ProductCard product={p} />
-                    <p className="font-body text-[11px] text-brand-contrast leading-relaxed mt-2">{p.reason}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {g.choices.map((choice) => (
-              <div key={choice.groupKey} className="mb-4">
-                <p className="font-body text-[11px] text-brand-contrast uppercase tracking-wider mb-2">Choose one</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-start">
-                  {choice.options.map((p, i) => (
-                    <div key={p.id} className="relative">
-                      {i > 0 && (
-                        <span className="absolute -left-3 top-1/2 -translate-y-1/2 -translate-x-full font-heading font-bold text-[10px] uppercase text-brand-contrast/60 hidden sm:block">
-                          or
-                        </span>
-                      )}
-                      <ProductCard product={p} />
-                      <p className="font-body text-[11px] text-brand-contrast leading-relaxed mt-2">{p.reason}</p>
-                    </div>
-                  ))}
+      <ol className="space-y-3">
+        {groups.flatMap((g) =>
+          g.refs.map((ref, i) => {
+            const entry = entriesById.get(ref.entryId);
+            const product = entry ? entryProduct(entry) : undefined;
+            if (!entry || !product) return null;
+            return (
+              <li key={`${g.step}-${ref.entryId}`} className="flex items-center gap-4">
+                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-brand-navy text-white font-heading font-bold text-[11px] shrink-0">
+                  {i + 1}
+                </span>
+                <div className="relative w-11 h-11 rounded overflow-hidden bg-brand-bg shrink-0">
+                  <Image src={product.images[0] || PLACEHOLDER_IMG} alt={product.name} fill className="object-cover" unoptimized={(product.images[0] || "").startsWith("http")} />
                 </div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+                <div className="min-w-0">
+                  <p className="font-body text-[10px] uppercase tracking-wider text-brand-contrast">{g.label}</p>
+                  <p className="font-heading font-bold text-sm text-brand-navy truncate">
+                    {product.name}
+                    {entry.kind === "choice" && <span className="font-body font-normal text-brand-contrast"> (as selected above)</span>}
+                  </p>
+                </div>
+              </li>
+            );
+          }),
+        )}
+      </ol>
     </div>
   );
 }

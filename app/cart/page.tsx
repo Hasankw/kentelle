@@ -23,7 +23,7 @@ export default function CartPage() {
   const {
     items, removeItem, updateQuantity, total,
     coupon, giftCard, applyCoupon, removeCoupon, applyGiftCard, removeGiftCard,
-    discount, bundleDiscount, discountedTotal,
+    discount, bundleDiscount, tierDiscount, nextTierMessage, discountedTotal,
   } = useCartStore();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -59,8 +59,11 @@ export default function CartPage() {
 
   const subtotal = total();
   const discountAmt = discount();
+  const tierAmt = tierDiscount();
+  const tierMessage = nextTierMessage();
   const afterDiscount = discountedTotal();
-  const shippingCost = calcShipping(shipping, afterDiscount);
+  const tierFreeShipping = tierAmt > 0 && useCartStore.getState().discountSettings.freeShippingEligible;
+  const shippingCost = tierFreeShipping ? 0 : calcShipping(shipping, afterDiscount);
   const orderTotal = afterDiscount + shippingCost;
 
   const remaining = Math.max(shipping.threshold - afterDiscount, 0);
@@ -118,6 +121,18 @@ export default function CartPage() {
       <h1 className="font-heading font-bold text-3xl text-brand-navy mb-4 text-center">
         Your Cart
       </h1>
+
+      {/* Automatic basket-value discount nudge — no code required */}
+      {tierMessage && (
+        <p className="text-center text-sm font-body text-brand-navy mb-4">
+          {tierMessage}
+        </p>
+      )}
+      {tierAmt > 0 && !tierMessage && (
+        <p className="text-center text-sm font-bold font-body text-brand-mint mb-4">
+          You&apos;ve unlocked the maximum automatic discount! 🎉
+        </p>
+      )}
 
       {/* Free shipping progress bar */}
       {shipping.type === "threshold" && (
@@ -327,9 +342,15 @@ export default function CartPage() {
               <span className="font-bold">−{formatPrice(bundleDiscount())}</span>
             </div>
           )}
+          {tierAmt > 0 && (
+            <div className="flex justify-between text-sm font-body text-green-600">
+              <span>Automatic Discount</span>
+              <span className="font-bold">−{formatPrice(tierAmt)}</span>
+            </div>
+          )}
           {discountAmt > 0 && (
             <div className="flex justify-between text-sm font-body text-green-600">
-              <span>Discount</span>
+              <span>You Save</span>
               <span className="font-bold">−{formatPrice(discountAmt)}</span>
             </div>
           )}

@@ -6,7 +6,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { name, slug, description, ingredients, howToUse, routine, cautions, price, salePrice, stock, isActive, images, categoryIds } = await request.json();
+  const { name, slug, description, ingredients, howToUse, routine, cautions, price, salePrice, stock, isActive, comingSoon, images, categoryIds } = await request.json();
 
   const existing = await db.product.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -29,6 +29,7 @@ export async function PUT(
       salePrice: salePrice ? Number(salePrice) : null,
       stock: Number(stock),
       isActive: !!isActive,
+      comingSoon: !!comingSoon,
       images: images ?? [],
       categories: {
         connect: toConnect.map((cid: string) => ({ id: cid })),

@@ -13,16 +13,41 @@ export async function GET() {
     quizStep: p.quizStep ?? null,
     quizTags: p.quizTags ?? [],
     quizAltGroup: p.quizAltGroup ?? null,
+    quizRoutineTiming: p.quizRoutineTiming ?? null,
+    quizFrequency: p.quizFrequency ?? null,
+    quizPairWithIds: p.quizPairWithIds ?? [],
+    quizBestMatchTags: p.quizBestMatchTags ?? [],
+    quizAlternativeForTags: p.quizAlternativeForTags ?? [],
+    comingSoon: !!p.comingSoon,
   }));
   return NextResponse.json(minimal);
 }
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const { id, quizStep, quizTags, quizAltGroup } = body;
+  const {
+    id,
+    quizStep,
+    quizTags,
+    quizAltGroup,
+    quizRoutineTiming,
+    quizFrequency,
+    quizPairWithIds,
+    quizBestMatchTags,
+    quizAlternativeForTags,
+  } = body;
   const product = await db.product.update({
     where: { id },
-    data: { quizStep: quizStep || null, quizTags: quizTags ?? [], quizAltGroup: quizAltGroup || null },
+    data: {
+      quizStep: quizStep || null,
+      quizTags: quizTags ?? [],
+      quizAltGroup: quizAltGroup || null,
+      quizRoutineTiming: quizRoutineTiming || null,
+      quizFrequency: quizFrequency || null,
+      quizPairWithIds: quizPairWithIds ?? [],
+      quizBestMatchTags: quizBestMatchTags ?? [],
+      quizAlternativeForTags: quizAlternativeForTags ?? [],
+    },
   });
   return NextResponse.json(product);
 }

@@ -12,6 +12,7 @@ export interface Product {
   images: string[];
   stock: number;
   isActive: boolean;
+  comingSoon: boolean;
   categories: Category[];
   createdAt: Date;
 }

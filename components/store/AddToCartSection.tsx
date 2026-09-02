@@ -15,13 +15,14 @@ interface AddToCartSectionProps {
     salePrice: number | null;
     images: string[];
     stock: number;
+    comingSoon?: boolean;
   };
 }
 
 export default function AddToCartSection({ product }: AddToCartSectionProps) {
   const [qty, setQty] = useState(1);
   const { addItem, openCart } = useCartStore();
-  const outOfStock = product.stock === 0;
+  const outOfStock = product.stock === 0 || !!product.comingSoon;
 
   const handleAdd = () => {
     for (let i = 0; i < qty; i++) {
@@ -76,7 +77,7 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
         className="w-full"
         variant={outOfStock ? "ghost" : "primary"}
       >
-        {outOfStock ? "Out of Stock" : "Add to Cart"}
+        {product.comingSoon ? "Coming Soon" : outOfStock ? "Out of Stock" : "Add to Cart"}
       </Button>
     </div>
   );

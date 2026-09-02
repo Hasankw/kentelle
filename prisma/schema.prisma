@@ -34,6 +34,30 @@ model Product {
   // presents them as an either/or choice (e.g. DayCare vs Day Beauty
   // Radiance) instead of prescribing both.
   quizAltGroup String?
+  // Explicit, admin-controlled Kentelle usage instruction — overrides the
+  // old tag-based AM/PM guess (e.g. actives are not assumed to be Night-only;
+  // Glycolic 10 is normally DAY). One of "DAY" | "NIGHT" | "DAY_NIGHT" |
+  // "SPECIAL" (special / prescribed-days only). Null falls back to the tag
+  // heuristic so existing untagged products keep working.
+  quizRoutineTiming String?
+  // Optional override for the starting-frequency copy shown in the
+  // prescription (e.g. "1–2x weekly, increase per tolerance"). Falls back
+  // to the tag-based default when unset.
+  quizFrequency     String?
+  // Other product ids this product should be paired with / layered with —
+  // shown as "Pair with" guidance on the prescription card.
+  quizPairWithIds   String[]    @default([])
+  // Concern keys (matching QuizConcern.key) this product is Kentelle's best
+  // match for — a direct product-to-concern link the owner can set without
+  // touching the question/option builder.
+  quizBestMatchTags String[]    @default([])
+  // Concern keys this product should be offered as a lower-priority
+  // alternative for, rather than the best match.
+  quizAlternativeForTags String[] @default([])
+  // Owner-controlled storefront + quiz availability: shown as a "Coming
+  // Soon" badge and excluded from purchase / quiz recommendations until
+  // turned off.
+  comingSoon        Boolean     @default(false)
 
   @@index([slug])
   @@index([isActive])
@@ -266,6 +290,31 @@ model QuizSettings {
   coreTreatmentId   String?
   coreMoisturiserId String?
   maxTreatments     Int     @default(5)
+}
+
+// Automatic basket-value discount tiers ("spend $X, get Y% off") — owner
+// editable, no discount code required. Applies to the whole cart subtotal
+// unless eligibleCategoryIds is set, in which case only those categories'
+// line items count toward the threshold.
+model CartDiscountTier {
+  id                  String   @id @default(cuid())
+  label               String?
+  threshold           Float
+  percent             Float
+  active              Boolean  @default(true)
+  sortOrder           Int      @default(0)
+  eligibleCategoryIds String[] @default([])
+
+  @@index([active])
+}
+
+model CartDiscountSettings {
+  id                     String  @id @default("singleton")
+  enabled                Boolean @default(true)
+  // If false, an applied coupon code takes precedence and the automatic
+  // tier discount is suppressed rather than stacked.
+  combinableWithCoupons  Boolean @default(false)
+  freeShippingEligible   Boolean @default(true)
 }
 
 model Content {

@@ -15,24 +15,33 @@ const TABS = [
 export default function QuizAdminTabs() {
   const pathname = usePathname();
   return (
-    <div className="flex items-center gap-1 border-b border-brand-contrast/10 mb-6 px-8 pt-6 -mx-8 -mt-6 bg-white">
-      {TABS.map((t) => {
-        const active = pathname === t.href;
-        return (
-          <Link
-            key={t.href}
-            href={t.href}
-            className={cn(
-              "px-4 py-3 text-xs font-heading font-bold uppercase tracking-widest border-b-2 -mb-px transition-colors",
-              active
-                ? "border-brand-navy text-brand-navy"
-                : "border-transparent text-brand-contrast hover:text-brand-navy"
-            )}
-          >
-            {t.label}
-          </Link>
-        );
-      })}
+    <div className="flex items-center justify-between border-b border-brand-contrast/10 mb-6 px-8 pt-6 -mx-8 -mt-6 bg-white">
+      <div className="flex items-center gap-1">
+        {TABS.map((t) => {
+          const active = pathname === t.href;
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={cn(
+                "px-4 py-3 text-xs font-heading font-bold uppercase tracking-widest border-b-2 -mb-px transition-colors",
+                active
+                  ? "border-brand-navy text-brand-navy"
+                  : "border-transparent text-brand-contrast hover:text-brand-navy"
+              )}
+            >
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
+      <Link
+        href="/skin-quiz/quiz?preview=1"
+        target="_blank"
+        className="mb-2 px-3 py-1.5 text-[10px] font-heading font-bold uppercase tracking-widest rounded border border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-white transition-colors"
+      >
+        Preview / Test Mode
+      </Link>
     </div>
   );
 }

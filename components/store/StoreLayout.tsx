@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AnnouncementBar from "./AnnouncementBar";
 import Navbar from "./Navbar";
@@ -19,8 +19,16 @@ export default function StoreLayout({
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const openCart = useCartStore((s) => s.openCart);
+  const setDiscountConfig = useCartStore((s) => s.setDiscountConfig);
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
+
+  useEffect(() => {
+    fetch("/api/discount-tiers")
+      .then((r) => r.json())
+      .then((d) => setDiscountConfig(d.tiers ?? [], d.settings))
+      .catch(() => {});
+  }, [setDiscountConfig]);
 
   if (isAdmin) {
     return (

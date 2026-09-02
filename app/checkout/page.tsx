@@ -116,7 +116,8 @@ export default function CheckoutPage() {
   });
 
   const subtotal = discountedTotal();
-  const shippingCost = calcShipping(shippingConfig, subtotal);
+  const tierFreeShipping = useCartStore.getState().tierDiscount() > 0 && useCartStore.getState().discountSettings.freeShippingEligible;
+  const shippingCost = tierFreeShipping ? 0 : calcShipping(shippingConfig, subtotal);
   const orderTotal = subtotal + shippingCost;
 
   if (checkoutMode === "checking" || navigating) return null;
@@ -446,7 +447,7 @@ export default function CheckoutPage() {
               ))}
             </ul>
             <div className="border-t border-brand-contrast/20 pt-3 space-y-1 text-sm font-body">
-              {(coupon || giftCard) && (
+              {(coupon || giftCard || useCartStore.getState().tierDiscount() > 0) && (
                 <div className="flex justify-between text-green-600 text-xs font-heading font-bold">
                   <span>Discount applied</span>
                   <span>−{formatPrice(useCartStore.getState().discount())}</span>

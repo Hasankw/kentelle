@@ -527,34 +527,23 @@ export async function sendOrderStatusUpdate(
 
 // ─── Skin Quiz Result Email ─────────────────────────────────────────────────
 
-type RoutineForEmailGroup = {
-  label: string;
-  products: QuizEmailProduct[];
-  choices: { groupKey: string; options: QuizEmailProduct[] }[];
-};
-
-type RoutineForEmail = {
-  skinProfile?: { primaryConcern: string | null; secondaryConcerns: string[] };
-  am: RoutineForEmailGroup[];
-  pm: RoutineForEmailGroup[];
-  notes: string[];
-  advisories?: string[];
-  mappingError?: boolean;
-};
-
-type QuizEmailProduct = {
-  id: string;
-  name: string;
-  slug: string;
-  images: string[];
-  price: number;
-  salePrice: number | null;
-  stock: number;
-  reason?: string;
-  frequency?: string;
-};
+import type { RoutineResult, PrescriptionEntry, PrescriptionProduct } from "./quiz/engine";
 
 type QuizEmailProfileRow = { label: string; value: string };
+
+const EMAIL_STEP_LABELS: Record<string, string> = {
+  cleanser: "Cleanser",
+  toner: "Toner / Mist",
+  treatment: "Treatments",
+  moisturiser: "Moisturiser",
+  eye: "Eye Care",
+  special: "Special Care",
+};
+
+function entryStep(entry: PrescriptionEntry): string {
+  const product = entry.kind === "product" ? entry.product : entry.options[0];
+  return product?.step ?? "special";
+}
 
 function escapeHtml(value: unknown) {
   return String(value ?? "")
@@ -570,7 +559,7 @@ function absoluteStoreUrl(path: string) {
   return `https://kentelle.com${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-function quizPriceHtml(product: QuizEmailProduct) {
+function quizPriceHtml(product: PrescriptionProduct) {
   const price = Number(product.price);
   const salePrice = product.salePrice == null ? null : Number(product.salePrice);
   if (salePrice != null && Number.isFinite(salePrice) && salePrice < price) {
@@ -580,7 +569,7 @@ function quizPriceHtml(product: QuizEmailProduct) {
   return `<span style="font-size:16px;font-weight:bold;color:#3A3240;">$${price.toFixed(2)} AUD</span>`;
 }
 
-function quizProductCardHtml(product: QuizEmailProduct, step: string, stepNumber: number, choice: boolean) {
+function quizProductCardHtml(product: PrescriptionProduct, choice: boolean, pairLabel?: string) {
   const image = absoluteStoreUrl(product.images?.[0] || "/images/placeholder.svg");
   const productUrl = `https://kentelle.com/products/${encodeURIComponent(product.slug)}`;
   const checkoutUrl = `https://kentelle.com/buy/${encodeURIComponent(product.slug)}`;
@@ -593,15 +582,16 @@ function quizProductCardHtml(product: QuizEmailProduct, step: string, stepNumber
         </a>
       </td>
       <td style="padding:20px 22px;vertical-align:middle;font-family:Arial,sans-serif;">
-        <p style="margin:0 0 7px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">Step ${stepNumber} &nbsp;&middot;&nbsp; ${escapeHtml(step)}${choice ? " &nbsp;&middot;&nbsp; Choose one" : ""}</p>
+        <p style="margin:0 0 7px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">${escapeHtml(EMAIL_STEP_LABELS[product.step ?? "special"] ?? "Special Care")} &nbsp;&middot;&nbsp; ${escapeHtml(product.timingLabel)}${choice ? " &nbsp;&middot;&nbsp; Choose one" : ""}</p>
         <h3 style="margin:0 0 9px;font:normal 21px Georgia,'Times New Roman',serif;line-height:1.18;color:#3A3240;">${escapeHtml(product.name)}</h3>
         ${product.reason ? `<p style="margin:0 0 9px;font-size:11px;line-height:1.55;color:#655C62;font-family:Arial,sans-serif;"><strong style="color:#3A3240;">Why we chose this:</strong> ${escapeHtml(product.reason)}</p>` : ""}
-        ${product.frequency ? `<p style="margin:0 0 12px;font-size:10px;font-weight:bold;letter-spacing:0.6px;text-transform:uppercase;color:#9B8FA0;">${escapeHtml(product.frequency)}</p>` : ""}
+        ${product.frequency ? `<p style="margin:0 0 6px;font-size:10px;font-weight:bold;letter-spacing:0.6px;text-transform:uppercase;color:#9B8FA0;">${escapeHtml(product.frequency)}</p>` : ""}
+        ${pairLabel ? `<p style="margin:0 0 12px;font-size:11px;color:#655C62;font-family:Arial,sans-serif;"><strong style="color:#3A3240;">Pair with:</strong> ${escapeHtml(pairLabel)}</p>` : ""}
         <p style="margin:0 0 14px;font-family:Arial,sans-serif;">${quizPriceHtml(product)}</p>
         ${
           canBuy
             ? `<a href="${checkoutUrl}" style="display:inline-block;background:#C8DFE8;border:1px solid #3A3240;border-radius:22px;padding:10px 19px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.3px;text-transform:uppercase;text-decoration:none;">Buy Now &rarr;</a>
-              <a href="${productUrl}" style="display:inline-block;margin-left:10px;color:#655C62;font:700 9px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;text-decoration:underline;">Details</a>`
+              <a href="${productUrl}" style="display:inline-block;margin-left:10px;color:#655C62;font:700 9px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;text-decoration:underline;">View Product Details</a>`
             : `<span style="display:inline-block;background:#EEE8E5;border-radius:22px;padding:10px 19px;color:#897E84;font:700 10px Arial,sans-serif;letter-spacing:1.3px;text-transform:uppercase;">Out of stock</span>`
         }
       </td>
@@ -609,38 +599,63 @@ function quizProductCardHtml(product: QuizEmailProduct, step: string, stepNumber
   </table>`;
 }
 
-function quizRoutineSectionHtml(heading: string, groups: RoutineForEmailGroup[]) {
-  if (!groups.length) return "";
-  const cardsHtml = groups
-    .flatMap((group, groupIndex) => [
-      ...group.products.map((product) => quizProductCardHtml(product, group.label, groupIndex + 1, false)),
-      ...group.choices.flatMap((choice) => choice.options.map((product) => quizProductCardHtml(product, group.label, groupIndex + 1, true))),
-    ])
+// "Your Prescribed Kentelle Products" — the master list, one card per
+// product ever, even if it's used Day & Night.
+function quizPrescriptionSectionHtml(prescription: PrescriptionEntry[]) {
+  if (!prescription.length) return "";
+  const cardsHtml = prescription
+    .map((entry) => {
+      if (entry.kind === "product") {
+        const pairLabel = entry.product.pairWith.map((p) => p.name).join(", ") || undefined;
+        return quizProductCardHtml(entry.product, false, pairLabel);
+      }
+      return entry.options
+        .map((p) => quizProductCardHtml(p, true, p.pairWith.map((x) => x.name).join(", ") || undefined))
+        .join("");
+    })
     .join("");
   return `<div style="margin-bottom:30px;">
-    <p style="margin:0 0 14px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">${escapeHtml(heading)}</p>
+    <p style="margin:0 0 14px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">Your Prescribed Kentelle Products</p>
     ${cardsHtml}
+  </div>`;
+}
+
+// Day/Night routine — instructions only, referencing the prescription
+// above by name and application order. No product data or price is
+// repeated here, so nothing here can be mistaken for a second basket item.
+function quizRoutineInstructionsHtml(heading: string, groups: RoutineResult["am"], byId: Map<string, PrescriptionEntry>) {
+  if (!groups.length) return "";
+  const rows = groups
+    .flatMap((group) =>
+      group.refs.map((ref) => {
+        const entry = byId.get(ref.entryId);
+        if (!entry) return "";
+        const names = entry.kind === "product" ? entry.product.name : entry.options.map((o) => o.name).join(" or ");
+        return `<tr>
+          <td style="padding:9px 0;border-bottom:1px solid #E8DEDA;font:700 9px Arial,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:#627A82;width:38%;">${escapeHtml(EMAIL_STEP_LABELS[group.step] ?? group.step)}</td>
+          <td style="padding:9px 0 9px 14px;border-bottom:1px solid #E8DEDA;font:13px Arial,sans-serif;color:#3A3240;">${escapeHtml(names)}</td>
+        </tr>`;
+      }),
+    )
+    .join("");
+  return `<div style="margin-bottom:22px;">
+    <p style="margin:0 0 10px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">${escapeHtml(heading)}</p>
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">${rows}</table>
   </div>`;
 }
 
 export async function sendQuizResultEmail(
   email: string,
   name: string,
-  routine: RoutineForEmail,
+  routine: RoutineResult,
   profile: QuizEmailProfileRow[] = [],
 ) {
   const greetingName = escapeHtml(name || "there");
 
-  const allGroups = [...routine.am, ...routine.pm];
-  const seenProductIds = new Set<string>();
-  const uniqueProducts = allGroups
-    .flatMap((g) => [...g.products, ...g.choices.flatMap((c) => c.options)])
-    .filter((product) => {
-      if (seenProductIds.has(product.id)) return false;
-      seenProductIds.add(product.id);
-      return true;
-    });
-  const hasRoutine = uniqueProducts.length > 0 && !routine.mappingError;
+  const prescription = routine.prescription ?? [];
+  const uniqueProducts = prescription.flatMap((e) => (e.kind === "product" ? [e.product] : e.options));
+  const entriesById = new Map(prescription.map((e) => [e.id, e]));
+  const hasRoutine = prescription.length > 0 && !routine.mappingError;
 
   const skinProfileRows: QuizEmailProfileRow[] = [];
   if (routine.skinProfile?.primaryConcern) {
@@ -665,7 +680,9 @@ export async function sendQuizResultEmail(
     : "";
 
   const routineHtml = hasRoutine
-    ? quizRoutineSectionHtml("Morning Routine", routine.am) + quizRoutineSectionHtml("Evening Routine", routine.pm)
+    ? quizPrescriptionSectionHtml(prescription) +
+      quizRoutineInstructionsHtml("Your Day Routine", routine.am, entriesById) +
+      quizRoutineInstructionsHtml("Your Night Routine", routine.pm, entriesById)
     : `<div style="padding:18px 20px;background:#F5EEF3;border-left:3px solid #D4A5B5;font:13px Arial,sans-serif;line-height:1.6;color:#3A3240;text-align:left;">
         We're finishing up your product matches by hand — a member of our team will follow up shortly with your personalised picks. In the meantime, feel free to browse the full KENTELLE range or book a consultation below.
       </div>`;
@@ -675,8 +692,8 @@ export async function sendQuizResultEmail(
         <p style="margin:0 0 6px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">How To Introduce Your Routine</p>
         <p style="margin:0;font-size:12px;line-height:1.6;color:#3A3240;font-family:Arial,sans-serif;">
           ${
-            uniqueProducts.some((p) => (p.frequency ?? "").toLowerCase().includes("pm only"))
-              ? "Start any active treatment 2–3 nights a week and build up gradually as your skin adjusts — introduce one new active at a time rather than all at once."
+            uniqueProducts.some((p) => p.frequency.toLowerCase().includes("weekly") || p.frequency.toLowerCase().includes("prescribed"))
+              ? "Start any active treatment gradually and build up as your skin adjusts — introduce one new active at a time rather than all at once, following the frequency noted on each product above."
               : "Introduce each new product one at a time over the first couple of weeks so you can see how your skin responds before layering in the next."
           }
         </p>

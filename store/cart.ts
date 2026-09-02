@@ -4,6 +4,13 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem } from "@/types";
 import { MOTHERS_DAY_BUNDLE } from "@/lib/bundles";
+import {
+  DEFAULT_DISCOUNT_SETTINGS,
+  tierDiscountAmount,
+  nextTierMessage as computeNextTierMessage,
+  type DiscountTier,
+  type DiscountSettings,
+} from "@/lib/discount-tiers";
 
 interface AppliedCoupon {
   code: string;
@@ -21,6 +28,8 @@ interface CartStore {
   isOpen: boolean;
   coupon: AppliedCoupon | null;
   giftCard: AppliedGiftCard | null;
+  discountTiers: DiscountTier[];
+  discountSettings: DiscountSettings;
 
   addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: string) => void;
@@ -35,6 +44,13 @@ interface CartStore {
   removeCoupon: () => void;
   applyGiftCard: (gc: AppliedGiftCard) => void;
   removeGiftCard: () => void;
+  setDiscountConfig: (tiers: DiscountTier[], settings: DiscountSettings) => void;
+  /** Automatic basket-value tier discount — no code required. Suppressed
+   * (not stacked) when a coupon is applied and tiers aren't marked
+   * combinable with coupons. */
+  tierDiscount: () => number;
+  /** "Spend another $X to unlock Y% off" — null once the top tier is hit. */
+  nextTierMessage: () => string | null;
   discount: () => number;
   bundleDiscount: () => number;
   discountedTotal: () => number;
@@ -47,6 +63,8 @@ export const useCartStore = create<CartStore>()(
       isOpen: false,
       coupon: null,
       giftCard: null,
+      discountTiers: [],
+      discountSettings: DEFAULT_DISCOUNT_SETTINGS,
 
       addItem: (incoming) => {
         set((state) => {
@@ -94,6 +112,15 @@ export const useCartStore = create<CartStore>()(
       removeCoupon: () => set({ coupon: null }),
       applyGiftCard: (gc) => set({ giftCard: gc }),
       removeGiftCard: () => set({ giftCard: null }),
+      setDiscountConfig: (discountTiers, discountSettings) => set({ discountTiers, discountSettings }),
+
+      tierDiscount: () => {
+        const { coupon, discountTiers, discountSettings } = get();
+        if (coupon && !discountSettings.combinableWithCoupons) return 0;
+        return tierDiscountAmount(get().total(), discountTiers);
+      },
+
+      nextTierMessage: () => computeNextTierMessage(get().total(), get().discountTiers),
 
       bundleDiscount: () => {
         const items = get().items;
@@ -110,7 +137,7 @@ export const useCartStore = create<CartStore>()(
       discount: () => {
         const raw = get().total();
         const { coupon, giftCard } = get();
-        let d = get().bundleDiscount();
+        let d = get().bundleDiscount() + get().tierDiscount();
         if (coupon) {
           d += coupon.type === "PERCENTAGE"
             ? raw * (coupon.value / 100)

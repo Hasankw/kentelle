@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 
+export type RoutineTiming = "DAY" | "NIGHT" | "DAY_NIGHT" | "SPECIAL";
+
 export type QuizProductRef = {
   id: string;
   name: string;
@@ -14,6 +16,20 @@ export type QuizProductRef = {
   /** Products sharing a group are interchangeable — the results UI shows
    * them as an either/or choice instead of prescribing both. */
   altGroup: string | null;
+  /** Admin-set Day/Night/Day & Night/Special classification. Null means
+   * "not explicitly set" — the engine falls back to the tag heuristic. */
+  routineTiming: RoutineTiming | null;
+  /** Admin override for starting-frequency copy (e.g. "1–2x weekly"). */
+  frequencyOverride: string | null;
+  /** Other product ids this product should be paired with. */
+  pairWithIds: string[];
+  /** Concern keys this product is Kentelle's best match for — set directly
+   * on the product, independent of the question/option builder. */
+  bestMatchTags: string[];
+  /** Concern keys this product should be offered as an alternative for. */
+  alternativeForTags: string[];
+  /** Shown but not yet purchasable — excluded from recommendations. */
+  comingSoon: boolean;
 };
 
 export type QuizOptionDto = {
@@ -124,6 +140,21 @@ export async function loadQuizConfig(): Promise<QuizConfig> {
   const altGroupProducts = (allActiveProducts as any[]).filter((p) => p.quizAltGroup);
   altGroupProducts.forEach((p) => productIds.add(p.id));
 
+  // Also pull in every product carrying a direct concern link (Best Match
+  // For / Alternative For) set on the product itself — these can recommend
+  // a product into the engine without it ever being wired to a question.
+  const directLinkProducts = (allActiveProducts as any[]).filter(
+    (p) => (p.quizBestMatchTags?.length ?? 0) > 0 || (p.quizAlternativeForTags?.length ?? 0) > 0,
+  );
+  directLinkProducts.forEach((p) => productIds.add(p.id));
+
+  // Pull in any "pair with" targets so the prescription card can resolve
+  // their name/slug even if they weren't independently recommended.
+  const byId = new Map((allActiveProducts as any[]).map((p) => [p.id, p]));
+  for (const id of [...productIds]) {
+    for (const pairId of byId.get(id)?.quizPairWithIds ?? []) productIds.add(pairId);
+  }
+
   const productRows = productIds.size
     ? await db.product.findMany({ where: { id: { in: [...productIds] } } })
     : [];
@@ -142,6 +173,12 @@ export async function loadQuizConfig(): Promise<QuizConfig> {
       stock: p.stock,
       ingredients: p.ingredients ?? null,
       altGroup: p.quizAltGroup ?? null,
+      routineTiming: (p.quizRoutineTiming as RoutineTiming | null) ?? null,
+      frequencyOverride: p.quizFrequency ?? null,
+      pairWithIds: p.quizPairWithIds ?? [],
+      bestMatchTags: p.quizBestMatchTags ?? [],
+      alternativeForTags: p.quizAlternativeForTags ?? [],
+      comingSoon: !!p.comingSoon,
     };
   }
 

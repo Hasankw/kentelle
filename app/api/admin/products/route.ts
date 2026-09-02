@@ -7,7 +7,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const { name, slug, description, ingredients, howToUse, routine, cautions, price, salePrice, stock, isActive, images, categoryIds } = await request.json();
+  const { name, slug, description, ingredients, howToUse, routine, cautions, price, salePrice, stock, isActive, comingSoon, images, categoryIds } = await request.json();
 
   const product = await db.product.create({
     data: {
@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       salePrice: salePrice ? Number(salePrice) : null,
       stock: Number(stock),
       isActive: !!isActive,
+      comingSoon: !!comingSoon,
       images: images ?? [],
       categories: categoryIds?.length
         ? { connect: categoryIds.map((id: string) => ({ id })) }

@@ -10,7 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, removeItem, updateQuantity, total, bundleDiscount, discountedTotal } =
+  const { items, isOpen, closeCart, removeItem, updateQuantity, total, bundleDiscount, tierDiscount, nextTierMessage, discountedTotal } =
     useCartStore();
 
   useEffect(() => {
@@ -144,7 +144,20 @@ export default function CartDrawer() {
                     </span>
                   </div>
                 )}
-                {bundleDiscount() > 0 && (
+                {tierDiscount() > 0 && (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-3 py-2">
+                    <span className="text-xs font-heading font-bold text-green-700 uppercase tracking-wider">
+                      Automatic Discount
+                    </span>
+                    <span className="text-xs font-heading font-bold text-green-700">
+                      -{formatPrice(tierDiscount())}
+                    </span>
+                  </div>
+                )}
+                {nextTierMessage() && (
+                  <p className="text-xs text-brand-navy">{nextTierMessage()}</p>
+                )}
+                {(bundleDiscount() > 0 || tierDiscount() > 0) && (
                   <div className="flex items-center justify-between">
                     <span className="font-body text-sm font-bold text-brand-navy">Total</span>
                     <span className="font-heading font-bold text-brand-navy">{formatPrice(discountedTotal())}</span>

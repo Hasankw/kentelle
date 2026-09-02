@@ -15,7 +15,7 @@ interface ProductCardProps {
   product: Pick<
     Product,
     "id" | "name" | "slug" | "price" | "salePrice" | "images" | "stock"
-  > & { description?: string | null };
+  > & { description?: string | null; comingSoon?: boolean };
   proBlocked?: boolean;
 }
 
@@ -38,10 +38,11 @@ export default function ProductCard({ product, proBlocked = false }: ProductCard
     ? calcDiscount(product.price, product.salePrice)
     : 0;
   const outOfStock = product.stock === 0;
+  const comingSoon = !!product.comingSoon;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (outOfStock) return;
+    if (outOfStock || comingSoon) return;
     addItem({
       id: product.id,
       name: product.name,
@@ -96,13 +97,15 @@ export default function ProductCard({ product, proBlocked = false }: ProductCard
             {discount > 0 && (
               <Badge variant="sale">-{discount}%</Badge>
             )}
-            {outOfStock && (
+            {comingSoon ? (
+              <Badge variant="default">Coming Soon</Badge>
+            ) : outOfStock ? (
               <Badge variant="soldout">Sold Out</Badge>
-            )}
+            ) : null}
           </div>
 
           {/* Quick-add button */}
-          {!outOfStock && !proBlocked && (
+          {!outOfStock && !comingSoon && !proBlocked && (
             <button
               onClick={handleAddToCart}
               className="absolute bottom-0 left-0 right-0 bg-brand-accent text-brand-navy rounded py-3 text-xs font-heading font-bold tracking-widest uppercase flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hover:bg-brand-accent/85"

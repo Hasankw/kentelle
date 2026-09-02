@@ -38,7 +38,11 @@ function getOrCreateSessionId(): string {
 
 export default function ChatWidget() {
   const cartCount = useCartStore((s) => s.itemCount());
-  const hasCart = cartCount > 0;
+  // See Navbar.tsx — the persisted cart count is only known client-side;
+  // wait for mount so the first client render matches SSR.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const hasCart = mounted && cartCount > 0;
   const [enabled, setEnabled] = useState(true);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([

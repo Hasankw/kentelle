@@ -16,6 +16,22 @@ type QuizProduct = {
   quizStep: string | null;
   quizTags: string[];
   quizAltGroup: string | null;
+  quizRoutineTiming: string | null;
+  quizFrequency: string | null;
+  quizPairWithIds: string[];
+  quizBestMatchTags: string[];
+  quizAlternativeForTags: string[];
+};
+
+type Dirty = {
+  quizStep: string;
+  quizTagsText: string;
+  quizAltGroup: string;
+  quizRoutineTiming: string;
+  quizFrequency: string;
+  quizPairWithText: string;
+  quizBestMatchText: string;
+  quizAlternativeForText: string;
 };
 
 const STEP_OPTIONS = [
@@ -28,6 +44,18 @@ const STEP_OPTIONS = [
   { value: "special", label: "Special Care" },
 ];
 
+// Kentelle's approved usage instruction. Left blank ("— Auto —") falls back
+// to the tag heuristic (retinoid/aha => Night); actives are NOT assumed
+// Night-only by default — set this explicitly per Kentelle's instructions
+// (e.g. Glycolic 10 is normally DAY).
+const TIMING_OPTIONS = [
+  { value: "", label: "— Auto (from tags) —" },
+  { value: "DAY", label: "Day" },
+  { value: "NIGHT", label: "Night" },
+  { value: "DAY_NIGHT", label: "Day & Night" },
+  { value: "SPECIAL", label: "Special / Prescribed Days" },
+];
+
 const PLACEHOLDER = "/images/placeholder.svg";
 
 export default function QuizProductsAdminPage() {
@@ -35,7 +63,7 @@ export default function QuizProductsAdminPage() {
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
-  const [dirty, setDirty] = useState<Record<string, { quizStep: string; quizTagsText: string; quizAltGroup: string }>>({});
+  const [dirty, setDirty] = useState<Record<string, Dirty>>({});
 
   useEffect(() => {
     fetch("/api/admin/quiz/products")
@@ -44,6 +72,9 @@ export default function QuizProductsAdminPage() {
       .catch(() => toast("error", "Failed to load products"));
   }, []);
 
+  const bySlug = useMemo(() => new Map((products ?? []).map((p) => [p.slug, p])), [products]);
+  const byId = useMemo(() => new Map((products ?? []).map((p) => [p.id, p])), [products]);
+
   const filtered = useMemo(() => {
     if (!products) return [];
     const q = query.trim().toLowerCase();
@@ -51,38 +82,63 @@ export default function QuizProductsAdminPage() {
     return products.filter((p) => p.name.toLowerCase().includes(q));
   }, [products, query]);
 
-  const getStep = (p: QuizProduct) => dirty[p.id]?.quizStep ?? p.quizStep ?? "";
-  const getTagsText = (p: QuizProduct) => dirty[p.id]?.quizTagsText ?? p.quizTags.join(", ");
-  const getAltGroup = (p: QuizProduct) => dirty[p.id]?.quizAltGroup ?? p.quizAltGroup ?? "";
+  const defaults = (p: QuizProduct): Dirty => ({
+    quizStep: p.quizStep ?? "",
+    quizTagsText: p.quizTags.join(", "),
+    quizAltGroup: p.quizAltGroup ?? "",
+    quizRoutineTiming: p.quizRoutineTiming ?? "",
+    quizFrequency: p.quizFrequency ?? "",
+    quizPairWithText: p.quizPairWithIds.map((id) => byId.get(id)?.slug ?? id).join(", "),
+    quizBestMatchText: p.quizBestMatchTags.join(", "),
+    quizAlternativeForText: p.quizAlternativeForTags.join(", "),
+  });
 
-  const setField = (p: QuizProduct, field: "quizStep" | "quizTagsText" | "quizAltGroup", value: string) => {
+  const getField = <K extends keyof Dirty>(p: QuizProduct, field: K): Dirty[K] =>
+    (dirty[p.id]?.[field] ?? defaults(p)[field]) as Dirty[K];
+
+  const setField = (p: QuizProduct, field: keyof Dirty, value: string) => {
     setDirty((prev) => ({
       ...prev,
-      [p.id]: {
-        quizStep: field === "quizStep" ? value : (prev[p.id]?.quizStep ?? p.quizStep ?? ""),
-        quizTagsText: field === "quizTagsText" ? value : (prev[p.id]?.quizTagsText ?? p.quizTags.join(", ")),
-        quizAltGroup: field === "quizAltGroup" ? value : (prev[p.id]?.quizAltGroup ?? p.quizAltGroup ?? ""),
-      },
+      [p.id]: { ...defaults(p), ...prev[p.id], [field]: value },
     }));
   };
 
   const save = async (p: QuizProduct) => {
-    const quizStep = getStep(p);
-    const quizTags = getTagsText(p)
+    const quizStep = getField(p, "quizStep");
+    const quizTags = getField(p, "quizTagsText").split(",").map((t) => t.trim()).filter(Boolean);
+    const quizAltGroup = getField(p, "quizAltGroup").trim();
+    const quizRoutineTiming = getField(p, "quizRoutineTiming");
+    const quizFrequency = getField(p, "quizFrequency").trim();
+    const quizPairWithIds = getField(p, "quizPairWithText")
       .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const quizAltGroup = getAltGroup(p).trim();
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+      .map((slugOrId) => bySlug.get(slugOrId)?.id ?? (byId.has(slugOrId) ? slugOrId : null))
+      .filter((id): id is string => Boolean(id));
+    const quizBestMatchTags = getField(p, "quizBestMatchText").split(",").map((t) => t.trim()).filter(Boolean);
+    const quizAlternativeForTags = getField(p, "quizAlternativeForText").split(",").map((t) => t.trim()).filter(Boolean);
+
+    const patch = {
+      id: p.id,
+      quizStep: quizStep || null,
+      quizTags,
+      quizAltGroup: quizAltGroup || null,
+      quizRoutineTiming: quizRoutineTiming || null,
+      quizFrequency: quizFrequency || null,
+      quizPairWithIds,
+      quizBestMatchTags,
+      quizAlternativeForTags,
+    };
 
     setSavingId(p.id);
     try {
       const res = await fetch("/api/admin/quiz/products", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: p.id, quizStep: quizStep || null, quizTags, quizAltGroup: quizAltGroup || null }),
+        body: JSON.stringify(patch),
       });
       if (!res.ok) throw new Error();
-      setProducts((prev) => prev!.map((row) => (row.id === p.id ? { ...row, quizStep: quizStep || null, quizTags, quizAltGroup: quizAltGroup || null } : row)));
+      setProducts((prev) => prev!.map((row) => (row.id === p.id ? { ...row, ...patch } : row)));
       setDirty((prev) => {
         const next = { ...prev };
         delete next[p.id];
@@ -105,17 +161,18 @@ export default function QuizProductsAdminPage() {
         <QuizAdminTabs />
 
         <h1 className="font-heading font-bold text-2xl text-brand-navy mb-1">Quiz Product Tags</h1>
-        <p className="font-body text-sm text-brand-contrast mb-6 max-w-2xl">
-          Assign each product a routine step and safety tags so the Skin Quiz recommendation engine knows where it
-          belongs and when to exclude it. Tags are free text (e.g. <code className="text-brand-navy">retinoid</code>,{" "}
-          <code className="text-brand-navy">exfoliant-acid</code>, <code className="text-brand-navy">high-vitc</code>)
-          — they only take effect when they exactly match an <code className="text-brand-navy">excludesTag</code> on a
-          rule in{" "}
-          <Link href="/admin/quiz/safety" className="text-brand-blue underline">
-            Safety Flag Rules
-          </Link>
-          . Products sharing the same <strong>Alt Group</strong> key (e.g. <code className="text-brand-navy">am-moisturiser</code>)
-          are shown to the user as an either/or choice instead of both being prescribed.
+        <p className="font-body text-sm text-brand-contrast mb-6 max-w-3xl">
+          Assign each product a routine step, Day/Night/Special usage instruction, starting frequency and pairing so
+          the Skin Quiz prescription engine knows exactly how to present it — no code change required. Safety Tags are
+          free text (e.g. <code className="text-brand-navy">retinoid</code>, <code className="text-brand-navy">high-vitc</code>) — they
+          only take effect when they match an <code className="text-brand-navy">excludesTag</code> on a rule in{" "}
+          <Link href="/admin/quiz/safety" className="text-brand-blue underline">Safety Flag Rules</Link>. Products
+          sharing the same <strong>Alt Group</strong> key are shown as an either/or choice instead of both being
+          prescribed. <strong>Pair With</strong> takes a comma-separated list of product slugs. <strong>Best Match
+          For</strong> / <strong>Alternative For</strong> take comma-separated concern keys (e.g.{" "}
+          <code className="text-brand-navy">dryness</code>, <code className="text-brand-navy">pigment</code>) —
+          links this product straight to a concern without needing a question/option edit. Coming Soon is set on the{" "}
+          <Link href="/admin/products" className="text-brand-blue underline">main Product page</Link>.
         </p>
 
         <div className="relative max-w-sm mb-5">
@@ -137,7 +194,7 @@ export default function QuizProductsAdminPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-brand-contrast/10">
-                  {["", "Product", "Routine Step", "Safety Tags", "Alt Group", ""].map((h, i) => (
+                  {["", "Product", "Step", "Timing", "Frequency", "Safety Tags", "Alt Group", "Pair With", "Best Match For", "Alternative For", ""].map((h, i) => (
                     <th key={i} className="px-4 py-3 text-[10px] font-heading font-bold uppercase tracking-widest text-brand-contrast whitespace-nowrap">
                       {h}
                     </th>
@@ -155,7 +212,7 @@ export default function QuizProductsAdminPage() {
                     <td className="px-4 py-2.5 text-sm font-body text-brand-navy whitespace-nowrap">{p.name}</td>
                     <td className="px-4 py-2.5">
                       <select
-                        value={getStep(p)}
+                        value={getField(p, "quizStep")}
                         onChange={(e) => setField(p, "quizStep", e.target.value)}
                         className="text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
                       >
@@ -164,19 +221,62 @@ export default function QuizProductsAdminPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-2.5 min-w-[220px]">
+                    <td className="px-4 py-2.5">
+                      <select
+                        value={getField(p, "quizRoutineTiming")}
+                        onChange={(e) => setField(p, "quizRoutineTiming", e.target.value)}
+                        className="text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
+                      >
+                        {TIMING_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-2.5 min-w-[160px]">
                       <input
-                        value={getTagsText(p)}
-                        onChange={(e) => setField(p, "quizTagsText", e.target.value)}
-                        placeholder="e.g. retinoid, exfoliant-acid"
+                        value={getField(p, "quizFrequency")}
+                        onChange={(e) => setField(p, "quizFrequency", e.target.value)}
+                        placeholder="e.g. 1–2x weekly"
                         className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
                       />
                     </td>
-                    <td className="px-4 py-2.5 min-w-[140px]">
+                    <td className="px-4 py-2.5 min-w-[200px]">
                       <input
-                        value={getAltGroup(p)}
+                        value={getField(p, "quizTagsText")}
+                        onChange={(e) => setField(p, "quizTagsText", e.target.value)}
+                        placeholder="e.g. retinoid, high-vitc"
+                        className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
+                      />
+                    </td>
+                    <td className="px-4 py-2.5 min-w-[130px]">
+                      <input
+                        value={getField(p, "quizAltGroup")}
                         onChange={(e) => setField(p, "quizAltGroup", e.target.value)}
                         placeholder="e.g. am-moisturiser"
+                        className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
+                      />
+                    </td>
+                    <td className="px-4 py-2.5 min-w-[180px]">
+                      <input
+                        value={getField(p, "quizPairWithText")}
+                        onChange={(e) => setField(p, "quizPairWithText", e.target.value)}
+                        placeholder="e.g. derma-moisture-fix"
+                        className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
+                      />
+                    </td>
+                    <td className="px-4 py-2.5 min-w-[160px]">
+                      <input
+                        value={getField(p, "quizBestMatchText")}
+                        onChange={(e) => setField(p, "quizBestMatchText", e.target.value)}
+                        placeholder="e.g. dryness, pigment"
+                        className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
+                      />
+                    </td>
+                    <td className="px-4 py-2.5 min-w-[160px]">
+                      <input
+                        value={getField(p, "quizAlternativeForText")}
+                        onChange={(e) => setField(p, "quizAlternativeForText", e.target.value)}
+                        placeholder="e.g. redness"
                         className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
                       />
                     </td>
@@ -199,7 +299,7 @@ export default function QuizProductsAdminPage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-sm font-body text-brand-contrast">
+                    <td colSpan={11} className="px-4 py-8 text-center text-sm font-body text-brand-contrast">
                       No products match &quot;{query}&quot;.
                     </td>
                   </tr>

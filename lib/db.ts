@@ -599,6 +599,61 @@ async function quizSettingsUpdate(args: any) {
   return data;
 }
 
+// ─── discountTier (automatic basket-value tiers) ───────────────────────────
+
+async function discountTierFindMany(args: any = {}) {
+  let q: any = getSupabase().from("CartDiscountTier").select("*");
+  q = applyWhere(q, args.where);
+  q = applyOrder(q, args.orderBy ?? { sortOrder: "asc" });
+  const { data, error } = await q;
+  throwIfError(data, error, "discountTier.findMany");
+  return data ?? [];
+}
+
+async function discountTierCreate(args: any) {
+  const { data, error } = await getSupabase()
+    .from("CartDiscountTier")
+    .insert({ id: crypto.randomUUID(), ...args.data })
+    .select()
+    .single();
+  throwIfError(data, error, "discountTier.create");
+  return data;
+}
+
+async function discountTierUpdate(args: any) {
+  let q: any = getSupabase().from("CartDiscountTier").update(args.data);
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { data, error } = await q.select().single();
+  throwIfError(data, error, "discountTier.update");
+  return data;
+}
+
+async function discountTierDelete(args: any) {
+  let q: any = getSupabase().from("CartDiscountTier").delete();
+  for (const [k, v] of Object.entries(args.where)) q = q.eq(k, v);
+  const { error } = await q;
+  throwIfError(true, error, "discountTier.delete");
+  return { id: args.where.id };
+}
+
+// ─── discountSettings (singleton row) ──────────────────────────────────────
+
+async function discountSettingsFind() {
+  const { data, error } = await getSupabase().from("CartDiscountSettings").select("*").eq("id", "singleton").maybeSingle();
+  throwIfError(data, error, "discountSettings.find");
+  return data ?? null;
+}
+
+async function discountSettingsUpdate(args: any) {
+  const { data, error } = await getSupabase()
+    .from("CartDiscountSettings")
+    .upsert({ id: "singleton", ...args.data })
+    .select()
+    .single();
+  throwIfError(data, error, "discountSettings.update");
+  return data;
+}
+
 // ─── order ─────────────────────────────────────────────────────────────────
 
 function buildOrderSelect(include: any) {
@@ -1177,6 +1232,16 @@ export const db = {
   quizSettings: {
     find: quizSettingsFind,
     update: quizSettingsUpdate,
+  },
+  discountTier: {
+    findMany: discountTierFindMany,
+    create: discountTierCreate,
+    update: discountTierUpdate,
+    delete: discountTierDelete,
+  },
+  discountSettings: {
+    find: discountSettingsFind,
+    update: discountSettingsUpdate,
   },
   order: {
     findMany: orderFindMany,
