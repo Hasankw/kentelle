@@ -478,16 +478,18 @@ function QuestionLayout({
 }
 
 
-const STEP_ORDER = ["cleanser", "toner", "treatment", "eye", "moisturiser", "special"];
+// Per Kentelle's approved routine order — eye care always sits right after
+// toning, as step 3, ahead of treatment serums.
+const STEP_ORDER = ["cleanser", "toner", "eye", "treatment", "moisturiser", "special"];
 
 const STEP_META: Record<string, { label: string; blurb: string }> = {
   cleanser: { label: "Cleanse", blurb: "Lift away dirt, oil, SPF and makeup." },
   toner: { label: "Tone", blurb: "Rebalance and prep the skin after cleansing." },
+  eye: { label: "Eye Care", blurb: "Target the delicate eye area." },
   treatment: {
     label: "Treat",
     blurb: "Targeted serums and actives for your concerns — check each product's own Day/Night guidance below, as this varies by ingredient.",
   },
-  eye: { label: "Eye Care", blurb: "Target the delicate eye area." },
   moisturiser: { label: "Moisturise", blurb: "Lock in hydration to finish your routine." },
   special: { label: "Special Care", blurb: "Follow the specific timing noted on each product below." },
 };
@@ -738,8 +740,15 @@ function StepSection({
 
   return (
     <div className="mb-10">
-      <p className="font-heading text-[11px] font-bold uppercase tracking-widest text-brand-blue mb-1">Step {stepNumber}</p>
-      <h2 className="font-heading font-bold text-lg text-brand-navy mb-1">{meta.label}</h2>
+      <div className="flex items-center gap-3 mb-2 pb-3 border-b-2 border-brand-navy">
+        <span className="flex items-center justify-center w-9 h-9 shrink-0 rounded-full bg-brand-navy text-white font-heading font-bold text-base">
+          {stepNumber}
+        </span>
+        <div>
+          <p className="font-heading text-[10px] font-bold uppercase tracking-widest text-brand-blue leading-none mb-0.5">Step {stepNumber}</p>
+          <h2 className="font-heading font-bold text-xl text-brand-navy leading-tight">{meta.label}</h2>
+        </div>
+      </div>
       {meta.blurb && <p className="font-body text-xs text-brand-contrast mb-4 max-w-lg">{meta.blurb}</p>}
 
       {singles.length > 0 && (

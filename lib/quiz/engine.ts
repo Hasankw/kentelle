@@ -56,7 +56,9 @@ const STEP_LABELS: Record<string, string> = {
   special: "Special Care",
 };
 
-const STEP_ORDER = ["cleanser", "toner", "treatment", "eye", "moisturiser", "special"];
+// Per Kentelle's approved routine order — eye care always sits right after
+// toning, as step 3, ahead of treatment serums.
+const STEP_ORDER = ["cleanser", "toner", "eye", "treatment", "moisturiser", "special"];
 
 const TIMING_LABELS: Record<RoutineTiming, string> = {
   DAY: "Day",
@@ -351,7 +353,7 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
       return tags.includes("aha") || tags.includes("retinoid") || tags.includes("high-vitc") || tags.includes("mild-exfoliant");
     });
   if (needsSpfAdvisory) {
-    advisories.push("Finish every morning routine with a broad-spectrum SPF 30 — KENTELLE doesn't currently formulate one, so pair your actives with a sunscreen you trust.");
+    advisories.push("Finish with sunscreen when you'll be in the sun.");
   }
 
   function toPrescriptionProduct(id: string): PrescriptionProduct {
