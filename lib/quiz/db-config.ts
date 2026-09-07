@@ -33,6 +33,13 @@ export type QuizProductRef = {
   /** Category ids this product belongs to — carried onto the cart item so
    * category-scoped discount tiers apply correctly from the quiz too. */
   categoryIds: string[];
+  /** Short plain-English function statement shown on every prescription
+   * card, e.g. "Locks in moisture". Admin-editable, falls back to null. */
+  functionTag: string | null;
+  /** "Peel & Glow" or "Skin Nutrients" when the product belongs to that
+   * Kentelle category — called out on the card per the brand's request to
+   * emphasise those specific lines. Null for everything else. */
+  emphasisCategory: "Peel & Glow" | "Skin Nutrients" | null;
 };
 
 export type QuizOptionDto = {
@@ -183,6 +190,13 @@ export async function loadQuizConfig(): Promise<QuizConfig> {
       alternativeForTags: p.quizAlternativeForTags ?? [],
       comingSoon: !!p.comingSoon,
       categoryIds: (p.categories ?? []).map((c: any) => c.id),
+      functionTag: p.quizFunctionTag ?? null,
+      emphasisCategory:
+        p.quizEmphasisCategory === "PEEL_AND_GLOW"
+          ? "Peel & Glow"
+          : p.quizEmphasisCategory === "SKIN_NUTRIENTS"
+            ? "Skin Nutrients"
+            : null,
     };
   }
 

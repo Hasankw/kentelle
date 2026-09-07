@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, Check } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import QuizProgressBar from "@/components/quiz/QuizHeader";
 import QuizOptionCard from "@/components/quiz/QuizOptionCard";
 import { formatPrice } from "@/lib/utils";
@@ -13,11 +13,11 @@ import { useCartStore } from "@/store/cart";
 import {
   resolveRoutine,
   type RoutineResult,
-  type RoutineGroup,
   type PrescriptionEntry,
   type PrescriptionProduct,
 } from "@/lib/quiz/engine";
 import type { QuizConfig, QuizQuestionDto } from "@/lib/quiz/db-config";
+import { tierDiscountAmount, nextTierMessage, type DiscountTier } from "@/lib/discount-tiers";
 
 const RESULT_STORAGE_KEY = "kentelle-quiz-result";
 const PLACEHOLDER_IMG = "/images/placeholder.svg";
@@ -478,6 +478,25 @@ function QuestionLayout({
 }
 
 
+const STEP_ORDER = ["cleanser", "toner", "treatment", "eye", "moisturiser", "special"];
+
+const STEP_META: Record<string, { label: string; blurb: string }> = {
+  cleanser: { label: "Cleanse", blurb: "Lift away dirt, oil, SPF and makeup." },
+  toner: { label: "Tone", blurb: "Rebalance and prep the skin after cleansing." },
+  treatment: {
+    label: "Treat",
+    blurb: "Targeted serums and actives for your concerns — check each product's own Day/Night guidance below, as this varies by ingredient.",
+  },
+  eye: { label: "Eye Care", blurb: "Target the delicate eye area." },
+  moisturiser: { label: "Moisturise", blurb: "Lock in hydration to finish your routine." },
+  special: { label: "Special Care", blurb: "Follow the specific timing noted on each product below." },
+};
+
+function entryStep(entry: PrescriptionEntry): string {
+  const p = entry.kind === "product" ? entry.product : entry.options[0];
+  return p?.step ?? "special";
+}
+
 function ResultsView({
   name,
   result,
@@ -497,6 +516,7 @@ function ResultsView({
 
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [choiceSelection, setChoiceSelection] = useState<Record<string, string>>({});
+  const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([]);
 
   useEffect(() => {
     const sel: Record<string, boolean> = {};
@@ -511,21 +531,38 @@ function ResultsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result]);
 
+  useEffect(() => {
+    fetch("/api/discount-tiers")
+      .then((r) => r.json())
+      .then((d) => setDiscountTiers(d.tiers ?? []))
+      .catch(() => {});
+  }, []);
+
   const entryProduct = (entry: PrescriptionEntry): PrescriptionProduct | undefined =>
     entry.kind === "product"
       ? entry.product
       : entry.options.find((o) => o.id === choiceSelection[entry.id]) ?? entry.options[0];
 
-  const entriesById = useMemo(() => new Map(prescription.map((e) => [e.id, e])), [prescription]);
-
   const selectedEntries = prescription.filter((e) => selected[e.id] !== false);
   const selectedProducts = selectedEntries.map(entryProduct).filter((p): p is PrescriptionProduct => Boolean(p));
   const total = selectedProducts.reduce((sum, p) => sum + (p.salePrice ?? p.price), 0);
 
-  const needsTitration = prescription.some((e) => {
+  const discountableItems = useMemo(
+    () => selectedProducts.map((p) => ({ price: p.salePrice ?? p.price, quantity: 1, categoryIds: p.categoryIds })),
+    [selectedProducts],
+  );
+  const discountAmount = tierDiscountAmount(discountableItems, discountTiers);
+  const finalTotal = Math.max(total - discountAmount, 0);
+  const tierMessage = nextTierMessage(discountableItems, discountTiers);
+
+  const hasSkinNutrients = prescription.some((e) => {
     const p = entryProduct(e);
-    return p ? p.frequency.toLowerCase().includes("weekly") || p.frequency.toLowerCase().includes("prescribed") : false;
+    return p?.emphasisCategory === "Skin Nutrients";
   });
+
+  const stepSections = STEP_ORDER
+    .map((step) => ({ step, entries: prescription.filter((e) => entryStep(e) === step) }))
+    .filter((s) => s.entries.length > 0);
 
   const addRoutineToCart = () => {
     for (const p of selectedProducts) {
@@ -537,23 +574,25 @@ function ResultsView({
   return (
     <div className="flex flex-col min-h-screen bg-brand-bg">
       <main className="flex-grow pt-12 pb-20 px-5">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {isPreview && (
-            <div className="mb-8 bg-amber-100 border border-amber-400 rounded p-3 text-center">
+            <div className="mb-8 max-w-3xl mx-auto bg-amber-100 border border-amber-400 rounded p-3 text-center">
               <p className="font-heading font-bold text-[11px] uppercase tracking-widest text-amber-800">
                 Admin Preview / Test Mode — this result is not saved and no email is sent
               </p>
             </div>
           )}
-          <div className="text-center mb-10">
+          <div className="text-center mb-10 max-w-3xl mx-auto">
             <p className="font-heading text-xs font-bold tracking-[0.3em] uppercase text-brand-accent mb-3">
               {name ? `${name}'s Skin Profile` : "Your Skin Profile"}
             </p>
             <h1 className="font-heading font-bold text-2xl md:text-3xl text-brand-navy mb-3">
-              Your Personalised Skin Profile
+              {hasRoutine ? `Your ${stepSections.length}-Step Kentelle Routine` : "Your Personalised Skin Profile"}
             </h1>
             <p className="font-body text-sm text-brand-contrast max-w-md mx-auto">
-              Here&apos;s what your answers told us, and the KENTELLE prescription we&apos;ve built around it.
+              {hasRoutine
+                ? "Based on your answers, here's the routine we recommend — deselect anything you'd rather leave out, then add it all to your cart."
+                : "Here's what your answers told us, and the KENTELLE prescription we've built around it."}
             </p>
           </div>
 
@@ -576,97 +615,86 @@ function ResultsView({
           )}
 
           {hasRoutine ? (
-            <>
-              {/* Your Prescribed Kentelle Products — the master list, one line per product, ever */}
-              <div className="mb-12 max-w-3xl mx-auto">
-                <h2 className="text-center font-heading font-bold text-xl text-brand-navy mb-2">Your Prescribed Kentelle Products</h2>
-                <p className="text-center font-body text-xs text-brand-contrast mb-8 max-w-md mx-auto">
-                  Each product appears once, even if it&apos;s part of both your Day and Night routine. Deselect anything you&apos;d rather leave out.
-                </p>
-                <div className="space-y-4">
-                  {prescription.map((entry) => (
-                    <PrescriptionCard
-                      key={entry.id}
-                      entry={entry}
-                      checked={selected[entry.id] !== false}
-                      onToggle={() => setSelected((s) => ({ ...s, [entry.id]: s[entry.id] === false }))}
-                      selectedOptionId={choiceSelection[entry.id]}
-                      onSelectOption={(id) => setChoiceSelection((s) => ({ ...s, [entry.id]: id }))}
-                    />
-                  ))}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 lg:gap-10 items-start mb-10">
+              {/* Steps */}
+              <div>
+                {stepSections.map(({ step, entries }, i) => (
+                  <StepSection
+                    key={step}
+                    stepNumber={i + 1}
+                    stepKey={step}
+                    entries={entries}
+                    selected={selected}
+                    onToggle={(id) => setSelected((s) => ({ ...s, [id]: s[id] === false }))}
+                    choiceSelection={choiceSelection}
+                    onSelectOption={(entryId, optionId) => setChoiceSelection((s) => ({ ...s, [entryId]: optionId }))}
+                  />
+                ))}
+
+                {/* Layering & Usage Guidelines */}
+                <div className="mb-10 bg-white border border-brand-contrast/10 rounded p-6">
+                  <p className="font-heading font-bold text-[10px] uppercase tracking-widest text-brand-blue mb-3">Layering &amp; Usage Guidelines</p>
+                  <ul className="space-y-2 list-disc pl-4">
+                    <li className="font-body text-xs text-brand-contrast leading-relaxed">
+                      Every routine should include a moisture step — <strong className="text-brand-navy">Derma Moisture Fix</strong> or{" "}
+                      <strong className="text-brand-navy">Hyaluron Booster Capsules</strong> is essential to lock in your results.
+                    </li>
+                    <li className="font-body text-xs text-brand-contrast leading-relaxed">
+                      Routines are capped at a maximum of three treatment layers to avoid overloading your skin — we&apos;ve already applied this above.
+                    </li>
+                    {hasSkinNutrients && (
+                      <li className="font-body text-xs text-brand-contrast leading-relaxed">
+                        Your Skin Nutrients product (peptides, PDRN, collagen or exosomes) can be used every morning, every night, or on alternate days — choose
+                        whichever rhythm suits you to get its full benefit.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
+                {/* Advisories (SPF etc.) */}
+                {result.advisories.length > 0 && (
+                  <div className="bg-brand-pink border-l-2 border-brand-accent rounded p-5 mb-6 space-y-2">
+                    {result.advisories.map((n, i) => (
+                      <p key={i} className="font-body text-xs text-brand-navy leading-relaxed">{n}</p>
+                    ))}
+                  </div>
+                )}
+                {result.notes.length > 0 && (
+                  <div className="bg-white border border-brand-contrast/10 rounded p-5 mb-10 space-y-2">
+                    {result.notes.map((n, i) => (
+                      <p key={i} className="font-body text-xs text-brand-contrast leading-relaxed">{n}</p>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-brand-contrast/10 rounded p-6">
+                  <p className="font-body text-sm text-brand-navy text-center sm:text-left">
+                    Prefer expert guidance? Find a skin professional near you for a tailored, in-person consultation.
+                  </p>
+                  <a
+                    href="tel:0892280191"
+                    className="shrink-0 px-5 py-2.5 border-2 border-brand-navy text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-navy hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    Call (08) 9228 0191
+                  </a>
                 </div>
               </div>
 
-              {/* Day / Night routine — instructions only, no extra basket items */}
-              <RoutineInstructions title="Your Day Routine" groups={result.am} entriesById={entriesById} entryProduct={entryProduct} />
-              <RoutineInstructions title="Your Night Routine" groups={result.pm} entriesById={entriesById} entryProduct={entryProduct} />
-            </>
+              {/* Sidebar — sticky on desktop, drops below the steps on mobile */}
+              <RoutineSidebar
+                selectedProducts={selectedProducts}
+                total={total}
+                discountAmount={discountAmount}
+                finalTotal={finalTotal}
+                tierMessage={tierMessage}
+                onAddToCart={addRoutineToCart}
+              />
+            </div>
           ) : (
             <div className="max-w-3xl mx-auto mb-10 bg-brand-pink border-l-2 border-brand-accent rounded p-6 text-center">
               <p className="font-body text-sm text-brand-navy">
                 We&apos;re finalising your product matches by hand — our team will follow up shortly with your personalised picks. In the meantime, feel free to browse the full range below.
               </p>
-            </div>
-          )}
-
-          {/* Advisories (SPF etc.) */}
-          {result.advisories.length > 0 && (
-            <div className="bg-brand-pink border-l-2 border-brand-accent rounded p-5 mb-6 space-y-2 max-w-3xl mx-auto">
-              {result.advisories.map((n, i) => (
-                <p key={i} className="font-body text-xs text-brand-navy leading-relaxed">{n}</p>
-              ))}
-            </div>
-          )}
-          {result.notes.length > 0 && (
-            <div className="bg-white border border-brand-contrast/10 rounded p-5 mb-10 space-y-2 max-w-3xl mx-auto">
-              {result.notes.map((n, i) => (
-                <p key={i} className="font-body text-xs text-brand-contrast leading-relaxed">{n}</p>
-              ))}
-            </div>
-          )}
-
-          {/* How To Introduce Your Routine */}
-          {hasRoutine && (
-            <div className="max-w-3xl mx-auto mb-10 bg-white border border-brand-contrast/10 rounded p-6">
-              <p className="font-heading font-bold text-[10px] uppercase tracking-widest text-brand-blue mb-2">How To Introduce Your Routine</p>
-              <p className="font-body text-xs text-brand-contrast leading-relaxed">
-                {needsTitration
-                  ? "Start any prescribed treatment at its noted frequency and build up gradually as your skin adjusts — introduce one new active at a time rather than all at once."
-                  : "Introduce each new product one at a time over the first couple of weeks so you can see how your skin responds before layering in the next."}
-              </p>
-            </div>
-          )}
-
-          {/* Your Kentelle Prescription — selectable summary before basket */}
-          {hasRoutine && (
-            <div className="max-w-3xl mx-auto mb-10 bg-white border border-brand-contrast/10 rounded p-6">
-              <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-5">Your Kentelle Prescription</p>
-              <div className="space-y-2.5 mb-6">
-                {selectedProducts.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-3 text-sm font-body">
-                    <span className="flex items-center gap-2 text-brand-navy">
-                      <Check size={14} className="text-brand-blue shrink-0" />
-                      {p.name} — {p.timingLabel}
-                    </span>
-                    <span className="text-brand-contrast whitespace-nowrap">{formatPrice(p.salePrice ?? p.price)}</span>
-                  </div>
-                ))}
-                {selectedProducts.length === 0 && (
-                  <p className="font-body text-xs text-brand-contrast">Select at least one product above to build your prescription.</p>
-                )}
-              </div>
-              <div className="flex items-center justify-between border-t border-brand-contrast/15 pt-4 mb-6">
-                <span className="font-heading font-bold text-xs uppercase tracking-widest text-brand-navy">Product Total</span>
-                <span className="font-heading font-bold text-lg text-brand-navy">{formatPrice(total)}</span>
-              </div>
-              <button
-                type="button"
-                onClick={addRoutineToCart}
-                disabled={selectedProducts.length === 0}
-                className="w-full py-4 bg-brand-accent text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Add My Prescribed Routine To Cart
-              </button>
             </div>
           )}
 
@@ -679,171 +707,209 @@ function ResultsView({
               Retake the Quiz
             </Link>
           </div>
-
-          {/* Need Professional Advice? */}
-          <div className="max-w-3xl mx-auto text-center bg-brand-navy rounded p-8">
-            <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-white mb-2">Need Professional Advice?</p>
-            <p className="font-body text-xs text-brand-white/70 mb-5 max-w-sm mx-auto">
-              Book a personalised consultation with our Beaubelle-trained team in Perth.
-            </p>
-            <a
-              href="tel:0892280191"
-              className="inline-block px-6 py-3 bg-brand-white text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent transition-colors"
-            >
-              Call (08) 9228 0191
-            </a>
-          </div>
         </div>
       </main>
     </div>
   );
 }
 
-// A single line of "Your Prescribed Kentelle Products" — a product, or an
-// either/or choice slot (customer picks one option, but it's still one
-// prescription line / one basket item either way).
-function PrescriptionCard({
-  entry,
-  checked,
+// One numbered step of the routine (Cleanse, Tone, Treat…) — a short blurb
+// plus a grid of prescription cards for whatever's prescribed at that step.
+function StepSection({
+  stepNumber,
+  stepKey,
+  entries,
+  selected,
   onToggle,
-  selectedOptionId,
+  choiceSelection,
   onSelectOption,
 }: {
-  entry: PrescriptionEntry;
-  checked: boolean;
-  onToggle: () => void;
-  selectedOptionId?: string;
-  onSelectOption: (id: string) => void;
+  stepNumber: number;
+  stepKey: string;
+  entries: PrescriptionEntry[];
+  selected: Record<string, boolean>;
+  onToggle: (entryId: string) => void;
+  choiceSelection: Record<string, string>;
+  onSelectOption: (entryId: string, optionId: string) => void;
 }) {
-  const options = entry.kind === "product" ? [entry.product] : entry.options;
-  const active = entry.kind === "product" ? entry.product : options.find((o) => o.id === selectedOptionId) ?? options[0];
-  if (!active) return null;
-  const image = active.images[0] || PLACEHOLDER_IMG;
-  const discounted = active.salePrice != null && active.salePrice < active.price;
+  const meta = STEP_META[stepKey] ?? { label: stepKey, blurb: "" };
+  const singles = entries.filter((e) => e.kind === "product");
+  const choices = entries.filter((e) => e.kind === "choice");
 
   return (
-    <div className={`bg-white border rounded p-4 sm:p-5 flex flex-col sm:flex-row gap-4 transition-opacity ${checked ? "border-brand-contrast/15" : "border-brand-contrast/10 opacity-50"}`}>
-      <label className="flex items-start gap-3 sm:gap-4 flex-1 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={onToggle}
-          className="mt-1.5 w-4 h-4 accent-brand-navy shrink-0"
-        />
-        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded overflow-hidden bg-brand-bg shrink-0">
-          <Image src={image} alt={active.name} fill className="object-cover" unoptimized={image.startsWith("http")} />
+    <div className="mb-10">
+      <p className="font-heading text-[11px] font-bold uppercase tracking-widest text-brand-blue mb-1">Step {stepNumber}</p>
+      <h2 className="font-heading font-bold text-lg text-brand-navy mb-1">{meta.label}</h2>
+      {meta.blurb && <p className="font-body text-xs text-brand-contrast mb-4 max-w-lg">{meta.blurb}</p>}
+
+      {singles.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+          {singles.map((entry) => (
+            <PrescriptionCard
+              key={entry.id}
+              product={(entry as Extract<PrescriptionEntry, { kind: "product" }>).product}
+              checked={selected[entry.id] !== false}
+              onToggle={() => onToggle(entry.id)}
+            />
+          ))}
         </div>
-        <div className="flex-1 min-w-0">
-          {entry.kind === "choice" && (
-            <p className="font-body text-[10px] uppercase tracking-wider text-brand-contrast mb-1">Choose one</p>
-          )}
-          {entry.kind === "choice" ? (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-1">
-              {options.map((o) => (
-                <label
-                  key={o.id}
-                  className="flex items-center gap-1.5 font-heading font-bold text-sm text-brand-navy cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <input
-                    type="radio"
-                    name={`choice-${entry.id}`}
-                    checked={o.id === active.id}
-                    onChange={() => onSelectOption(o.id)}
-                    className="accent-brand-navy"
-                  />
-                  {o.name}
-                </label>
+      )}
+
+      {choices.map((entry) => {
+        if (entry.kind !== "choice") return null;
+        const activeId = choiceSelection[entry.id] ?? entry.options[0]?.id;
+        return (
+          <div key={entry.id} className="mb-4">
+            <p className="font-body text-[10px] uppercase tracking-wider text-brand-contrast mb-2">Choose one</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {entry.options.map((option) => (
+                <PrescriptionCard
+                  key={option.id}
+                  product={option}
+                  checked={selected[entry.id] !== false}
+                  onToggle={() => onToggle(entry.id)}
+                  radioGroup={entry.id}
+                  radioChecked={option.id === activeId}
+                  onSelectRadio={() => onSelectOption(entry.id, option.id)}
+                />
               ))}
             </div>
-          ) : (
-            <p className="font-heading font-bold text-sm text-brand-navy mb-1">{active.name}</p>
-          )}
-          <p className="font-body text-xs text-brand-contrast leading-relaxed mb-2">{active.reason}</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
-            <span className="font-body text-[11px] text-brand-navy">
-              <span className="font-heading font-bold uppercase tracking-wide text-brand-blue">When: </span>
-              {active.timingLabel}
-            </span>
-            <span className="font-body text-[11px] text-brand-navy">
-              <span className="font-heading font-bold uppercase tracking-wide text-brand-blue">Frequency: </span>
-              {active.frequency}
-            </span>
           </div>
-          {active.pairWith.length > 0 && (
-            <p className="font-body text-[11px] text-brand-contrast mb-2">
-              <span className="font-heading font-bold uppercase tracking-wide text-brand-blue">Pair with: </span>
-              {active.pairWith.map((p) => p.name).join(", ")}
-            </p>
-          )}
-          <div className="flex items-center gap-2 mb-2">
-            {discounted ? (
-              <>
-                <span className="font-body text-sm font-bold text-brand-blue">{formatPrice(active.salePrice!)}</span>
-                <span className="font-body text-xs text-brand-contrast line-through">{formatPrice(active.price)}</span>
-              </>
-            ) : (
-              <span className="font-body text-sm text-brand-navy">{formatPrice(active.price)}</span>
-            )}
-          </div>
-        </div>
-      </label>
-      <div className="shrink-0 sm:self-center">
-        <Link
-          href={`/products/${active.slug}`}
-          className="inline-block text-center px-4 py-2.5 border border-brand-navy text-brand-navy font-heading font-bold text-[10px] uppercase tracking-widest rounded hover:bg-brand-navy hover:text-white transition-colors whitespace-nowrap"
-        >
-          View Product Details
-        </Link>
-      </div>
+        );
+      })}
     </div>
   );
 }
 
-// Day/Night routine — usage instructions only. Renders the application
-// order by referencing the master prescription above; never introduces a
-// second copy of a product or its own add-to-cart action.
-function RoutineInstructions({
-  title,
-  groups,
-  entriesById,
-  entryProduct,
+// A single prescription card in the step grid — image with a select
+// checkbox (or a "choose one" radio for either/or options) overlaid,
+// short function tag, category emphasis, price and a link to the real
+// product page.
+function PrescriptionCard({
+  product,
+  checked,
+  onToggle,
+  radioGroup,
+  radioChecked,
+  onSelectRadio,
 }: {
-  title: string;
-  groups: RoutineGroup[];
-  entriesById: Map<string, PrescriptionEntry>;
-  entryProduct: (entry: PrescriptionEntry) => PrescriptionProduct | undefined;
+  product: PrescriptionProduct;
+  checked: boolean;
+  onToggle: () => void;
+  radioGroup?: string;
+  radioChecked?: boolean;
+  onSelectRadio?: () => void;
 }) {
-  if (!groups.length) return null;
+  const image = product.images[0] || PLACEHOLDER_IMG;
+  const discounted = product.salePrice != null && product.salePrice < product.price;
+  const isChoice = Boolean(radioGroup);
+
   return (
-    <div className="mb-12 max-w-3xl mx-auto">
-      <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-6 pb-2 border-b border-brand-contrast/15">{title}</p>
-      <ol className="space-y-3">
-        {groups.flatMap((g) =>
-          g.refs.map((ref, i) => {
-            const entry = entriesById.get(ref.entryId);
-            const product = entry ? entryProduct(entry) : undefined;
-            if (!entry || !product) return null;
-            return (
-              <li key={`${g.step}-${ref.entryId}`} className="flex items-center gap-4">
-                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-brand-navy text-white font-heading font-bold text-[11px] shrink-0">
-                  {i + 1}
-                </span>
-                <div className="relative w-11 h-11 rounded overflow-hidden bg-brand-bg shrink-0">
-                  <Image src={product.images[0] || PLACEHOLDER_IMG} alt={product.name} fill className="object-cover" unoptimized={(product.images[0] || "").startsWith("http")} />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-body text-[10px] uppercase tracking-wider text-brand-contrast">{g.label}</p>
-                  <p className="font-heading font-bold text-sm text-brand-navy truncate">
-                    {product.name}
-                    {entry.kind === "choice" && <span className="font-body font-normal text-brand-contrast"> (as selected above)</span>}
-                  </p>
-                </div>
-              </li>
-            );
-          }),
+    <div className={`border rounded overflow-hidden bg-white transition-opacity ${checked ? "border-brand-contrast/15" : "border-brand-contrast/10 opacity-50"}`}>
+      <label className="block cursor-pointer">
+        <div className="relative aspect-square bg-brand-bg">
+          <Image src={image} alt={product.name} fill className="object-cover" unoptimized={image.startsWith("http")} />
+          <input
+            type={isChoice ? "radio" : "checkbox"}
+            name={radioGroup}
+            checked={isChoice ? Boolean(radioChecked) : checked}
+            onChange={isChoice ? onSelectRadio : onToggle}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-2 left-2 w-4 h-4 accent-brand-navy"
+          />
+          {product.emphasisCategory && (
+            <span className="absolute top-2 right-2 bg-brand-navy text-white text-[9px] font-heading font-bold uppercase tracking-wide px-1.5 py-0.5 rounded">
+              {product.emphasisCategory}
+            </span>
+          )}
+        </div>
+        <div className="p-3" onClick={isChoice ? onSelectRadio : onToggle}>
+          <p className="font-body text-[9px] uppercase tracking-widest text-brand-contrast/70 mb-1">{product.timingLabel}</p>
+          <p className="font-heading font-bold text-sm text-brand-navy leading-tight mb-1">{product.name}</p>
+          {product.functionTag && (
+            <p className="font-body text-xs text-brand-contrast leading-snug mb-1.5">{product.functionTag}</p>
+          )}
+          <Link
+            href={`/products/${product.slug}`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-block font-body text-[11px] text-brand-blue underline underline-offset-2 mb-1.5"
+          >
+            View Product Details
+          </Link>
+          <div className="flex items-center gap-2">
+            {discounted ? (
+              <>
+                <span className="font-body text-sm font-bold text-brand-blue">{formatPrice(product.salePrice!)}</span>
+                <span className="font-body text-xs text-brand-contrast line-through">{formatPrice(product.price)}</span>
+              </>
+            ) : (
+              <span className="font-body text-sm text-brand-navy">{formatPrice(product.price)}</span>
+            )}
+          </div>
+        </div>
+      </label>
+    </div>
+  );
+}
+
+// Sticky-on-desktop / drops-below-steps-on-mobile cart summary — the one
+// place the routine total, automatic discount and "add all" action live.
+function RoutineSidebar({
+  selectedProducts,
+  total,
+  discountAmount,
+  finalTotal,
+  tierMessage,
+  onAddToCart,
+}: {
+  selectedProducts: PrescriptionProduct[];
+  total: number;
+  discountAmount: number;
+  finalTotal: number;
+  tierMessage: string | null;
+  onAddToCart: () => void;
+}) {
+  return (
+    <div className="bg-white border border-brand-contrast/15 rounded p-6 lg:sticky lg:top-24">
+      <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-4">Your Routine</p>
+      <div className="space-y-2 mb-4 max-h-72 overflow-y-auto pr-1">
+        {selectedProducts.map((p) => (
+          <div key={p.id} className="flex items-start justify-between gap-3 text-xs font-body">
+            <span className="text-brand-navy">{p.name}</span>
+            <span className="text-brand-contrast whitespace-nowrap">{formatPrice(p.salePrice ?? p.price)}</span>
+          </div>
+        ))}
+        {selectedProducts.length === 0 && (
+          <p className="font-body text-xs text-brand-contrast">Select products above to build your routine.</p>
         )}
-      </ol>
+      </div>
+      <div className="border-t border-brand-contrast/15 pt-3 space-y-1.5 mb-4">
+        <div className="flex items-center justify-between text-xs font-body text-brand-contrast">
+          <span>Subtotal</span>
+          <span>{formatPrice(total)}</span>
+        </div>
+        {discountAmount > 0 && (
+          <div className="flex items-center justify-between text-xs font-body text-green-700">
+            <span>Routine saving</span>
+            <span>−{formatPrice(discountAmount)}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between font-heading font-bold text-sm text-brand-navy pt-1">
+          <span>Total</span>
+          <span>{formatPrice(finalTotal)}</span>
+        </div>
+      </div>
+      {tierMessage && (
+        <p className="font-body text-[11px] text-brand-blue mb-4 leading-relaxed">{tierMessage}</p>
+      )}
+      <button
+        type="button"
+        onClick={onAddToCart}
+        disabled={selectedProducts.length === 0}
+        className="w-full py-3.5 bg-brand-accent text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Add All To Cart ({selectedProducts.length})
+      </button>
     </div>
   );
 }

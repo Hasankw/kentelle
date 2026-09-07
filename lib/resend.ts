@@ -582,8 +582,9 @@ function quizProductCardHtml(product: PrescriptionProduct, choice: boolean, pair
         </a>
       </td>
       <td style="padding:20px 22px;vertical-align:middle;font-family:Arial,sans-serif;">
-        <p style="margin:0 0 7px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">${escapeHtml(EMAIL_STEP_LABELS[product.step ?? "special"] ?? "Special Care")} &nbsp;&middot;&nbsp; ${escapeHtml(product.timingLabel)}${choice ? " &nbsp;&middot;&nbsp; Choose one" : ""}</p>
-        <h3 style="margin:0 0 9px;font:normal 21px Georgia,'Times New Roman',serif;line-height:1.18;color:#3A3240;">${escapeHtml(product.name)}</h3>
+        <p style="margin:0 0 7px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">${escapeHtml(product.timingLabel)}${choice ? " &nbsp;&middot;&nbsp; Choose one" : ""}${product.emphasisCategory ? ` &nbsp;&middot;&nbsp; ${escapeHtml(product.emphasisCategory)}` : ""}</p>
+        <h3 style="margin:0 0 6px;font:normal 21px Georgia,'Times New Roman',serif;line-height:1.18;color:#3A3240;">${escapeHtml(product.name)}</h3>
+        ${product.functionTag ? `<p style="margin:0 0 9px;font-size:12px;font-weight:bold;line-height:1.4;color:#3A3240;font-family:Arial,sans-serif;">${escapeHtml(product.functionTag)}</p>` : ""}
         ${product.reason ? `<p style="margin:0 0 9px;font-size:11px;line-height:1.55;color:#655C62;font-family:Arial,sans-serif;"><strong style="color:#3A3240;">Why we chose this:</strong> ${escapeHtml(product.reason)}</p>` : ""}
         ${product.frequency ? `<p style="margin:0 0 6px;font-size:10px;font-weight:bold;letter-spacing:0.6px;text-transform:uppercase;color:#9B8FA0;">${escapeHtml(product.frequency)}</p>` : ""}
         ${pairLabel ? `<p style="margin:0 0 12px;font-size:11px;color:#655C62;font-family:Arial,sans-serif;"><strong style="color:#3A3240;">Pair with:</strong> ${escapeHtml(pairLabel)}</p>` : ""}
@@ -600,18 +601,25 @@ function quizProductCardHtml(product: PrescriptionProduct, choice: boolean, pair
 }
 
 // "Your Prescribed Kentelle Products" — the master list, one card per
-// product ever, even if it's used Day & Night.
+// product ever, even if it's used Day & Night. Grouped under a heading for
+// each step (Cleanse, Tone, Treat…) in application order, mirroring the
+// on-site step-by-step layout.
 function quizPrescriptionSectionHtml(prescription: PrescriptionEntry[]) {
   if (!prescription.length) return "";
+  let lastStep: string | null = null;
   const cardsHtml = prescription
     .map((entry) => {
-      if (entry.kind === "product") {
-        const pairLabel = entry.product.pairWith.map((p) => p.name).join(", ") || undefined;
-        return quizProductCardHtml(entry.product, false, pairLabel);
-      }
-      return entry.options
-        .map((p) => quizProductCardHtml(p, true, p.pairWith.map((x) => x.name).join(", ") || undefined))
-        .join("");
+      const step = (entry.kind === "product" ? entry.product.step : entry.options[0]?.step) ?? "special";
+      const stepHeading =
+        step !== lastStep
+          ? `<p style="margin:${lastStep ? "22px" : "0"} 0 10px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">${escapeHtml(EMAIL_STEP_LABELS[step] ?? step)}</p>`
+          : "";
+      lastStep = step;
+      const body =
+        entry.kind === "product"
+          ? quizProductCardHtml(entry.product, false, entry.product.pairWith.map((p) => p.name).join(", ") || undefined)
+          : entry.options.map((p) => quizProductCardHtml(p, true, p.pairWith.map((x) => x.name).join(", ") || undefined)).join("");
+      return stepHeading + body;
     })
     .join("");
   return `<div style="margin-bottom:30px;">
@@ -620,27 +628,18 @@ function quizPrescriptionSectionHtml(prescription: PrescriptionEntry[]) {
   </div>`;
 }
 
-// Day/Night routine — instructions only, referencing the prescription
-// above by name and application order. No product data or price is
-// repeated here, so nothing here can be mistaken for a second basket item.
-function quizRoutineInstructionsHtml(heading: string, groups: RoutineResult["am"], byId: Map<string, PrescriptionEntry>) {
-  if (!groups.length) return "";
-  const rows = groups
-    .flatMap((group) =>
-      group.refs.map((ref) => {
-        const entry = byId.get(ref.entryId);
-        if (!entry) return "";
-        const names = entry.kind === "product" ? entry.product.name : entry.options.map((o) => o.name).join(" or ");
-        return `<tr>
-          <td style="padding:9px 0;border-bottom:1px solid #E8DEDA;font:700 9px Arial,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:#627A82;width:38%;">${escapeHtml(EMAIL_STEP_LABELS[group.step] ?? group.step)}</td>
-          <td style="padding:9px 0 9px 14px;border-bottom:1px solid #E8DEDA;font:13px Arial,sans-serif;color:#3A3240;">${escapeHtml(names)}</td>
-        </tr>`;
-      }),
-    )
-    .join("");
-  return `<div style="margin-bottom:22px;">
-    <p style="margin:0 0 10px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">${escapeHtml(heading)}</p>
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">${rows}</table>
+// General layering/usage rules — always shown for a real routine, with one
+// extra line only when a Skin Nutrients product was actually prescribed.
+function quizLayeringGuidanceHtml(hasSkinNutrients: boolean) {
+  return `<div style="background:#FBF8F4;border:1px solid #E8DEDA;padding:18px 20px;margin-top:8px;">
+    <p style="margin:0 0 8px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">Layering &amp; Usage Guidelines</p>
+    <p style="margin:0 0 6px;font-size:12px;line-height:1.6;color:#3A3240;font-family:Arial,sans-serif;">Every routine should include a moisture step — <strong>Derma Moisture Fix</strong> or <strong>Hyaluron Booster Capsules</strong> is essential to lock in your results.</p>
+    <p style="margin:0 0 6px;font-size:12px;line-height:1.6;color:#3A3240;font-family:Arial,sans-serif;">Routines are capped at a maximum of three treatment layers to avoid overloading your skin — we've already applied this above.</p>
+    ${
+      hasSkinNutrients
+        ? `<p style="margin:0;font-size:12px;line-height:1.6;color:#3A3240;font-family:Arial,sans-serif;">Your Skin Nutrients product (peptides, PDRN, collagen or exosomes) can be used every morning, every night, or on alternate days — choose whichever rhythm suits you to get its full benefit.</p>`
+        : ""
+    }
   </div>`;
 }
 
@@ -654,8 +653,8 @@ export async function sendQuizResultEmail(
 
   const prescription = routine.prescription ?? [];
   const uniqueProducts = prescription.flatMap((e) => (e.kind === "product" ? [e.product] : e.options));
-  const entriesById = new Map(prescription.map((e) => [e.id, e]));
   const hasRoutine = prescription.length > 0 && !routine.mappingError;
+  const hasSkinNutrients = uniqueProducts.some((p) => p.emphasisCategory === "Skin Nutrients");
 
   const skinProfileRows: QuizEmailProfileRow[] = [];
   if (routine.skinProfile?.primaryConcern) {
@@ -680,25 +679,12 @@ export async function sendQuizResultEmail(
     : "";
 
   const routineHtml = hasRoutine
-    ? quizPrescriptionSectionHtml(prescription) +
-      quizRoutineInstructionsHtml("Your Day Routine", routine.am, entriesById) +
-      quizRoutineInstructionsHtml("Your Night Routine", routine.pm, entriesById)
+    ? quizPrescriptionSectionHtml(prescription)
     : `<div style="padding:18px 20px;background:#F5EEF3;border-left:3px solid #D4A5B5;font:13px Arial,sans-serif;line-height:1.6;color:#3A3240;text-align:left;">
         We're finishing up your product matches by hand — a member of our team will follow up shortly with your personalised picks. In the meantime, feel free to browse the full KENTELLE range or book a consultation below.
       </div>`;
 
-  const introduceHtml = hasRoutine
-    ? `<div style="background:#FBF8F4;border:1px solid #E8DEDA;padding:18px 20px;margin-top:8px;">
-        <p style="margin:0 0 6px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">How To Introduce Your Routine</p>
-        <p style="margin:0;font-size:12px;line-height:1.6;color:#3A3240;font-family:Arial,sans-serif;">
-          ${
-            uniqueProducts.some((p) => p.frequency.toLowerCase().includes("weekly") || p.frequency.toLowerCase().includes("prescribed"))
-              ? "Start any active treatment gradually and build up as your skin adjusts — introduce one new active at a time rather than all at once, following the frequency noted on each product above."
-              : "Introduce each new product one at a time over the first couple of weeks so you can see how your skin responds before layering in the next."
-          }
-        </p>
-      </div>`
-    : "";
+  const introduceHtml = hasRoutine ? quizLayeringGuidanceHtml(hasSkinNutrients) : "";
 
   const advisoriesAndNotes = [...(routine.advisories ?? []), ...routine.notes];
   const notesHtml = advisoriesAndNotes.length

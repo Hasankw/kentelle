@@ -54,6 +54,15 @@ model Product {
   // Concern keys this product should be offered as a lower-priority
   // alternative for, rather than the best match.
   quizAlternativeForTags String[] @default([])
+  // Short plain-English function statement shown on every prescription
+  // card, e.g. "Locks in moisture", "Mild cleansing".
+  quizFunctionTag   String?
+  // Explicit admin call-out for Kentelle's specialty lines — "PEEL_AND_GLOW"
+  // or "SKIN_NUTRIENTS" — shown as a badge on the prescription card. Set
+  // by hand rather than inferred from the storefront shop category, since
+  // those are used broadly for site navigation and don't line up with which
+  // products are actually peel/exfoliant or nutrient-serum formulas.
+  quizEmphasisCategory String?
   // Owner-controlled storefront + quiz availability: shown as a "Coming
   // Soon" badge and excluded from purchase / quiz recommendations until
   // turned off.

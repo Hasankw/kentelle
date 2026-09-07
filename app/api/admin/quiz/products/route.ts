@@ -18,6 +18,8 @@ export async function GET() {
     quizPairWithIds: p.quizPairWithIds ?? [],
     quizBestMatchTags: p.quizBestMatchTags ?? [],
     quizAlternativeForTags: p.quizAlternativeForTags ?? [],
+    quizFunctionTag: p.quizFunctionTag ?? null,
+    quizEmphasisCategory: p.quizEmphasisCategory ?? null,
     comingSoon: !!p.comingSoon,
   }));
   return NextResponse.json(minimal);
@@ -35,6 +37,8 @@ export async function PATCH(req: NextRequest) {
     quizPairWithIds,
     quizBestMatchTags,
     quizAlternativeForTags,
+    quizFunctionTag,
+    quizEmphasisCategory,
   } = body;
   const product = await db.product.update({
     where: { id },
@@ -47,6 +51,8 @@ export async function PATCH(req: NextRequest) {
       quizPairWithIds: quizPairWithIds ?? [],
       quizBestMatchTags: quizBestMatchTags ?? [],
       quizAlternativeForTags: quizAlternativeForTags ?? [],
+      quizFunctionTag: quizFunctionTag || null,
+      quizEmphasisCategory: quizEmphasisCategory || null,
     },
   });
   return NextResponse.json(product);

@@ -21,6 +21,8 @@ type QuizProduct = {
   quizPairWithIds: string[];
   quizBestMatchTags: string[];
   quizAlternativeForTags: string[];
+  quizFunctionTag: string | null;
+  quizEmphasisCategory: string | null;
 };
 
 type Dirty = {
@@ -32,7 +34,18 @@ type Dirty = {
   quizPairWithText: string;
   quizBestMatchText: string;
   quizAlternativeForText: string;
+  quizFunctionTag: string;
+  quizEmphasisCategory: string;
 };
+
+// Explicit call-out for Kentelle's specialty lines, shown as a badge on the
+// prescription card. Set by hand — not inferred from the shop category,
+// since those are used broadly for site navigation.
+const EMPHASIS_OPTIONS = [
+  { value: "", label: "— None —" },
+  { value: "PEEL_AND_GLOW", label: "Peel & Glow" },
+  { value: "SKIN_NUTRIENTS", label: "Skin Nutrients" },
+];
 
 const STEP_OPTIONS = [
   { value: "", label: "— Not in quiz —" },
@@ -91,6 +104,8 @@ export default function QuizProductsAdminPage() {
     quizPairWithText: p.quizPairWithIds.map((id) => byId.get(id)?.slug ?? id).join(", "),
     quizBestMatchText: p.quizBestMatchTags.join(", "),
     quizAlternativeForText: p.quizAlternativeForTags.join(", "),
+    quizFunctionTag: p.quizFunctionTag ?? "",
+    quizEmphasisCategory: p.quizEmphasisCategory ?? "",
   });
 
   const getField = <K extends keyof Dirty>(p: QuizProduct, field: K): Dirty[K] =>
@@ -117,6 +132,8 @@ export default function QuizProductsAdminPage() {
       .filter((id): id is string => Boolean(id));
     const quizBestMatchTags = getField(p, "quizBestMatchText").split(",").map((t) => t.trim()).filter(Boolean);
     const quizAlternativeForTags = getField(p, "quizAlternativeForText").split(",").map((t) => t.trim()).filter(Boolean);
+    const quizFunctionTag = getField(p, "quizFunctionTag").trim();
+    const quizEmphasisCategory = getField(p, "quizEmphasisCategory");
 
     const patch = {
       id: p.id,
@@ -128,6 +145,8 @@ export default function QuizProductsAdminPage() {
       quizPairWithIds,
       quizBestMatchTags,
       quizAlternativeForTags,
+      quizFunctionTag: quizFunctionTag || null,
+      quizEmphasisCategory: quizEmphasisCategory || null,
     };
 
     setSavingId(p.id);
@@ -194,7 +213,7 @@ export default function QuizProductsAdminPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-brand-contrast/10">
-                  {["", "Product", "Step", "Timing", "Frequency", "Safety Tags", "Alt Group", "Pair With", "Best Match For", "Alternative For", ""].map((h, i) => (
+                  {["", "Product", "Step", "Timing", "Frequency", "Function", "Emphasis", "Safety Tags", "Alt Group", "Pair With", "Best Match For", "Alternative For", ""].map((h, i) => (
                     <th key={i} className="px-4 py-3 text-[10px] font-heading font-bold uppercase tracking-widest text-brand-contrast whitespace-nowrap">
                       {h}
                     </th>
@@ -239,6 +258,25 @@ export default function QuizProductsAdminPage() {
                         placeholder="e.g. 1–2x weekly"
                         className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
                       />
+                    </td>
+                    <td className="px-4 py-2.5 min-w-[180px]">
+                      <input
+                        value={getField(p, "quizFunctionTag")}
+                        onChange={(e) => setField(p, "quizFunctionTag", e.target.value)}
+                        placeholder="e.g. Locks in moisture"
+                        className="w-full text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
+                      />
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <select
+                        value={getField(p, "quizEmphasisCategory")}
+                        onChange={(e) => setField(p, "quizEmphasisCategory", e.target.value)}
+                        className="text-xs font-body text-brand-navy border border-brand-contrast/20 rounded px-2 py-1.5 outline-none focus:border-brand-navy"
+                      >
+                        {EMPHASIS_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-4 py-2.5 min-w-[200px]">
                       <input
@@ -299,7 +337,7 @@ export default function QuizProductsAdminPage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-8 text-center text-sm font-body text-brand-contrast">
+                    <td colSpan={13} className="px-4 py-8 text-center text-sm font-body text-brand-contrast">
                       No products match &quot;{query}&quot;.
                     </td>
                   </tr>
