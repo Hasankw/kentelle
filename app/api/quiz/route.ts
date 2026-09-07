@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sendQuizResultEmail } from "@/lib/resend";
+import { sendQuizResultEmail, sendQuizInternalNotification } from "@/lib/resend";
 import { resolveRoutine } from "@/lib/quiz/engine";
 import { loadQuizConfig, type QuizConfig } from "@/lib/quiz/db-config";
 
@@ -90,6 +90,15 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error("quiz result email failed:", e);
     }
+  }
+
+  // Every completed quiz — not just the ones where the customer left an
+  // email — gets forwarded to the Kentelle team with the full answer flow
+  // and resulting prescription.
+  try {
+    await sendQuizInternalNotification(config, submission?.id ?? null, name, email, concerns, responses, routine);
+  } catch (e) {
+    console.error("quiz internal notification failed:", e);
   }
 
   return NextResponse.json({ ok: true, routine });

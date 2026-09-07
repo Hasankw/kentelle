@@ -529,6 +529,7 @@ export async function sendOrderStatusUpdate(
 
 import type { RoutineResult, PrescriptionEntry, PrescriptionProduct } from "./quiz/engine";
 import { tierDiscountAmount, type DiscountTier } from "./discount-tiers";
+import type { QuizConfig, QuizQuestionDto } from "./quiz/db-config";
 
 type QuizEmailProfileRow = { label: string; value: string };
 
@@ -608,13 +609,15 @@ function quizProductCardHtml(product: PrescriptionProduct, choice: boolean, pair
 function quizPrescriptionSectionHtml(prescription: PrescriptionEntry[]) {
   if (!prescription.length) return "";
   let lastStep: string | null = null;
+  let stepNumber = 0;
   const cardsHtml = prescription
     .map((entry) => {
       const step = (entry.kind === "product" ? entry.product.step : entry.options[0]?.step) ?? "special";
-      const stepHeading =
-        step !== lastStep
-          ? `<p style="margin:${lastStep ? "22px" : "0"} 0 10px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">${escapeHtml(EMAIL_STEP_LABELS[step] ?? step)}</p>`
-          : "";
+      let stepHeading = "";
+      if (step !== lastStep) {
+        stepNumber += 1;
+        stepHeading = `<p style="margin:${lastStep ? "26px" : "0"} 0 10px;font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">Step ${stepNumber} &nbsp;&middot;&nbsp; ${escapeHtml(EMAIL_STEP_LABELS[step] ?? step)}</p>`;
+      }
       lastStep = step;
       const body =
         entry.kind === "product"
@@ -794,6 +797,136 @@ export async function sendQuizResultEmail(
     from: "Kentelle Skincare <noreply@kentelle.com>",
     to: email,
     subject: "Your Personalised Skincare Routine | Kentelle",
+    html,
+  });
+}
+
+// ─── Internal notification — every quiz submission, sent to the Kentelle team ──
+
+const QUIZ_INTERNAL_NOTIFICATION_EMAIL = "info@kentelle.com";
+
+function resolveQuizAnswer(question: QuizQuestionDto | undefined, value: unknown): string {
+  if (!question) return typeof value === "string" ? value : JSON.stringify(value);
+  if (question.type === "text") {
+    const s = String(value ?? "").trim();
+    return s || "(left blank)";
+  }
+  const values = Array.isArray(value) ? value : [value];
+  const labels = values
+    .map((v) => question.options?.find((o) => o.value === v)?.label ?? String(v))
+    .filter(Boolean);
+  return labels.length ? labels.join(", ") : "(no answer)";
+}
+
+/**
+ * Fired for every quiz submission, regardless of whether the customer gave
+ * an email — Kentelle gets the full answer flow and resulting prescription
+ * for every completed quiz, not just the ones that go on to email the
+ * customer their result.
+ */
+export async function sendQuizInternalNotification(
+  config: QuizConfig,
+  submissionId: string | null,
+  name: string,
+  customerEmail: string | null,
+  concerns: string[],
+  responses: Record<string, unknown>,
+  routine: RoutineResult,
+) {
+  const questionById = new Map<string, QuizQuestionDto>();
+  if (config.nameQuestion) questionById.set(config.nameQuestion.id, config.nameQuestion);
+  for (const list of Object.values(config.questionsByPool)) {
+    for (const q of list) questionById.set(q.id, q);
+  }
+  const concernLabelByKey = new Map(config.concerns.map((c) => [c.key, c.label]));
+
+  const answeredRows = Object.entries(responses)
+    .map(([questionId, value]) => ({ question: questionById.get(questionId), value }))
+    .sort((a, b) => {
+      const poolA = a.question?.poolKey ?? "zzz";
+      const poolB = b.question?.poolKey ?? "zzz";
+      if (poolA !== poolB) return poolA.localeCompare(poolB);
+      return (a.question?.sortOrder ?? 999) - (b.question?.sortOrder ?? 999);
+    });
+
+  const qaHtml = answeredRows
+    .map(
+      ({ question, value }) => `<tr>
+        <td style="padding:8px 0;border-bottom:1px solid #E8DEDA;font:11px Arial,sans-serif;color:#655C62;vertical-align:top;width:55%;">${escapeHtml(question?.prompt ?? "(question no longer exists)")}</td>
+        <td style="padding:8px 0 8px 14px;border-bottom:1px solid #E8DEDA;font:700 12px Arial,sans-serif;color:#3A3240;vertical-align:top;">${escapeHtml(resolveQuizAnswer(question, value))}</td>
+      </tr>`,
+    )
+    .join("");
+
+  // Grouped by step (Cleanse, Tone, Treat…) in application order, same as
+  // the on-site step-by-step layout and the customer email.
+  const prescription = routine.prescription ?? [];
+  let lastPrescriptionStep: string | null = null;
+  let prescriptionStepNumber = 0;
+  const prescriptionHtml = prescription.length
+    ? prescription
+        .map((e) => {
+          const product = e.kind === "product" ? e.product : e.options[0];
+          const step = product?.step ?? "special";
+          let stepRow = "";
+          if (step !== lastPrescriptionStep) {
+            prescriptionStepNumber += 1;
+            stepRow = `<tr><td colspan="3" style="padding:${lastPrescriptionStep ? "14px" : "0"} 0 4px;font:700 9px Arial,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:#627A82;border-bottom:1px solid #E8DEDA;">Step ${prescriptionStepNumber} &middot; ${escapeHtml(EMAIL_STEP_LABELS[step] ?? step)}</td></tr>`;
+          }
+          lastPrescriptionStep = step;
+          const label = e.kind === "product" ? e.product.name : e.options.map((o) => o.name).join(" or ");
+          const timing = e.kind === "product" ? e.product.timingLabel : e.options[0]?.timingLabel;
+          const frequency = e.kind === "product" ? e.product.frequency : e.options[0]?.frequency;
+          return `${stepRow}<tr>
+            <td style="padding:6px 0;font:12px Arial,sans-serif;color:#3A3240;">${escapeHtml(label)}</td>
+            <td style="padding:6px 8px;text-align:right;font:11px Arial,sans-serif;color:#655C62;white-space:nowrap;">${escapeHtml(timing ?? "")}</td>
+            <td style="padding:6px 0;text-align:right;font:11px Arial,sans-serif;color:#9B8FA0;white-space:nowrap;">${escapeHtml(frequency ?? "")}</td>
+          </tr>`;
+        })
+        .join("")
+    : `<tr><td colspan="3" style="padding:8px 0;font:12px Arial,sans-serif;color:#902020;">No products were recommended for this submission.</td></tr>`;
+
+  const notesHtml = [...(routine.advisories ?? []), ...(routine.notes ?? [])]
+    .map((n) => `<p style="margin:0 0 6px;font:12px Arial,sans-serif;color:#3A3240;line-height:1.5;">${escapeHtml(n)}</p>`)
+    .join("");
+
+  const html = emailWrapper(`
+    <div style="padding:30px 40px;background:#F7F2EE;border-bottom:1px solid #D9A5B7;">
+      <p style="margin:0 0 6px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#D09BB0;font-family:Arial,sans-serif;">New Skin Quiz Submission</p>
+      <h2 style="margin:0;font:normal 26px Georgia,'Times New Roman',serif;color:#3A3240;">${escapeHtml(name || "Anonymous")}</h2>
+      <p style="margin:8px 0 0;font:13px Arial,sans-serif;color:#655C62;">${customerEmail ? escapeHtml(customerEmail) : "No email provided"} &middot; ${escapeHtml(new Date().toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" }))}</p>
+    </div>
+    <div style="padding:30px 40px;background:#FBF8F4;">
+      ${
+        routine.mappingError
+          ? `<p style="margin:0 0 22px;padding:12px 16px;background:#FBEAEA;border-left:3px solid #C0392B;font:700 12px Arial,sans-serif;color:#902020;">&#9888; No routine could be matched for this customer — please follow up manually.</p>`
+          : ""
+      }
+      <p style="margin:0 0 6px;font:700 9px Arial,sans-serif;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">Skin Concerns</p>
+      <p style="margin:0 0 22px;font:13px Arial,sans-serif;color:#3A3240;">${concerns.length ? concerns.map((k) => escapeHtml(concernLabelByKey.get(k) ?? k)).join(", ") : "—"}</p>
+
+      <p style="margin:0 0 10px;font:700 9px Arial,sans-serif;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">Full Answer Flow</p>
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px;">${qaHtml}</table>
+
+      <p style="margin:0 0 10px;font:700 9px Arial,sans-serif;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;">Resulting Prescription</p>
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:20px;">${prescriptionHtml}</table>
+
+      ${notesHtml}
+
+      ${
+        submissionId
+          ? `<p style="margin:22px 0 0;">
+        <a href="https://kentelle.com/admin/quiz/${encodeURIComponent(submissionId)}" style="display:inline-block;background:#3A3240;border-radius:22px;padding:11px 22px;color:#FFFFFF;font:700 10px Arial,sans-serif;letter-spacing:1.2px;text-transform:uppercase;text-decoration:none;">View In Admin &rarr;</a>
+      </p>`
+          : ""
+      }
+    </div>
+  `);
+
+  await getResend().emails.send({
+    from: "Kentelle Skincare <noreply@kentelle.com>",
+    to: QUIZ_INTERNAL_NOTIFICATION_EMAIL,
+    subject: `New Skin Quiz Submission — ${name || "Anonymous"}`,
     html,
   });
 }
