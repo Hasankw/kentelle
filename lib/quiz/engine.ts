@@ -57,8 +57,11 @@ const STEP_LABELS: Record<string, string> = {
 };
 
 // Per Kentelle's approved routine order — eye care always sits right after
-// toning, as step 3, ahead of treatment serums.
-const STEP_ORDER = ["cleanser", "toner", "eye", "treatment", "moisturiser", "special"];
+// toning, as step 3, ahead of treatment serums. Moisturiser always seals
+// the routine as the last step, for every skin concern — at night it's
+// literally the final product; during the day it's the last Kentelle step
+// before the customer's own sunscreen.
+const STEP_ORDER = ["cleanser", "toner", "eye", "treatment", "special", "moisturiser"];
 
 const TIMING_LABELS: Record<RoutineTiming, string> = {
   DAY: "Day",

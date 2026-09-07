@@ -479,8 +479,11 @@ function QuestionLayout({
 
 
 // Per Kentelle's approved routine order — eye care always sits right after
-// toning, as step 3, ahead of treatment serums.
-const STEP_ORDER = ["cleanser", "toner", "eye", "treatment", "moisturiser", "special"];
+// toning, as step 3, ahead of treatment serums. Moisturiser always seals
+// the routine as the last step, for every skin concern — at night it's
+// literally the final product; during the day it's the last Kentelle step
+// before the customer's own sunscreen.
+const STEP_ORDER = ["cleanser", "toner", "eye", "treatment", "special", "moisturiser"];
 
 const STEP_META: Record<string, { label: string; blurb: string }> = {
   cleanser: { label: "Cleanse", blurb: "Lift away dirt, oil, SPF and makeup." },
@@ -490,8 +493,8 @@ const STEP_META: Record<string, { label: string; blurb: string }> = {
     label: "Treat",
     blurb: "Targeted serums and actives for your concerns — check each product's own Day/Night guidance below, as this varies by ingredient.",
   },
-  moisturiser: { label: "Moisturise", blurb: "Lock in hydration to finish your routine." },
   special: { label: "Special Care", blurb: "Follow the specific timing noted on each product below." },
+  moisturiser: { label: "Moisturise", blurb: "Seal your routine with your choice of moisturiser — always the final step, day or night." },
 };
 
 function entryStep(entry: PrescriptionEntry): string {
