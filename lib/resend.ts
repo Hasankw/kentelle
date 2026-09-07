@@ -528,6 +528,7 @@ export async function sendOrderStatusUpdate(
 // ─── Skin Quiz Result Email ─────────────────────────────────────────────────
 
 import type { RoutineResult, PrescriptionEntry, PrescriptionProduct } from "./quiz/engine";
+import { tierDiscountAmount, type DiscountTier } from "./discount-tiers";
 
 type QuizEmailProfileRow = { label: string; value: string };
 
@@ -648,6 +649,7 @@ export async function sendQuizResultEmail(
   name: string,
   routine: RoutineResult,
   profile: QuizEmailProfileRow[] = [],
+  discountTiers: DiscountTier[] = [],
 ) {
   const greetingName = escapeHtml(name || "there");
 
@@ -655,6 +657,21 @@ export async function sendQuizResultEmail(
   const uniqueProducts = prescription.flatMap((e) => (e.kind === "product" ? [e.product] : e.options));
   const hasRoutine = prescription.length > 0 && !routine.mappingError;
   const hasSkinNutrients = uniqueProducts.some((p) => p.emphasisCategory === "Skin Nutrients");
+
+  // One product per prescription line — the first option for an either/or
+  // choice, matching the on-site default — used for the routine total and
+  // the "add all to cart" link so a Day & Night product isn't counted or
+  // added twice, and a choice slot doesn't add both alternatives.
+  const defaultSelection = prescription
+    .map((e) => (e.kind === "product" ? e.product : e.options[0]))
+    .filter((p): p is PrescriptionProduct => Boolean(p) && p.stock !== 0);
+  const subtotal = defaultSelection.reduce((sum, p) => sum + (p.salePrice ?? p.price), 0);
+  const discountAmount = tierDiscountAmount(
+    defaultSelection.map((p) => ({ price: p.salePrice ?? p.price, quantity: 1, categoryIds: p.categoryIds })),
+    discountTiers,
+  );
+  const routineTotal = Math.max(subtotal - discountAmount, 0);
+  const cartLink = `https://kentelle.com/routine-cart?ids=${defaultSelection.map((p) => encodeURIComponent(p.id)).join(",")}`;
 
   const skinProfileRows: QuizEmailProfileRow[] = [];
   if (routine.skinProfile?.primaryConcern) {
@@ -686,6 +703,43 @@ export async function sendQuizResultEmail(
 
   const introduceHtml = hasRoutine ? quizLayeringGuidanceHtml(hasSkinNutrients) : "";
 
+  const summaryHtml = hasRoutine
+    ? `<div style="background:#FFFFFF;border:1px solid #E8DEDA;padding:22px 24px;margin-top:8px;">
+        <p style="margin:0 0 14px;font-size:9px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#627A82;font-family:Arial,sans-serif;">Your Routine Summary</p>
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:14px;">
+          ${defaultSelection
+            .map(
+              (p) => `<tr>
+                <td style="padding:5px 0;font:12px Arial,sans-serif;color:#3A3240;">${escapeHtml(p.name)}</td>
+                <td style="padding:5px 0;text-align:right;font:12px Arial,sans-serif;color:#655C62;white-space:nowrap;">$${(p.salePrice ?? p.price).toFixed(2)}</td>
+              </tr>`,
+            )
+            .join("")}
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-top:1px solid #E8DEDA;padding-top:10px;">
+          <tr>
+            <td style="padding:4px 0;font:12px Arial,sans-serif;color:#655C62;">Subtotal</td>
+            <td style="padding:4px 0;text-align:right;font:12px Arial,sans-serif;color:#3A3240;">$${subtotal.toFixed(2)}</td>
+          </tr>
+          ${
+            discountAmount > 0
+              ? `<tr>
+            <td style="padding:4px 0;font:12px Arial,sans-serif;color:#3B7A57;">Automatic Discount</td>
+            <td style="padding:4px 0;text-align:right;font:12px Arial,sans-serif;color:#3B7A57;">&minus;$${discountAmount.toFixed(2)}</td>
+          </tr>`
+              : ""
+          }
+          <tr>
+            <td style="padding:8px 0 0;font:700 14px Arial,sans-serif;color:#3A3240;">Total</td>
+            <td style="padding:8px 0 0;text-align:right;font:700 14px Arial,sans-serif;color:#3A3240;">$${routineTotal.toFixed(2)}</td>
+          </tr>
+        </table>
+        <p style="margin:20px 0 0;text-align:center;">
+          <a href="${cartLink}" style="display:inline-block;background:#C8DFE8;border:1px solid #3A3240;border-radius:24px;padding:13px 28px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.4px;text-transform:uppercase;text-decoration:none;">Add My Prescribed Routine To Cart &rarr;</a>
+        </p>
+      </div>`
+    : "";
+
   const advisoriesAndNotes = [...(routine.advisories ?? []), ...routine.notes];
   const notesHtml = advisoriesAndNotes.length
     ? `<div style="background:#F5EEF3;border-left:3px solid #D4A5B5;padding:16px 20px;margin-top:16px;text-align:left;">
@@ -716,13 +770,14 @@ export async function sendQuizResultEmail(
       </div>
 
       ${routineHtml}
+      ${summaryHtml}
       ${introduceHtml}
       ${notesHtml}
 
       ${
         hasRoutine
-          ? `<p style="margin:28px 0 0;text-align:center;">
-        <a href="https://kentelle.com/shop" style="display:inline-block;background:#C8DFE8;border:1px solid #3A3240;border-radius:24px;padding:13px 26px;color:#27343A;font:700 10px Arial,sans-serif;letter-spacing:1.4px;text-transform:uppercase;text-decoration:none;">Shop My Routine &rarr;</a>
+          ? `<p style="margin:20px 0 0;text-align:center;">
+        <a href="https://kentelle.com/shop" style="color:#655C62;font:700 9px Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;text-decoration:underline;">Or browse the full range &rarr;</a>
       </p>`
           : ""
       }

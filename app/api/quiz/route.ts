@@ -82,7 +82,8 @@ export async function POST(req: NextRequest) {
 
   if (email) {
     try {
-      await sendQuizResultEmail(email, name, routine, buildEmailProfile(config, concerns, responses));
+      const discountTiers = await db.discountTier.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
+      await sendQuizResultEmail(email, name, routine, buildEmailProfile(config, concerns, responses), discountTiers);
       if (submission) {
         await db.quizSubmission.update({ where: { id: submission.id }, data: { emailSent: true } });
       }
