@@ -76,5 +76,5 @@ export function nextTierMessage(items: DiscountableItem[], tiers: DiscountTier[]
   if (!candidates.length) return null;
   const { tier, remaining } = candidates[0];
   const scope = tier.eligibleCategoryIds.length > 0 ? " on eligible items" : "";
-  return `Spend another $${remaining.toFixed(2)}${scope} to unlock ${tier.percent}% off.`;
+  return `Add $${remaining.toFixed(2)}${scope} more to unlock ${tier.percent}% off.`;
 }

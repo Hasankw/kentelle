@@ -68,13 +68,14 @@ export async function POST(req: NextRequest) {
     typeof body.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)
       ? body.email.trim().toLowerCase()
       : null;
+  const phone: string | null = typeof body.phone === "string" && body.phone.trim() ? body.phone.trim().slice(0, 30) : null;
 
   const routine = resolveRoutine(config, { concerns, name, responses });
 
   let submission: any = null;
   try {
     submission = await db.quizSubmission.create({
-      data: { email, name: name || null, concerns, responses, routine, emailSent: false },
+      data: { email, phone, name: name || null, concerns, responses, routine, emailSent: false },
     });
   } catch (e) {
     console.error("quiz submission save failed:", e);

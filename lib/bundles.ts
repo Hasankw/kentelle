@@ -1,8 +1,7 @@
 export const MOTHERS_DAY_BUNDLE = {
-  productIds: [
-    "a177462a-6926-419c-9201-fe3f46211da2", // G Biomed Skin Cleanser
-    "74b18878-fedb-4e05-a043-731938f98748",  // Derma Moisture Fix
-  ],
+  // Promo ended — emptied instead of deleted so cart.ts/ProductCard/PDP
+  // bundle-pricing code doesn't need touching if a future bundle promo reuses it.
+  productIds: [] as string[],
   bundleQty: 2,
   bundlePrice: 120,
   unitPrice: 89,

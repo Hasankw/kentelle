@@ -78,7 +78,7 @@ const TIMING_LABELS: Record<RoutineTiming, string> = {
 // on this heuristic. Must match the real product tag vocabulary used across
 // the catalog (see admin → Quiz → Product Tags): "retinoid", "aha",
 // "mild-exfoliant", "high-vitc".
-const PM_ONLY_TAGS = new Set(["retinoid", "aha"]);
+const PM_ONLY_TAGS = new Set(["retinoid"]);
 
 // Per-step cap on how many *single* (non either/or) products can appear —
 // prevents duplicate cleansers/moisturisers when several answers each tag
@@ -325,11 +325,10 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
     const cap = step === "treatment" ? maxTreatments : (STEP_SINGLES_CAP[step] ?? 3);
     const ranked = singles.sort((a, b) => (scores.get(b) ?? 0) - (scores.get(a) ?? 0));
     const kept = ranked.slice(0, cap);
-    if (ranked.length > kept.length) {
-      notes.push(
-        `${ranked.length - kept.length} lower-priority ${(STEP_LABELS[step] ?? step).toLowerCase()} option(s) were folded out to keep your routine focused — ask in-store for the full list.`,
-      );
-    }
+    // Folded-out lower-priority options are explained generically by the
+    // "Other Suitable Products" copy on the results page instead of a
+    // per-step count here — customers can't actually get "the full list"
+    // in-store, so promising one was misleading.
     finalByStep.set(step, [...kept, ...inGroups]);
   }
 
@@ -356,7 +355,9 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
       return tags.includes("aha") || tags.includes("retinoid") || tags.includes("high-vitc") || tags.includes("mild-exfoliant");
     });
   if (needsSpfAdvisory) {
-    advisories.push("Finish with sunscreen when you'll be in the sun.");
+    advisories.push(
+      "Morning Routine: Finish with a broad-spectrum sunscreen as the final step, particularly when using exfoliating or renewing treatments"
+    );
   }
 
   function toPrescriptionProduct(id: string): PrescriptionProduct {

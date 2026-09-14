@@ -227,6 +227,7 @@ model Routine {
 model QuizSubmission {
   id        String   @id @default(cuid())
   email     String?
+  phone     String?
   name      String?
   concerns  String[]
   responses Json

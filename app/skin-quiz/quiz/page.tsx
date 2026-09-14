@@ -81,10 +81,9 @@ const POOL_VISUALS: Record<string, { image: string; caption: string }> = {
 };
 
 type Step =
+  | { kind: "contact" }
   | { kind: "concerns" }
-  | { kind: "name" }
-  | { kind: "question"; group: string; poolKey: string; question: QuizQuestionDto }
-  | { kind: "email" };
+  | { kind: "question"; group: string; poolKey: string; question: QuizQuestionDto };
 
 function buildSteps(config: QuizConfig, concerns: string[]): Step[] {
   const poolKeys = [...new Set(
@@ -93,7 +92,7 @@ function buildSteps(config: QuizConfig, concerns: string[]): Step[] {
       .filter((k): k is string => Boolean(k))
   )];
 
-  const steps: Step[] = [{ kind: "concerns" }, { kind: "name" }];
+  const steps: Step[] = [{ kind: "contact" }, { kind: "concerns" }];
   for (const key of poolKeys) {
     const label = POOL_LABELS[key] ?? key;
     for (const q of config.questionsByPool[key] ?? []) {
@@ -103,7 +102,6 @@ function buildSteps(config: QuizConfig, concerns: string[]): Step[] {
   for (const q of config.questionsByPool["lifestyle"] ?? []) {
     steps.push({ kind: "question", group: "Lifestyle & Safety", poolKey: "lifestyle", question: q });
   }
-  steps.push({ kind: "email" });
   return steps;
 }
 
@@ -128,6 +126,7 @@ function SkinQuizFlowInner() {
   const [name, setName] = useState("");
   const [responses, setResponses] = useState<Record<string, string | string[]>>({});
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [stepIndex, setStepIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<RoutineResult | null>(null);
@@ -168,7 +167,7 @@ function SkinQuizFlowInner() {
   const groupSequence = useMemo(() => {
     const seen: string[] = [];
     for (const s of steps) {
-      const label = s.kind === "concerns" ? "Skin Concerns" : s.kind === "name" ? "About You" : s.kind === "email" ? "Almost Done" : s.group;
+      const label = s.kind === "contact" ? "About You" : s.kind === "concerns" ? "Skin Concerns" : s.group;
       if (!seen.includes(label)) seen.push(label);
     }
     return seen;
@@ -209,7 +208,7 @@ function SkinQuizFlowInner() {
   }
 
   const currentGroupLabel =
-    step.kind === "concerns" ? "Skin Concerns" : step.kind === "name" ? "About You" : step.kind === "email" ? "Almost Done" : step.group;
+    step.kind === "contact" ? "About You" : step.kind === "concerns" ? "Skin Concerns" : step.group;
   const groupIndex = groupSequence.indexOf(currentGroupLabel);
   const percent = ((stepIndex + 1) / steps.length) * 100;
 
@@ -237,9 +236,10 @@ function SkinQuizFlowInner() {
     });
   };
 
-  const submit = async (withEmail: boolean) => {
+  const submit = async () => {
     setSubmitting(true);
-    const finalEmail = withEmail && email.trim() ? email.trim() : undefined;
+    const finalEmail = email.trim() || undefined;
+    const finalPhone = phone.trim() || undefined;
     const computed = resolveRoutine(config, { concerns, name, responses });
     setResult(computed);
     try {
@@ -260,7 +260,7 @@ function SkinQuizFlowInner() {
       await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email: finalEmail, concerns, responses }),
+        body: JSON.stringify({ name, email: finalEmail, phone: finalPhone, concerns, responses }),
       });
     } catch {
       // Non-blocking — the routine is already computed and shown either way.
@@ -269,10 +269,11 @@ function SkinQuizFlowInner() {
     }
   };
 
+  const isLastStep = stepIndex === steps.length - 1;
+
   const canProceed =
+    step.kind === "contact" ? name.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) :
     step.kind === "concerns" ? true :
-    step.kind === "name" ? name.trim().length > 0 :
-    step.kind === "email" ? true :
     step.question.type === "text" ? true :
     step.question.type === "multi" ? true :
     Boolean(responses[step.question.id]);
@@ -317,19 +318,40 @@ function SkinQuizFlowInner() {
               </QuestionLayout>
             )}
 
-            {step.kind === "name" && config.nameQuestion && (
+            {step.kind === "contact" && (
               <div className="max-w-xl mx-auto">
                 <div className="text-center mb-8">
-                  <h1 className="font-heading font-bold text-xl md:text-2xl text-brand-navy mb-2">{config.nameQuestion.prompt}</h1>
+                  <h1 className="font-heading font-bold text-xl md:text-2xl text-brand-navy mb-2">
+                    {config.nameQuestion?.prompt ?? "Let's start with your details"}
+                  </h1>
+                  <p className="font-body text-xs text-brand-contrast">
+                    We&apos;ll use this to send your personalised routine and follow up if you need help.
+                  </p>
                 </div>
-                <input
-                  autoFocus
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={config.nameQuestion.placeholder ?? undefined}
-                  className="w-full px-5 py-4 border-2 border-brand-contrast/20 focus:border-brand-navy outline-none rounded font-body text-sm text-brand-navy bg-brand-white"
-                />
+                <div className="space-y-3">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={config.nameQuestion?.placeholder ?? "Your name"}
+                    className="w-full px-5 py-4 border-2 border-brand-contrast/20 focus:border-brand-navy outline-none rounded font-body text-sm text-brand-navy bg-brand-white"
+                  />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full px-5 py-4 border-2 border-brand-contrast/20 focus:border-brand-navy outline-none rounded font-body text-sm text-brand-navy bg-brand-white"
+                  />
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone (optional)"
+                    className="w-full px-5 py-4 border-2 border-brand-contrast/20 focus:border-brand-navy outline-none rounded font-body text-sm text-brand-navy bg-brand-white"
+                  />
+                </div>
               </div>
             )}
 
@@ -375,32 +397,6 @@ function SkinQuizFlowInner() {
               </QuestionLayout>
             )}
 
-            {step.kind === "email" && (
-              <div className="max-w-xl mx-auto">
-                <div className="text-center mb-8">
-                  <h1 className="font-heading font-bold text-xl md:text-2xl text-brand-navy mb-2">
-                    Where should we send your routine?
-                  </h1>
-                  <p className="font-body text-xs text-brand-contrast">
-                    Optional — we&apos;ll email your personalised routine so you can find it again anytime.
-                  </p>
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full px-5 py-4 border-2 border-brand-contrast/20 focus:border-brand-navy outline-none rounded font-body text-sm text-brand-navy bg-brand-white mb-4"
-                />
-                <button
-                  onClick={() => submit(false)}
-                  disabled={submitting}
-                  className="w-full text-center text-xs text-brand-contrast font-body underline underline-offset-2 disabled:opacity-50"
-                >
-                  Skip — just show my routine
-                </button>
-              </div>
-            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -411,10 +407,10 @@ function SkinQuizFlowInner() {
           <button
             type="button"
             disabled={!canProceed || submitting}
-            onClick={() => (step.kind === "email" ? submit(true) : goNext())}
+            onClick={() => (isLastStep ? submit() : goNext())}
             className="w-full py-3.5 bg-brand-navy text-brand-white font-heading font-bold text-xs uppercase tracking-[0.15em] rounded hover:bg-brand-navy/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {step.kind === "email" ? (
+            {isLastStep ? (
               submitting ? "Building Your Routine…" : (<><Sparkles size={14} /> See My Routine</>)
             ) : (
               "Next"
@@ -639,13 +635,22 @@ function ResultsView({
                 {/* Layering & Usage Guidelines */}
                 <div className="mb-10 bg-white border border-brand-contrast/10 rounded p-6">
                   <p className="font-heading font-bold text-[10px] uppercase tracking-widest text-brand-blue mb-3">Layering &amp; Usage Guidelines</p>
+                  <p className="font-body text-xs text-brand-contrast leading-relaxed mb-3">
+                    Your personalised routine has been kept simple and focused, with products selected according to your skin concerns.
+                  </p>
                   <ul className="space-y-2 list-disc pl-4">
                     <li className="font-body text-xs text-brand-contrast leading-relaxed">
-                      Every routine should include a moisture step — <strong className="text-brand-navy">Derma Moisture Fix</strong> or{" "}
-                      <strong className="text-brand-navy">Hyaluron Booster Capsules</strong> is essential to lock in your results.
+                      <strong className="text-brand-navy">Keep your routine focused:</strong> We recommend no more than three treatment layers at one time to avoid unnecessary over-layering.
                     </li>
                     <li className="font-body text-xs text-brand-contrast leading-relaxed">
-                      Routines are capped at a maximum of three treatment layers to avoid overloading your skin — we&apos;ve already applied this above.
+                      <strong className="text-brand-navy">Always include hydration:</strong> Follow treatment products with <strong className="text-brand-navy">Derma Moisture Fix</strong> or{" "}
+                      <strong className="text-brand-navy">Hyaluron Booster Capsules</strong> to help support hydration and the skin barrier.
+                    </li>
+                    <li className="font-body text-xs text-brand-contrast leading-relaxed">
+                      <strong className="text-brand-navy">When using an exfoliating or peeling product:</strong> Follow with your recommended treatment serum, then moisturiser.
+                    </li>
+                    <li className="font-body text-xs text-brand-contrast leading-relaxed">
+                      <strong className="text-brand-navy">Daytime protection:</strong> Finish your morning routine with a suitable broad-spectrum sunscreen.
                     </li>
                     {hasSkinNutrients && (
                       <li className="font-body text-xs text-brand-contrast leading-relaxed">
@@ -654,6 +659,13 @@ function ResultsView({
                       </li>
                     )}
                   </ul>
+                  <div className="mt-4 pt-4 border-t border-brand-contrast/10">
+                    <p className="font-heading font-bold text-[10px] uppercase tracking-widest text-brand-blue mb-2">Other Suitable Products</p>
+                    <p className="font-body text-xs text-brand-contrast leading-relaxed">
+                      Your quiz may identify additional products that suit your skin concerns. These are not included in your core routine to keep it simple
+                      and avoid duplication. You can explore these products separately on the Kentelle website.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Advisories (SPF etc.) */}
@@ -676,12 +688,20 @@ function ResultsView({
                   <p className="font-body text-sm text-brand-navy text-center sm:text-left">
                     Prefer expert guidance? Find a skin professional near you for a tailored, in-person consultation.
                   </p>
-                  <a
-                    href="tel:0892280191"
-                    className="shrink-0 px-5 py-2.5 border-2 border-brand-navy text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-navy hover:text-white transition-colors whitespace-nowrap"
-                  >
-                    Call (08) 9228 0191
-                  </a>
+                  <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                    <a
+                      href="tel:0892280191"
+                      className="px-5 py-2.5 border-2 border-brand-navy text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-navy hover:text-white transition-colors whitespace-nowrap text-center"
+                    >
+                      Call (08) 9228 0191
+                    </a>
+                    <a
+                      href="tel:0412454337"
+                      className="px-5 py-2.5 border-2 border-brand-navy text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-navy hover:text-white transition-colors whitespace-nowrap text-center"
+                    >
+                      Call (61) 412 454 337
+                    </a>
+                  </div>
                 </div>
               </div>
 
@@ -692,6 +712,7 @@ function ResultsView({
                 discountAmount={discountAmount}
                 finalTotal={finalTotal}
                 tierMessage={tierMessage}
+                discountTiers={discountTiers}
                 onAddToCart={addRoutineToCart}
               />
             </div>
@@ -872,6 +893,7 @@ function RoutineSidebar({
   discountAmount,
   finalTotal,
   tierMessage,
+  discountTiers,
   onAddToCart,
 }: {
   selectedProducts: PrescriptionProduct[];
@@ -879,11 +901,36 @@ function RoutineSidebar({
   discountAmount: number;
   finalTotal: number;
   tierMessage: string | null;
+  discountTiers: DiscountTier[];
   onAddToCart: () => void;
 }) {
+  const ladderTiers = [...discountTiers]
+    .filter((t) => t.active && t.eligibleCategoryIds.length === 0)
+    .sort((a, b) => a.threshold - b.threshold);
+
   return (
     <div className="bg-white border border-brand-contrast/15 rounded p-6 lg:sticky lg:top-24">
       <p className="font-heading font-bold text-sm uppercase tracking-widest text-brand-navy mb-4">Your Routine</p>
+
+      {ladderTiers.length > 0 && (
+        <div className="mb-4 bg-brand-pink/40 border border-brand-accent/30 rounded p-3">
+          <ul className="space-y-1 mb-1.5">
+            {ladderTiers.map((t) => {
+              const met = total >= t.threshold;
+              return (
+                <li
+                  key={t.id}
+                  className={`flex items-center justify-between text-[11px] font-body ${met ? "text-green-700 font-bold" : "text-brand-navy"}`}
+                >
+                  <span>{met ? "✓ " : ""}Spend ${t.threshold.toFixed(0)}+ — Save {t.percent}%</span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="text-[10px] font-body text-brand-contrast italic">Your discount is applied automatically.</p>
+        </div>
+      )}
+
       <div className="space-y-2 mb-4 max-h-72 overflow-y-auto pr-1">
         {selectedProducts.map((p) => (
           <div key={p.id} className="flex items-start justify-between gap-3 text-xs font-body">
