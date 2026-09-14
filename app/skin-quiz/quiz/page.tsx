@@ -518,6 +518,7 @@ function ResultsView({
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [choiceSelection, setChoiceSelection] = useState<Record<string, string>>({});
   const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([]);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
     const sel: Record<string, boolean> = {};
@@ -566,6 +567,11 @@ function ResultsView({
     .filter((s) => s.entries.length > 0);
 
   const addRoutineToCart = () => {
+    // Guard against a double-click/double-tap adding every line twice —
+    // router.push doesn't unmount this view synchronously, so a second
+    // click before navigation completes would otherwise re-run the loop.
+    if (addingToCart) return;
+    setAddingToCart(true);
     for (const p of selectedProducts) {
       addItem({ id: p.id, name: p.name, slug: p.slug, image: p.images[0] || PLACEHOLDER_IMG, price: p.salePrice ?? p.price, categoryIds: p.categoryIds });
     }
@@ -714,6 +720,7 @@ function ResultsView({
                 tierMessage={tierMessage}
                 discountTiers={discountTiers}
                 onAddToCart={addRoutineToCart}
+                adding={addingToCart}
               />
             </div>
           ) : (
@@ -895,6 +902,7 @@ function RoutineSidebar({
   tierMessage,
   discountTiers,
   onAddToCart,
+  adding,
 }: {
   selectedProducts: PrescriptionProduct[];
   total: number;
@@ -903,6 +911,7 @@ function RoutineSidebar({
   tierMessage: string | null;
   discountTiers: DiscountTier[];
   onAddToCart: () => void;
+  adding: boolean;
 }) {
   const ladderTiers = [...discountTiers]
     .filter((t) => t.active && t.eligibleCategoryIds.length === 0)
@@ -964,10 +973,10 @@ function RoutineSidebar({
       <button
         type="button"
         onClick={onAddToCart}
-        disabled={selectedProducts.length === 0}
+        disabled={selectedProducts.length === 0 || adding}
         className="w-full py-3.5 bg-brand-accent text-brand-navy font-heading font-bold text-xs uppercase tracking-widest rounded hover:bg-brand-accent/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        Add All To Cart ({selectedProducts.length})
+        {adding ? "Adding…" : `Add All To Cart (${selectedProducts.length})`}
       </button>
     </div>
   );
