@@ -82,10 +82,15 @@ const PM_ONLY_TAGS = new Set(["retinoid"]);
 
 // Per-step cap on how many *single* (non either/or) products can appear —
 // prevents duplicate cleansers/moisturisers when several answers each tag
-// their own pick. Either/or (altGroup) choices are exempt — they're meant
-// to show as an intentional pair. "treatment" is capped separately by the
-// admin-configured maxTreatments setting.
+// their own pick. "treatment" is capped separately by the admin-configured
+// maxTreatments setting.
 const STEP_SINGLES_CAP: Record<string, number> = { cleanser: 1, toner: 1, moisturiser: 1, eye: 2, special: 2 };
+
+// Either/or (altGroup) choices are meant to show as an intentional pair —
+// e.g. a Day vs. Night moisturiser — not a pile of every product that
+// happened to match. Capped to the top-scoring options per group so a
+// customer is never asked to pick among more than this many.
+const ALT_GROUP_CAP = 2;
 
 function computeFrequency(tags: string[]): string {
   if (tags.includes("retinoid")) return "PM only — start 2–3x weekly and build up gradually";
@@ -321,15 +326,30 @@ export function resolveRoutine(config: QuizConfig, answers: QuizAnswers): Routin
   const finalByStep = new Map<string, string[]>();
   for (const [step, ids] of byStep) {
     const singles = [...new Set(ids.filter((id) => !config.products[id]?.altGroup))];
-    const inGroups = [...new Set(ids.filter((id) => config.products[id]?.altGroup))];
     const cap = step === "treatment" ? maxTreatments : (STEP_SINGLES_CAP[step] ?? 3);
     const ranked = singles.sort((a, b) => (scores.get(b) ?? 0) - (scores.get(a) ?? 0));
     const kept = ranked.slice(0, cap);
+
+    // Cap each either/or group to its top-scoring options too (see
+    // ALT_GROUP_CAP), ranked so the resulting options list — and its
+    // default radio selection — leads with the best match.
+    const groupIds = new Set(ids.filter((id) => config.products[id]?.altGroup));
+    const byAltGroup = new Map<string, string[]>();
+    for (const id of groupIds) {
+      const group = config.products[id]!.altGroup!;
+      (byAltGroup.get(group) ?? byAltGroup.set(group, []).get(group)!).push(id);
+    }
+    const cappedGroupIds: string[] = [];
+    for (const groupMembers of byAltGroup.values()) {
+      const rankedGroup = groupMembers.sort((a, b) => (scores.get(b) ?? 0) - (scores.get(a) ?? 0));
+      cappedGroupIds.push(...rankedGroup.slice(0, ALT_GROUP_CAP));
+    }
+
     // Folded-out lower-priority options are explained generically by the
     // "Other Suitable Products" copy on the results page instead of a
     // per-step count here — customers can't actually get "the full list"
     // in-store, so promising one was misleading.
-    finalByStep.set(step, [...kept, ...inGroups]);
+    finalByStep.set(step, [...kept, ...cappedGroupIds]);
   }
 
   const allIncludedIds = [...finalByStep.values()].flat();

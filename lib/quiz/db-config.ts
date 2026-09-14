@@ -132,7 +132,7 @@ export async function loadQuizConfig(): Promise<QuizConfig> {
     coreTonerId: null,
     coreTreatmentId: null,
     coreMoisturiserId: null,
-    maxTreatments: 5,
+    maxTreatments: 2,
   };
 
   const productIds = new Set<string>();

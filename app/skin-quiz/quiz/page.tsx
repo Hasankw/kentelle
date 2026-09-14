@@ -22,6 +22,14 @@ import { tierDiscountAmount, nextTierMessage, type DiscountTier } from "@/lib/di
 const RESULT_STORAGE_KEY = "kentelle-quiz-result";
 const PLACEHOLDER_IMG = "/images/placeholder.svg";
 
+// Either/or choice groups are keyed by their admin-set altGroup (e.g.
+// "am-moisturiser") — label the ones we know about so two groups in the
+// same step (day vs. night moisturiser) don't both just say "Choose one".
+const ALT_GROUP_LABELS: Record<string, string> = {
+  "am-moisturiser": "Morning Moisturiser",
+  "pm-moisturiser": "Evening Moisturiser",
+};
+
 type StoredResult = { name: string; result: RoutineResult };
 
 const POOL_LABELS: Record<string, string> = {
@@ -784,12 +792,13 @@ function StepSection({
 
       {singles.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-          {singles.map((entry) => (
+          {singles.map((entry, i) => (
             <PrescriptionCard
               key={entry.id}
               product={(entry as Extract<PrescriptionEntry, { kind: "product" }>).product}
               checked={selected[entry.id] !== false}
               onToggle={() => onToggle(entry.id)}
+              recommended={i === 0 && singles.length > 1}
             />
           ))}
         </div>
@@ -798,19 +807,33 @@ function StepSection({
       {choices.map((entry) => {
         if (entry.kind !== "choice") return null;
         const activeId = choiceSelection[entry.id] ?? entry.options[0]?.id;
+        const groupSelected = selected[entry.id] !== false;
+        const groupLabel = ALT_GROUP_LABELS[entry.groupKey] ?? "Choose one";
         return (
           <div key={entry.id} className="mb-4">
-            <p className="font-body text-[10px] uppercase tracking-wider text-brand-contrast mb-2">Choose one</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {entry.options.map((option) => (
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-body text-[10px] uppercase tracking-wider text-brand-contrast">
+                {groupLabel}{entry.options.length > 1 ? " — we've picked our recommendation for you" : ""}
+              </p>
+              <button
+                type="button"
+                onClick={() => onToggle(entry.id)}
+                className="font-body text-[11px] text-brand-blue underline underline-offset-2"
+              >
+                {groupSelected ? "Skip — I don't need this" : "+ Add it back"}
+              </button>
+            </div>
+            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 transition-opacity ${groupSelected ? "" : "opacity-40 pointer-events-none"}`}>
+              {entry.options.map((option, i) => (
                 <PrescriptionCard
                   key={option.id}
                   product={option}
-                  checked={selected[entry.id] !== false}
+                  checked={groupSelected}
                   onToggle={() => onToggle(entry.id)}
                   radioGroup={entry.id}
                   radioChecked={option.id === activeId}
                   onSelectRadio={() => onSelectOption(entry.id, option.id)}
+                  recommended={i === 0 && entry.options.length > 1}
                 />
               ))}
             </div>
@@ -832,6 +855,7 @@ function PrescriptionCard({
   radioGroup,
   radioChecked,
   onSelectRadio,
+  recommended = false,
 }: {
   product: PrescriptionProduct;
   checked: boolean;
@@ -839,6 +863,7 @@ function PrescriptionCard({
   radioGroup?: string;
   radioChecked?: boolean;
   onSelectRadio?: () => void;
+  recommended?: boolean;
 }) {
   const image = product.images[0] || PLACEHOLDER_IMG;
   const discounted = product.salePrice != null && product.salePrice < product.price;
@@ -857,6 +882,11 @@ function PrescriptionCard({
             onClick={(e) => e.stopPropagation()}
             className="absolute top-2 left-2 w-4 h-4 accent-brand-navy"
           />
+          {recommended && (
+            <span className="absolute bottom-2 left-2 bg-brand-accent text-brand-navy text-[9px] font-heading font-bold uppercase tracking-wide px-1.5 py-0.5 rounded">
+              Recommended
+            </span>
+          )}
           {product.emphasisCategory && (
             <span className="absolute top-2 right-2 bg-brand-navy text-white text-[9px] font-heading font-bold uppercase tracking-wide px-1.5 py-0.5 rounded">
               {product.emphasisCategory}
