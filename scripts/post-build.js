@@ -1,7 +1,35 @@
 "use strict";
 // Post-build script: copies assets into standalone dir and wraps server.js
 // with a port-guard so Hostinger's duplicate worker exits cleanly.
-const { cpSync, writeFileSync, renameSync, existsSync } = require("fs");
+const { cpSync, writeFileSync, renameSync, existsSync, mkdtempSync, rmSync } = require("fs");
+const { execSync } = require("child_process");
+const os = require("os");
+const path = require("path");
+
+// Hostinger runs Linux x64, but this build may run on any dev machine (e.g. macOS).
+// npm only installs sharp's native binary for the CURRENT platform, so force-install
+// the linux-x64 one into an isolated scratch dir (never touch the project's own
+// node_modules — that would strip the darwin binary local `next dev` needs) and copy
+// it into the standalone bundle. Without this, sharp throws at import time on the
+// server, which crashes every route that imports lib/imageOptimize.ts, including
+// unrelated GET handlers in the same file.
+const scratchDir = mkdtempSync(path.join(os.tmpdir(), "sharp-linux-x64-"));
+writeFileSync(path.join(scratchDir, "package.json"), "{}");
+execSync(
+  "npm install --no-save --force --os=linux --cpu=x64 --libc=glibc sharp",
+  { cwd: scratchDir, stdio: "inherit" }
+);
+cpSync(
+  path.join(scratchDir, "node_modules/@img/sharp-linux-x64"),
+  ".next/standalone/node_modules/@img/sharp-linux-x64",
+  { recursive: true }
+);
+cpSync(
+  path.join(scratchDir, "node_modules/@img/sharp-libvips-linux-x64"),
+  ".next/standalone/node_modules/@img/sharp-libvips-linux-x64",
+  { recursive: true }
+);
+rmSync(scratchDir, { recursive: true, force: true });
 
 cpSync("public", ".next/standalone/public", { recursive: true });
 cpSync(".next/static", ".next/standalone/.next/static", { recursive: true });
