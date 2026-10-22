@@ -24,12 +24,15 @@ const SHOP_LINKS: FooterLink[] = [
   { id: "shop-professional-use", label: "Professional Use", href: "/collections/professional-use", enabled: true },
 ];
 
+const SOCIAL_LINKS: SocialLink[] = [
+  { id: "s1", label: "Instagram", href: "https://www.instagram.com/ken.telle" },
+  { id: "s2", label: "Facebook", href: "https://www.facebook.com/ken.ken.667207" },
+  { id: "s3", label: "TikTok", href: "https://www.tiktok.com/@ken.telle" },
+];
+
 const DEFAULT: FooterData = {
   brandDescription: "Science-backed skincare crafted for Australian skin. Clean ingredients, real results.",
-  socialLinks: [
-    { id: "s1", label: "Instagram", href: "https://instagram.com/kentelle" },
-    { id: "s2", label: "Facebook", href: "https://facebook.com/kentelle" },
-  ],
+  socialLinks: SOCIAL_LINKS,
   copyright: `© ${new Date().getFullYear()} Kentelle Skincare. All rights reserved.`,
   columns: [
     {
@@ -56,9 +59,38 @@ const DEFAULT: FooterData = {
   ],
 };
 
+function SocialIcon({ label }: { label: string }) {
+  const l = label.toLowerCase();
+  if (l === "instagram") {
+    return (
+      <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (l === "facebook") {
+    return (
+      <svg viewBox="0 0 24 24" width={20} height={20} fill="currentColor" aria-hidden="true">
+        <path d="M13.5 21v-7.5H16l.5-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.5V4.4c-.3 0-1.2-.1-2.2-.1-2.3 0-3.9 1.4-3.9 4v2.2H8v3h2.5V21h3z" />
+      </svg>
+    );
+  }
+  if (l === "tiktok") {
+    return (
+      <svg viewBox="0 0 24 24" width={20} height={20} fill="currentColor" aria-hidden="true">
+        <path d="M19.6 6.7a4.8 4.8 0 0 1-3.8-4.2h-3.4v13.3a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .8.1V9.5a6.3 6.3 0 1 0 5.5 6.3V9.2a8.1 8.1 0 0 0 4.7 1.5V7.3a4.8 4.8 0 0 1-.9-.6z" />
+      </svg>
+    );
+  }
+  return <ExternalLink size={20} />;
+}
+
 function normalizeFooterData(data: FooterData): FooterData {
   return {
     ...data,
+    socialLinks: SOCIAL_LINKS,
     columns: data.columns.map((column) => {
       if (column.id === "col1" || column.title.trim().toLowerCase() === "shop") {
         return { ...column, links: SHOP_LINKS };
@@ -162,7 +194,7 @@ export default function Footer() {
                   className="text-brand-contrast hover:text-brand-white transition-colors"
                   aria-label={s.label}
                 >
-                  <ExternalLink size={20} />
+                  <SocialIcon label={s.label} />
                 </a>
               ))}
             </div>

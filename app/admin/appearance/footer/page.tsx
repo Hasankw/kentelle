@@ -25,12 +25,15 @@ const SHOP_LINKS: FooterLink[] = [
   { id: "shop-professional-use", label: "Professional Use", href: "/collections/professional-use", enabled: true },
 ];
 
+const SOCIAL_LINKS: SocialLink[] = [
+  { id: "s1", label: "Instagram", href: "https://www.instagram.com/ken.telle" },
+  { id: "s2", label: "Facebook", href: "https://www.facebook.com/ken.ken.667207" },
+  { id: "s3", label: "TikTok", href: "https://www.tiktok.com/@ken.telle" },
+];
+
 const DEFAULT_DATA: FooterData = {
   brandDescription: "Science-backed skincare crafted for Australian skin. Clean ingredients, real results.",
-  socialLinks: [
-    { id: "s1", label: "Instagram", href: "https://instagram.com/kentelle" },
-    { id: "s2", label: "Facebook", href: "https://facebook.com/kentelle" },
-  ],
+  socialLinks: SOCIAL_LINKS,
   copyright: `© ${new Date().getFullYear()} Kentelle Skincare. All rights reserved.`,
   columns: [
     {
